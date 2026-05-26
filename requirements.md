@@ -26,27 +26,27 @@ The goal of this CRM system is to:
 
 The system will include four primary modules:
 
-### S1 — Customer Management
+### Student 1 — Customer Management
 - Customer profile creation and maintenance
 - Contact management
 - Interaction history tracking
 
-### S2 — RFQ / Pipeline Management
+### Student 2 — RFQ / Pipeline Management
 - RFQ creation and tracking
 - Sales pipeline stages
 - Quote and deal tracking
 
-### S3 — Digital Campaign Management
+### Student 3 — Digital Campaign Management
 - Campaign creation and tracking
 - Customer segmentation
 - Campaign performance metrics
 
-### S4 — Inventory Management
+### Student 4 — Inventory Management
 - Product catalog
 - Stock tracking
 - Inventory allocation to RFQs
 
-### S5 — Integration Layer
+### All — Integration Layer
 - Cross-module data sharing
 - Reporting and unified dashboard
 - Internal APIs for module communication

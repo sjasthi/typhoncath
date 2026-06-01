@@ -73,14 +73,22 @@ www.jasthi.com
 
 6/1/26:
 [1] Accounts -- Contacts
-Can there be multiple contacts for one Account?
-Any possibility of a Contact joining a different company and become a contact for a different Account?
+Can there be multiple contacts for one Account? (Yes)
+Any possibility of a Contact joining a different company and become a contact for a different Account?  (not really)
 
 [2] What is your source of these Accounts? Cold Calls? Or some trigger? How does one get into the system?
+Either they know it 
+CRMs have a parent account 
+Multiple Accounts
+By Us / Can contacts come from a variety of sources
+-- internet search
 
-[3] Can Accounts exist without Contacts? Can Contacts exist without corresponding Account?
+[3] Can Accounts exist without Contacts? (Yes)
+Can Contacts exist without corresponding Account?  (NO)
 
-[4] Does the Pipeline Dashboard rely on only "Opportunities Pipeline" or any other data sources?
+
+[4] Does the Pipeline Dashboard rely on only "Opportunities Pipeline" or any other data sources? (multiple
+Open, Won, Lost
 
 
 

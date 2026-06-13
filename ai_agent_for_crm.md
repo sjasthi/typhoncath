@@ -319,22 +319,6 @@ Build a web interface showing:
 * Search
 * AI Chat Interface
 
-Recommended:
-
-* React
-* Angular
-* Vue
-
-Backend:
-
-* Python
-* Flask
-* FastAPI
-
-Database:
-
-* PostgreSQL
-
 ---
 
 # Bonus Modules

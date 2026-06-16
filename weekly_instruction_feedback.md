@@ -414,39 +414,38 @@ Deliverables:
 
 Deliverables:
 
-* Repo initialized
-* Database schema started
-* Shared PHP/MySQL connection
-* Login/session skeleton
-* Basic list page for each module
+* Database schema started **Max**
+* Shared PHP/MySQL connection **Trevor**
+* Login/session skeleton **Casey**
+* Basic list page for each module **Jonah**
 
 ## FP5 — Core CRUD
 
 Deliverables:
-
-* Create/edit forms for each module
-* Basic validation
-* Database insert/update/read working
-* Shared Bootstrap layout applied
+**Everyone has their own pages**
+* Create/edit forms for each module **Everyone**
+* Basic validation **Trevor**
+* Database insert/update/read working **Max**
+* Shared Bootstrap layout applied **Jonah**
 
 ## FP6 — Module Workflows
 
 Deliverables:
 
-* Customer interactions
-* RFQ stage changes
-* Campaign audience selection
-* Inventory reservation/stock logic
-* Role checks added
+* Customer interactions **Max**
+* RFQ stage changes **Trevor**
+* Campaign audience selection **Jonah**
+* Inventory reservation/stock logic **Casey**
+* Role checks added **Trevor**
 
 ## FP7 — Cross-Module Integration
 
 Deliverables:
 
-* RFQs linked to customers
-* Campaigns linked to customer segments/tags
-* RFQs linked to inventory reservations
-* Shared service/helper functions
+* RFQs linked to customers **Trevor**
+* Campaigns linked to customer segments/tags **Jonah**
+* RFQs linked to inventory reservations **Trevor**
+* Shared service/helper functions **Max**
 
 ## FP8 — Dashboard / Reporting
 

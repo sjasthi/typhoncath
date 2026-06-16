@@ -1,0 +1,16 @@
+FP3:  1. Rough outline of the website (pages/actions/sitemap)
+         Visualization of how the user interaface for the CRM site going to look like! (Super Admin, Admin, other roles) (For each role, how is the UI going to look like)
+       2. Code structure of the repo
+       3. Need weekly plan for the rest of the iterations as follows. (assume 4 folks for now)
+
+             Jonah     Max     Casey        Trevor   All
+
+FP3            X        X        X            X
+FP4
+FP5
+..
+
+FP10
+
+
+

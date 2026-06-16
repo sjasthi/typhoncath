@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="drawio" version="26.0.0">
+  <diagram name="RFQ Pipeline State">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="1000" pageHeight="750" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title -->
+        <mxCell id="2" value="RFQ Pipeline State Diagram" style="text;html=1;align=center;fontSize=16;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="200" y="20" width="500" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Start node -->
+        <mxCell id="3" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#333333;strokeColor=#333333;aspect=fixed;" vertex="1" parent="1">
+          <mxGeometry x="430" y="70" width="40" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- States: New, In Review, Quoted, Negotiation, Won, Lost -->
+        <mxCell id="4" value="New" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="390" y="150" width="130" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="5" value="In Review" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="390" y="265" width="130" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="6" value="Quoted" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="390" y="380" width="130" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="7" value="Negotiation" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="390" y="495" width="130" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="8" value="Won" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="200" y="600" width="130" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="9" value="Lost" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="590" y="600" width="130" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- End nodes -->
+        <mxCell id="10" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#333333;strokeColor=#333333;aspect=fixed;" vertex="1" parent="1">
+          <mxGeometry x="245" y="690" width="40" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="11" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#333333;strokeColor=#333333;aspect=fixed;" vertex="1" parent="1">
+          <mxGeometry x="635" y="690" width="40" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Open status legend box -->
+        <mxCell id="12" value="OPEN status:&#xa;New, In Review, Quoted, Negotiation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="680" y="260" width="220" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="13" value="WON status" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="680" y="340" width="120" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="14" value="LOST status" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="820" y="340" width="100" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="200" value="Pipeline Status Legend" style="text;html=1;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="680" y="230" width="220" height="24" as="geometry" />
+        </mxCell>
+
+        <!-- TRANSITIONS -->
+        <!-- Start -> New -->
+        <mxCell id="20" value="RFQ created" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=10;" edge="1" parent="1" source="3" target="4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- New -> In Review -->
+        <mxCell id="21" value="sales review starts" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=10;" edge="1" parent="1" source="4" target="5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- In Review -> Quoted -->
+        <mxCell id="22" value="quote prepared" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=10;" edge="1" parent="1" source="5" target="6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Quoted -> Negotiation -->
+        <mxCell id="23" value="customer responds" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=10;" edge="1" parent="1" source="6" target="7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Negotiation -> Won -->
+        <mxCell id="24" value="customer accepts" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=10;exitX=0;exitY=0.5;entryX=0.5;entryY=0;" edge="1" parent="1" source="7" target="8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Negotiation -> Lost -->
+        <mxCell id="25" value="rejects / no fit" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=10;exitX=1;exitY=0.5;entryX=0.5;entryY=0;" edge="1" parent="1" source="7" target="9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Quoted -> Lost -->
+        <mxCell id="26" value="expires / rejected" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=10;exitX=1;exitY=0.5;entryX=0;entryY=0.3;" edge="1" parent="1" source="6" target="9">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="560" y="410" />
+              <mxPoint x="560" y="618" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- In Review -> Lost -->
+        <mxCell id="27" value="invalid / no fit" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=10;exitX=1;exitY=0.5;entryX=0;entryY=0.1;" edge="1" parent="1" source="5" target="9">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="570" y="295" />
+              <mxPoint x="570" y="606" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Negotiation -> Quoted (revise quote) -->
+        <mxCell id="28" value="revise quote" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=10;exitX=0;exitY=0.4;entryX=0;entryY=0.6;dashed=1;" edge="1" parent="1" source="7" target="6">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="360" y="517" />
+              <mxPoint x="360" y="403" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Lost -> In Review (optional reopen) -->
+        <mxCell id="29" value="reopen (optional)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=10;dashed=1;exitX=0;exitY=0.5;entryX=1;entryY=0.5;" edge="1" parent="1" source="9" target="5">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="560" y="630" />
+              <mxPoint x="340" y="630" />
+              <mxPoint x="340" y="295" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Won -> End -->
+        <mxCell id="30" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="8" target="10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Lost -> End -->
+        <mxCell id="31" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="9" target="11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,3 +1,6 @@
+<!-- general applications settings -->
+
+
 <?php
 return [
     'name' => 'Typhon Cath CRM',

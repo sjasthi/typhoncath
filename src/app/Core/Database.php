@@ -4,8 +4,19 @@ namespace App\Core;
 use PDO;
 use PDOException;
 
+// Instead of every student writing their own connection like this:
+
+// $conn = new mysqli(...);
+
+// Everyone should use:
+
+// $db = Database::connection();
+// NOTE: CLASS:FUNCTION calls the function within a class
+
+
 class Database
 {
+    
     private static ?PDO $connection = null;
 
     public static function connection(): PDO

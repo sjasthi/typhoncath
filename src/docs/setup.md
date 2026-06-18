@@ -1,5 +1,3 @@
-# typhoncath
-CRM for Typhon Cath
 # TyphonCath CRM — Local Setup Guide
 
 ## Prerequisites

@@ -1,0 +1,2 @@
+-- 004_create_campaigns.sql
+-- TODO: Move relevant statements from database/schema.sql into this migration if your team uses migrations.

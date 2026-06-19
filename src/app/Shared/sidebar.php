@@ -20,10 +20,10 @@ Eventually, the sidebar should only show links the user is allowed to access. --
 
 
 
-<div class="crm-shell">
-    <aside class="crm-sidebar">
-        <h2>Typhon CRM</h2>
-        <nav>
+<div class="app-shell">
+    <aside class="app-sidebar">
+        <div class="app-brand">Typhon CRM</div>
+        <nav class="app-nav">
             <a href="/dashboard.php">Dashboard</a>
             <a href="/modules/customer/accounts.php">Customers</a>
             <a href="/modules/rfq/pipeline.php">RFQ Pipeline</a>
@@ -33,4 +33,4 @@ Eventually, the sidebar should only show links the user is allowed to access. --
             <a href="/logout.php">Logout</a>
         </nav>
     </aside>
-    <main class="crm-main">
+    <main class="app-main">

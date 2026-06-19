@@ -2,7 +2,7 @@
 
 * { box-sizing: border-box; }
 
-#root{
+:root{
   --tc-success: #198754;
   --tc-success-bg: #e8f6ef;
   --tc-warning: #b7791f;
@@ -167,4 +167,62 @@ label { display: block; font-weight: 600; margin-bottom: 0.25rem; }
   .app-sidebar { display: none; }
   body { background: #fff; }
   .app-main { padding: 0; }
+}
+
+/* RFQ SECTION */
+.rfq-main-view {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(180px, 1fr));
+  gap: 1rem;
+  width: 100%;
+  min-height: 60vh;
+  overflow-x: auto;
+}
+
+.rfq-item {
+  background: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.rfq-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.rfq-count {
+  background: #e0e0e0;
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+.rfq-card {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 0.6rem 0.75rem;
+}
+
+.rfq-card-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #111;
+}
+
+.rfq-card-meta {
+  font-size: 0.78rem;
+  color: #666;
+  margin-top: 0.2rem;
 }

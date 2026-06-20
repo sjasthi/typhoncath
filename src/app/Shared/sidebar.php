@@ -21,8 +21,11 @@ Eventually, the sidebar should only show links the user is allowed to access. --
 
 
 <div class="app-shell">
-    <aside class="app-sidebar">
-        <div class="app-brand">Typhon CRM</div>
+    <aside class="app-sidebar" id="app-sidebar">
+        <div class="app-sidebar-top">
+            <div class="app-brand">Typhon CRM</div>
+            <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle sidebar">&#8249;</button>
+        </div>
         <nav class="app-nav">
             <a href="/dashboard.php">Dashboard</a>
             <a href="/modules/customer/accounts.php">Customers</a>
@@ -34,3 +37,4 @@ Eventually, the sidebar should only show links the user is allowed to access. --
         </nav>
     </aside>
     <main class="app-main">
+        <button class="sidebar-open-btn" id="sidebar-open-btn" aria-label="Open sidebar">&#9776;</button>

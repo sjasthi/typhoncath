@@ -24,6 +24,10 @@ class RFQController
             $grouped[$rfq['stage']][] = $rfq;
         }
 
+        $winRateData    = $this->repo->winRateByAccount();
+        $valueByStage   = $this->repo->totalValueByStage();
+        $expiringQuotes = $this->repo->quotesExpiringSoon();
+
         include __DIR__ . '/views/pipeline_board.php';
     }
 

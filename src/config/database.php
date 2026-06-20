@@ -1,5 +1,3 @@
-<!-- database.php = database connection settings -->
-<!-- .env file stores secrets -->
 <?php
 return [
     'host' => getenv('DB_HOST') ?: 'localhost',

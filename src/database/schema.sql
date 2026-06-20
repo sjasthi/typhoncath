@@ -144,3 +144,6 @@ CREATE TABLE campaign_audience (
     FOREIGN KEY (account_id) REFERENCES accounts(id),
     FOREIGN KEY (contact_id) REFERENCES contacts(id)
 );
+
+select * from accounts;
+select * from users;

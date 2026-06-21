@@ -35,7 +35,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$accounts = $repo->all();
+$accounts = $repo->search(
+    $_GET['search'] ?? '',
+    $_GET['industry'] ?? '',
+    $_GET['source'] ?? ''
+);
 
 include __DIR__ . '/../../../app/Shared/header.php';
 include __DIR__ . '/../../../app/Shared/sidebar.php';

@@ -52,6 +52,38 @@
 
     <hr>
 
+    <form method="GET">
+
+        <input
+            type="text"
+            name="search"
+            placeholder="Customer Name"
+            value="<?= htmlspecialchars($_GET['search'] ?? '') ?>">
+
+        <input
+            type="text"
+            name="industry"
+            placeholder="Industry"
+            value="<?= htmlspecialchars($_GET['industry'] ?? '') ?>">
+
+        <input
+            type="text"
+            name="source"
+            placeholder="Source"
+            value="<?= htmlspecialchars($_GET['source'] ?? '') ?>">
+
+        <button type="submit">
+            Filter
+        </button>
+
+        <a href="accounts.php">
+            Clear
+        </a>
+
+    </form>
+
+    <hr>
+
     <h2>Existing Customers</h2>
 
     <table border="1" cellpadding="8">

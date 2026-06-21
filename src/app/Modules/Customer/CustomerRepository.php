@@ -19,6 +19,45 @@ class CustomerRepository
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    public function search(
+        string $search = '',
+        string $industry = '',
+        string $source = ''
+    ): array {
+
+        $db = Database::connection();
+
+        $sql = "
+            SELECT *
+            FROM accounts
+            WHERE 1=1
+        ";
+
+        $params = [];
+
+        if ($search !== '') {
+            $sql .= " AND account_name LIKE :search";
+            $params['search'] = "%{$search}%";
+        }
+
+        if ($industry !== '') {
+            $sql .= " AND industry LIKE :industry";
+            $params['industry'] = "%{$industry}%";
+        }
+
+        if ($source !== '') {
+            $sql .= " AND source LIKE :source";
+            $params['source'] = "%{$source}%";
+        }
+
+        $sql .= " ORDER BY account_name";
+
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     public function create(array $data): void
     {
         $db = Database::connection();

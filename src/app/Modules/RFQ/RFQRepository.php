@@ -77,10 +77,8 @@ class RFQRepository
 
     public function find_by_id($id){
         $db = Database::connection();
-        // IMPORTANT THE '?' PREVENT SQL INJECTION AND ALLOWS FOR US TO CHECK THE
-        // VALUE PASSED IN BEFORE RUNNING IT ON THE DB
-        $stmt = $db->prepare("SELECT FROM rfqs WHERE id==?");
-        $stmt->execute([$id]);
+        $stmt = $db->prepare("SELECT * FROM rfqs WHERE id = ?");
+        $stmt->execute([(int)$id]);
         return $stmt->fetch();
     }
 

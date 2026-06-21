@@ -59,4 +59,8 @@ class RFQController
         $rfqs = $this->repo->all();
         include __DIR__ . '/views/pipeline_board.php';
     }
+
+    public function create(): void {
+        include __DIR__ . '/views/create_rfq.php';
+    }
 }

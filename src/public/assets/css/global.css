@@ -246,6 +246,33 @@ label { display: block; font-weight: 600; margin-bottom: 0.25rem; }
 }
 
 /* RFQ SECTION */
+.rfq-board-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.rfq-board-header h1 { margin: 0; }
+
+.rfq-create-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--primary-blue);
+  color: #fff;
+  font-size: 1.5rem;
+  line-height: 1;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.rfq-create-btn:hover { background: #1648c0; }
+
+
 .rfq-main-view {
   display: grid;
   grid-template-columns: repeat(6, minmax(180px, 1fr));

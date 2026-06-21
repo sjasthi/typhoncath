@@ -15,6 +15,66 @@ class RFQRepository
     }
 
 
+    public static array $stages = ['New', 'In Review', 'Quoted', 'Negotiation', 'Won', 'Lost'];
+
+    private function buildWhere(string $q, string $idSearch, array $stages): array {
+        $clauses = [];
+        $params  = [];
+
+        if ($idSearch !== '') {
+            $clauses[] = 'r.id = ?';
+            $params[]  = (int)$idSearch;
+        }
+        if ($q !== '') {
+            $clauses[] = '(r.title LIKE ? OR a.account_name LIKE ?)';
+            $params[]  = "%$q%";
+            $params[]  = "%$q%";
+        }
+        $validStages = array_values(array_intersect($stages, self::$stages));
+        if (!empty($validStages)) {
+            $placeholders = implode(',', array_fill(0, count($validStages), '?'));
+            $clauses[]    = "r.stage IN ($placeholders)";
+            array_push($params, ...$validStages);
+        }
+
+        $sql = $clauses ? ' WHERE ' . implode(' AND ', $clauses) : '';
+        return [$sql, $params];
+    }
+
+    public function searchCount(string $q = '', string $idSearch = '', array $stages = []): int {
+        [$where, $params] = $this->buildWhere($q, $idSearch, $stages);
+        $db   = Database::connection();
+        $stmt = $db->prepare("SELECT COUNT(*) FROM rfqs r LEFT JOIN accounts a ON a.id = r.account_id" . $where);
+        $stmt->execute($params);
+        return (int)$stmt->fetchColumn();
+    }
+
+    public function search(string $q = '', string $sortCol = 'created_at', string $sortDir = 'DESC', int $limit = 25, int $offset = 0, string $idSearch = '', array $stages = []): array {
+        $colMap = [
+            'id'           => 'r.id',
+            'title'        => 'r.title',
+            'account_name' => 'a.account_name',
+            'stage'        => 'r.stage',
+            'created_at'   => 'r.created_at',
+            'updated_at'   => 'r.updated_at',
+        ];
+        $orderCol = $colMap[$sortCol] ?? 'r.created_at';
+        $orderDir = strtoupper($sortDir) === 'ASC' ? 'ASC' : 'DESC';
+
+        [$where, $params] = $this->buildWhere($q, $idSearch, $stages);
+
+        $db   = Database::connection();
+        $stmt = $db->prepare("
+            SELECT r.id, r.title, a.account_name, r.stage, r.created_at, r.updated_at
+            FROM rfqs r
+            LEFT JOIN accounts a ON a.id = r.account_id
+            $where
+            ORDER BY $orderCol $orderDir LIMIT $limit OFFSET $offset
+        ");
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
     public function find_by_id($id){
         $db = Database::connection();
         // IMPORTANT THE '?' PREVENT SQL INJECTION AND ALLOWS FOR US TO CHECK THE

@@ -15,10 +15,18 @@ INSERT INTO accounts (account_name, email, phone, industry, source, tags) VALUES
 ('Demo Hospital', 'contact@demohospital.test', '555-0100', 'Healthcare', 'Seed Data', 'hospital,prospect');
 
 INSERT INTO products (product_name, sku, price, description) VALUES
-('Typhon Catheter Demo Product', 'TYPHON-DEMO-001', 499.00, 'Demo product for CRM inventory.');
+('Typhon Catheter Demo Product',              'TYPHON-DEMO-001',  499.00, 'Demo product for CRM inventory.'),
+('Triple-Lumen Central Venous Catheter Kit',  'CVC-3L-001',       285.00, 'Triple-lumen CVC kit for central venous access; 7 Fr, 20 cm.'),
+('PICC Line Kit — Power Injectable',          'PICC-PWR-002',     198.00, 'Power-injectable PICC kit with introducer needle and guidewire.'),
+('Foley Catheter 16 Fr Silicone',             'FOLEY-16-003',      42.50, 'All-silicone indwelling Foley catheter, 16 Fr, 10 mL balloon.'),
+('Arterial Line Catheter 20 Ga',              'ART-LINE-004',      87.00, 'Radial arterial line catheter, 20 Ga, with pressure transducer tubing.');
 
 INSERT INTO inventory (product_id, available_quantity, reserved_quantity) VALUES
-(1, 100, 0);
+(1, 100,  0),
+(2, 250, 12),
+(3, 480,  0),
+(4, 900, 20),
+(5, 160,  5);
 
 -- ── Additional accounts ───────────────────────────────
 INSERT INTO accounts (account_name, email, phone, industry, source, tags) VALUES

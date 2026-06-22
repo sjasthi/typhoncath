@@ -1,5 +1,15 @@
 console.log('Typhon Cath CRM loaded.');
 
+// Auto-dismiss flash banner after 4 seconds
+(function () {
+    var banner = document.getElementById('flash-banner');
+    if (!banner) return;
+    setTimeout(function () {
+        banner.classList.add('flash-banner--hiding');
+        setTimeout(function () { banner.remove(); }, 400);
+    }, 4000);
+}());
+
 // Collapsible sidebar
 (function () {
     var sidebar  = document.getElementById('app-sidebar');

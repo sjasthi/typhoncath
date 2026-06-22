@@ -1,5 +1,8 @@
 <section class="card">
-    <h1>RFQ Pipeline Board</h1>
+    <div class="rfq-board-header">
+        <h1>RFQ Pipeline Board</h1>
+        <a href="/modules/rfq/create.php" class="rfq-create-btn" title="Create RFQ">+</a>
+    </div>
 
     <div class="rfq-main-view">
         <?php foreach ($grouped as $stage => $rfqs): ?>

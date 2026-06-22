@@ -38,3 +38,11 @@ Eventually, the sidebar should only show links the user is allowed to access. --
     </aside>
     <main class="app-main">
         <button class="sidebar-open-btn" id="sidebar-open-btn" aria-label="Open sidebar">&#9776;</button>
+
+        <?php if (!empty($_SESSION['flash'])): ?>
+        <?php $flash = $_SESSION['flash']; unset($_SESSION['flash']); ?>
+        <div class="flash-banner flash-banner--<?= htmlspecialchars($flash['type']) ?>" role="alert" id="flash-banner">
+            <span><?= htmlspecialchars($flash['message']) ?></span>
+            <button class="flash-banner-close" onclick="this.parentElement.remove()" aria-label="Dismiss">&times;</button>
+        </div>
+        <?php endif; ?>

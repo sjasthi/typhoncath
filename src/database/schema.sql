@@ -73,7 +73,7 @@ CREATE TABLE rfqs (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (account_id) REFERENCES accounts(id),
-    FOREIGN KEY (contact_id) REFERENCES contacts(id),
+    FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE CASCADE,
     FOREIGN KEY (created_by_user_id) REFERENCES users(id)
 );
 
@@ -144,3 +144,8 @@ CREATE TABLE campaign_audience (
     FOREIGN KEY (account_id) REFERENCES accounts(id),
     FOREIGN KEY (contact_id) REFERENCES contacts(id)
 );
+
+select * from accounts;
+select * from users;
+SELECT DATABASE();
+SHOW TABLES;

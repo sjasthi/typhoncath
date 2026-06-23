@@ -139,9 +139,11 @@
 
                 <tr>
 
-                    <td>
-                        <?= htmlspecialchars($account['account_name']) ?>
-                    </td>
+                 <td>
+				    <a href="account_detail.php?id=<?= $account['id'] ?>">
+				        <?= htmlspecialchars($account['account_name']) ?>
+				    </a>
+				</td>
 
                     <td>
                         <?= htmlspecialchars($account['email']) ?>

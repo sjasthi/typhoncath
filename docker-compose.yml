@@ -24,13 +24,18 @@ services:
       MYSQL_PASSWORD: secret
     volumes:
       - db_data:/var/lib/mysql
-      # - ./src/database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
-      # - ./src/database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql
+      - ./src/database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./src/database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
       interval: 5s
       timeout: 5s
       retries: 10
+
+  adminer:
+    image: adminer
+    ports:
+      - "8081:8080"
 
 volumes:
   db_data:

@@ -15,7 +15,186 @@ INSERT INTO accounts (account_name, email, phone, industry, source, tags) VALUES
 ('Demo Hospital', 'contact@demohospital.test', '555-0100', 'Healthcare', 'Seed Data', 'hospital,prospect');
 
 INSERT INTO products (product_name, sku, price, description) VALUES
-('Typhon Catheter Demo Product', 'TYPHON-DEMO-001', 499.00, 'Demo product for CRM inventory.');
+('Typhon Catheter Demo Product',              'TYPHON-DEMO-001',  499.00, 'Demo product for CRM inventory.'),
+('Triple-Lumen Central Venous Catheter Kit',  'CVC-3L-001',       285.00, 'Triple-lumen CVC kit for central venous access; 7 Fr, 20 cm.'),
+('PICC Line Kit — Power Injectable',          'PICC-PWR-002',     198.00, 'Power-injectable PICC kit with introducer needle and guidewire.'),
+('Foley Catheter 16 Fr Silicone',             'FOLEY-16-003',      42.50, 'All-silicone indwelling Foley catheter, 16 Fr, 10 mL balloon.'),
+('Arterial Line Catheter 20 Ga',              'ART-LINE-004',      87.00, 'Radial arterial line catheter, 20 Ga, with pressure transducer tubing.');
 
 INSERT INTO inventory (product_id, available_quantity, reserved_quantity) VALUES
-(1, 100, 0);
+(1, 100,  0),
+(2, 250, 12),
+(3, 480,  0),
+(4, 900, 20),
+(5, 160,  5);
+
+-- ── Additional accounts ───────────────────────────────
+INSERT INTO accounts (account_name, email, phone, industry, source, tags) VALUES
+('City Medical Center',        'procurement@citymed.test',      '555-0201', 'Healthcare', 'Seed Data', 'hospital,active'),
+('Regional Heart Institute',   'supply@heartinstitute.test',    '555-0202', 'Cardiology', 'Seed Data', 'specialist,prospect'),
+('St. Luke\'s Hospital',       'orders@stlukes.test',           '555-0203', 'Healthcare', 'Seed Data', 'hospital,active'),
+('Northwest Cardiology Group', 'purchasing@nwcardio.test',      '555-0204', 'Cardiology', 'Seed Data', 'specialist,active'),
+('Valley General Hospital',    'supply@valleygeneral.test',     '555-0205', 'Healthcare', 'Seed Data', 'hospital,prospect');
+
+-- ── Contacts ──────────────────────────────────────────
+INSERT INTO contacts (account_id, first_name, last_name, email, phone, title) VALUES
+(1, 'Sandra', 'Lee',     'slee@demohospital.test',      '555-1001', 'Procurement Manager'),
+(2, 'James',  'Ortega',  'jortega@citymed.test',        '555-1002', 'Supply Chain Director'),
+(3, 'Maria',  'Chen',    'mchen@heartinstitute.test',   '555-1003', 'Purchasing Lead'),
+(4, 'David',  'Park',    'dpark@stlukes.test',          '555-1004', 'Operations Manager'),
+(5, 'Rachel', 'Torres',  'rtorres@nwcardio.test',       '555-1005', 'Procurement Officer'),
+(6, 'Kevin',  'Nguyen',  'knguyen@valleygeneral.test',  '555-1006', 'Supply Coordinator');
+
+-- ── RFQs across all stages ────────────────────────────
+-- New (recent)
+INSERT INTO rfqs (account_id, contact_id, created_by_user_id, title, description, stage, created_at) VALUES
+(1, 1, 1, 'Q3 Catheter Supply Request',    'Standard quarterly reorder for ICU ward.',            'New', '2026-06-17 09:00:00'),
+(2, 2, 1, 'ICU Catheter Bulk Order',       'Bulk order for new ICU expansion unit.',              'New', '2026-06-15 10:30:00'),
+(3, 3, 1, 'Hybrid OR Catheter Kit',        'Specialty kit for new hybrid operating room.',        'New', '2026-06-18 14:00:00'),
+
+-- In Review
+(3, 3, 1, 'Cardiac Catheter Package',      'Annual package for cath lab procedures.',             'In Review', '2026-06-05 08:00:00'),
+(4, 4, 1, 'Annual Contract Renewal',       'Renewal of 2025 catheter supply contract.',           'In Review', '2026-06-08 11:00:00'),
+(6, 6, 1, 'Emergency Supply Order',        'Urgent restock following inventory shortage.',        'In Review', '2026-06-01 09:30:00'),
+
+-- Quoted (expiring soon + one overdue)
+(5, 5, 1, 'Coronary Catheter Bundle',      'Discounted bundle for coronary procedures.',          'Quoted', '2026-05-10 09:00:00'),
+(6, 6, 1, 'Pediatric Catheter Order',      'Pediatric sizing range for new ward.',                'Quoted', '2026-05-20 13:00:00'),
+(1, 1, 1, 'Catheter Consumables Q2',       'Consumables top-up order.',                           'Quoted', '2026-05-01 10:00:00'),
+
+-- Negotiation
+(2, 2, 1, 'Multi-site Supply Agreement',   'Agreement covering three City Medical locations.',    'Negotiation', '2026-04-28 08:00:00'),
+(3, 3, 1, 'Annual Volume Deal',            'Volume pricing negotiation for full-year supply.',    'Negotiation', '2026-04-20 09:00:00'),
+
+-- Won
+(4, 4, 1, 'Catheter Supply Contract 2026', 'Signed annual supply contract.',                      'Won',  '2026-02-10 09:00:00'),
+(5, 5, 1, 'Specialty Catheter Package',    'Specialty package for cardiology department.',        'Won',  '2026-03-05 10:00:00'),
+
+-- Lost
+(6, 6, 1, 'Budget Catheter Tender',        'Lost to lower-cost competitor.',                      'Lost', '2026-01-15 09:00:00'),
+(1, 1, 1, 'Pilot Program Order',           'Pilot declined — customer paused procurement.',       'Lost', '2026-02-20 11:00:00');
+
+-- ── Additional accounts (diverse industries & sources) ─
+INSERT INTO accounts (account_name, email, phone, industry, source, tags) VALUES
+('Summit Ambulatory Surgery Ctr', 'supply@summitasc.test',         '555-0301', 'Ambulatory Surgery', 'Trade Show',   'asc,active'),
+('Pacific Vascular Associates',   'procurement@pacvascular.test',  '555-0302', 'Vascular Surgery',   'Referral',     'specialist,prospect'),
+('Midlands Research Hospital',    'supply@midlandsresearch.test',  '555-0303', 'Academic Medicine',  'Direct',       'research,active'),
+('BlueCross Regional Medical',    'orders@bluecrossreg.test',      '555-0304', 'Healthcare',         'Inbound',      'hospital,active'),
+('Sunrise Nursing & Rehab',       'director@sunrisenr.test',       '555-0305', 'Long-Term Care',     'Cold Outreach','ltc,prospect'),
+('Apex Medical Distributors',     'purchasing@apexmed.test',       '555-0306', 'Distribution',       'Partner',      'distributor,active');
+
+-- ── Additional contacts ───────────────────────────────
+INSERT INTO contacts (account_id, first_name, last_name, email, phone, title) VALUES
+(7,  'Priya',   'Sharma',    'psharma@summitasc.test',        '555-1007', 'Director of Surgical Services'),
+(8,  'Carlos',  'Mendez',    'cmendez@pacvascular.test',      '555-1008', 'Procurement Manager'),
+(9,  'Aisha',   'Okonkwo',   'aokonkwo@midlandsresearch.test','555-1009', 'Research Supply Coordinator'),
+(10, 'Tom',     'Wilder',    'twilder@bluecrossreg.test',     '555-1010', 'Supply Chain Director'),
+(11, 'Linda',   'Hoffman',   'lhoffman@sunrisenr.test',       '555-1011', 'Nursing Director'),
+(12, 'Bryan',   'Cho',       'bcho@apexmed.test',             '555-1012', 'Key Account Manager');
+
+-- ── Additional RFQs ───────────────────────────────────
+-- New
+INSERT INTO rfqs (account_id, contact_id, created_by_user_id, title, description, stage, created_at) VALUES
+(7,  7,  1, 'PICC Line Kit Requisition',          '500-unit PICC kit order for oncology IV therapy programme.',            'New', '2026-06-20 08:15:00'),
+(8,  8,  1, 'Vascular Access Catheter Trial',     'Comparing Typhon CVC against current supplier across two ICU bays.',    'New', '2026-06-19 10:00:00'),
+(9,  9,  1, 'Dialysis Catheter Evaluation',       'Research trial kit for hemodialysis access study — 6-month window.',    'New', '2026-06-18 13:30:00'),
+(10, 10, 1, 'Central Venous Catheter Restock',    'Urgent restock of triple-lumen CVCs following supply chain delay.',     'New', '2026-06-17 09:45:00'),
+
+-- In Review
+(11, 11, 1, 'Foley Catheter Annual Agreement',    'Annual Foley supply for 180-bed long-term care facility.',              'In Review', '2026-06-09 09:00:00'),
+(12, 12, 1, 'GPO Evaluation — Arterial Lines',    'Distributor evaluating Typhon arterials for GPO catalogue inclusion.',  'In Review', '2026-06-06 14:00:00'),
+(7,  7,  1, 'ASC Vascular Sheath Package',        'Quarterly vascular sheath and introducer kit for OR suite 3 & 4.',      'In Review', '2026-06-03 11:30:00'),
+(4,  4,  1, 'Peritoneal Dialysis Catheter RFQ',   'Evaluating Typhon PD catheters for new dialysis unit expansion.',       'In Review', '2026-05-29 10:00:00'),
+
+-- Quoted
+(8,  8,  1, 'Peripherally Inserted Line Bundle',  'Negotiated bundle: PICC + midline kits for 12-month supply.',           'Quoted', '2026-05-22 09:00:00'),
+(12, 12, 1, 'Distributor Bulk Catheter Order',    'High-volume mixed catheter order for Q3 distributor allocation.',        'Quoted', '2026-05-16 13:00:00'),
+(9,  9,  1, 'Hemodialysis Access Kit — Q2',       'Tunnelled dialysis catheter kits for 40-patient cohort study.',         'Quoted', '2026-05-11 10:30:00'),
+(3,  3,  1, 'Hybrid Cath Lab Supply Package',     'Specialty catheter and sheath bundle for expanded hybrid OR suite.',     'Quoted', '2026-05-06 08:00:00'),
+
+-- Negotiation
+(10, 10, 1, 'Multi-Year Urinary Catheter Deal',   'Three-year supply agreement across two BlueCross campuses.',             'Negotiation', '2026-04-18 09:00:00'),
+(5,  5,  1, 'Coronary Intervention Supply Pact',  'Preferred-vendor agreement for coronary guide catheters.',               'Negotiation', '2026-04-12 10:00:00'),
+(11, 11, 1, 'Home Care Catheter Programme',        'Monthly intermittent catheter delivery for 60 discharged patients.',    'Negotiation', '2026-04-07 14:00:00'),
+
+-- Won
+(7,  7,  1, 'Q1 PICC Line Contract',              'Signed 6-month PICC supply agreement for oncology ward.',                'Won', '2026-01-22 09:00:00'),
+(9,  9,  1, 'Dialysis Supply Agreement 2026',     'Annual hemodialysis catheter contract — full year supply secured.',      'Won', '2026-02-12 11:00:00'),
+(10, 10, 1, 'Foley Catheter Framework Deal',      'Two-year Foley catheter framework signed at contracted pricing.',        'Won', '2026-03-08 09:00:00'),
+(12, 12, 1, 'Typhon Distribution Partnership',    'Exclusive distribution agreement for three-state territory.',            'Won', '2026-01-10 10:00:00'),
+
+-- Lost
+(8,  8,  1, 'Vascular Access Open Tender 2026',  'Lost on price — competitor offered 18% lower unit cost.',                'Lost', '2026-02-25 09:00:00'),
+(6,  6,  1, 'Pediatric Catheter Rebid',           'Customer re-awarded to incumbent — switching costs too high.',           'Lost', '2026-03-18 13:00:00'),
+(12, 12, 1, 'National GPO Bid Q1',               'GPO awarded contract to alternative supplier; revisit Q4.',              'Lost', '2026-01-28 11:00:00');
+
+-- ── Quotes ────────────────────────────────────────────
+-- rfq 7 (Quoted, expiring in 3 days: 2026-06-22)
+INSERT INTO quotes (rfq_id, quote_amount, discount, validity_start_date, validity_end_date) VALUES
+(7,  45000.00,  5.00, '2026-06-01', '2026-06-22'),
+
+-- rfq 8 (Quoted, expiring in 2 days: 2026-06-21)
+(8,  12500.00,  0.00, '2026-06-05', '2026-06-21'),
+
+-- rfq 9 (Quoted, OVERDUE — expired 5 days ago: 2026-06-14)
+(9,  78000.00,  8.00, '2026-05-15', '2026-06-14'),
+
+-- rfq 10 (Negotiation, expiring in 21 days)
+(10, 220000.00, 10.00, '2026-06-10', '2026-07-10'),
+
+-- rfq 11 (Negotiation, expiring in 5 days: 2026-06-24)
+(11,  95000.00,  7.00, '2026-06-01', '2026-06-24'),
+
+-- rfq 12 (Won)
+(12, 135000.00,  5.00, '2026-04-01', '2026-05-01'),
+
+-- rfq 13 (Won)
+(13,  67500.00,  3.00, '2026-03-15', '2026-04-15'),
+
+-- rfq 14 (Lost)
+(14,  28000.00,  2.00, '2026-02-01', '2026-03-01'),
+
+-- rfq 15 (Lost)
+(15,  15000.00,  0.00, '2026-01-15', '2026-02-15'),
+
+-- rfq 24 (Quoted, expires 2026-07-05 — 14 days out)
+(24,  38500.00,  4.00, '2026-06-05', '2026-07-05'),
+
+-- rfq 25 (Quoted, expires 2026-06-29 — 8 days out)
+(25, 182000.00,  6.00, '2026-05-29', '2026-06-29'),
+
+-- rfq 26 (Quoted, expires 2026-07-11 — 20 days out)
+(26,  54000.00,  3.00, '2026-05-25', '2026-07-11'),
+
+-- rfq 27 (Quoted, expires 2026-06-23 — 2 days out)
+(27,  97500.00,  5.00, '2026-05-20', '2026-06-23'),
+
+-- rfq 28 (Negotiation, expires 2026-07-18)
+(28, 310000.00, 12.00, '2026-06-01', '2026-07-18'),
+
+-- rfq 29 (Negotiation, expires 2026-07-03)
+(29, 124000.00,  8.00, '2026-05-15', '2026-07-03'),
+
+-- rfq 30 (Negotiation, expires 2026-06-26 — 5 days out)
+(30,  21600.00,  0.00, '2026-06-01', '2026-06-26'),
+
+-- rfq 31 (Won)
+(31,  44000.00,  3.00, '2026-01-15', '2026-02-15'),
+
+-- rfq 32 (Won)
+(32, 168000.00,  7.00, '2026-02-01', '2026-03-01'),
+
+-- rfq 33 (Won)
+(33,  89000.00,  5.00, '2026-02-20', '2026-03-20'),
+
+-- rfq 34 (Won)
+(34, 475000.00, 10.00, '2026-01-05', '2026-02-05'),
+
+-- rfq 35 (Lost)
+(35,  61000.00,  2.00, '2026-02-01', '2026-03-01'),
+
+-- rfq 36 (Lost)
+(36,  19500.00,  0.00, '2026-03-01', '2026-04-01'),
+
+-- rfq 37 (Lost)
+(37, 290000.00,  9.00, '2026-01-10', '2026-02-10');

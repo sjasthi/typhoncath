@@ -41,7 +41,6 @@
             type="text"
             name="tags"
             placeholder="Tags">
-
         <button
             type="submit"
             name="add_account">

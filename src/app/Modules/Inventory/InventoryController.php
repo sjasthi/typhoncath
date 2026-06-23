@@ -56,12 +56,12 @@ class InventoryController
         try {
             if ($id === null) {
                 $newId = $this->service->createProduct($productName, $sku, $price, $description, $startingQuantity);
-                header('Location: /modules/inventory/product_detail.php?id=' . $newId . '&saved=1');
+                header('Location: /modules/inventory/products.php?page=detail&id=' . $newId . '&saved=1');
                 exit;
             }
 
             $this->service->updateProduct($id, $productName, $sku, $price, $description);
-            header('Location: /modules/inventory/product_detail.php?id=' . $id . '&saved=1');
+            header('Location: /modules/inventory/products.php?page=detail&id=' . $id . '&saved=1');
             exit;
         } catch (\InvalidArgumentException $e) {
             $product = $id !== null ? $this->service->getProductDetail($id) : null;
@@ -95,7 +95,7 @@ class InventoryController
 
         try {
             $this->service->updateStock($productId, $availableQuantity, $reservedQuantity);
-            header('Location: /modules/inventory/product_detail.php?id=' . $productId . '&saved=1');
+            header('Location: /modules/inventory/products.php?page=detail&id=' . $productId . '&saved=1');
             exit;
         } catch (\InvalidArgumentException $e) {
             $product = $this->service->getProductDetail($productId);
@@ -105,7 +105,52 @@ class InventoryController
     }
 
     /**
-     * GET /modules/inventory/reservations.php
+     * GET ?page=delete&id=X
+     * Shows a confirmation screen before deleting.
+     */
+    public function confirmDelete(): void
+    {
+        $id      = (int) ($_GET['id'] ?? 0);
+        $product = $this->service->getProductDetail($id);
+
+        if ($product === null) {
+            http_response_code(404);
+            echo '<section class="card"><h1>Product Not Found</h1><p class="text-muted">No product exists with that ID.</p><a href="/modules/inventory/products.php" class="btn mt-3">Back to Inventory</a></section>';
+            return;
+        }
+
+        include __DIR__ . '/views/delete_confirm.php';
+    }
+
+    /**
+     * POST ?page=delete
+     * Deletes a product after checking for active reservations.
+     */
+    public function handleDelete(): void
+    {
+        $id = (int) ($_POST['id'] ?? 0);
+
+        try {
+            $product = $this->service->getProductDetail($id);
+            $name    = $product['product_name'] ?? "Product #{$id}";
+            $this->service->deleteProduct($id);
+            $_SESSION['flash'] = [
+                'type'    => 'success',
+                'message' => "\"{$name}\" was deleted successfully.",
+            ];
+        } catch (\Exception $e) {
+            $_SESSION['flash'] = [
+                'type'    => 'error',
+                'message' => $e->getMessage(),
+            ];
+        }
+
+        header('Location: /modules/inventory/products.php');
+        exit;
+    }
+
+    /**
+     * GET ?page=reservations
      * Shows all RFQ inventory reservations.
      */
     public function reservations(): void
@@ -133,10 +178,10 @@ class InventoryController
             } else {
                 throw new \InvalidArgumentException('Unknown action.');
             }
-            header('Location: /modules/inventory/reservations.php');
+            header('Location: /modules/inventory/products.php?page=reservations');
             exit;
         } catch (\Exception $e) {
-            header('Location: /modules/inventory/reservations.php?error=' . urlencode($e->getMessage()));
+            header('Location: /modules/inventory/products.php?page=reservations&error=' . urlencode($e->getMessage()));
             exit;
         }
     }

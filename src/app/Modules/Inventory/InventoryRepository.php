@@ -168,4 +168,31 @@ class InventoryRepository
         );
         return $stmt->execute([$status, $id]);
     }
+
+    /**
+     * Delete a product and its inventory row.
+     * The inventory row is removed automatically via ON DELETE CASCADE.
+     * Will fail if active reservations exist (FK constraint on rfq_inventory_reservations).
+     */
+    public function delete(int $id): bool
+    {
+        $db   = Database::connection();
+        $stmt = $db->prepare("DELETE FROM products WHERE id = ?");
+        return $stmt->execute([$id]);
+    }
+
+    /**
+     * Count active (Reserved) reservations for a product.
+     * Used to block deletion when stock is committed to an RFQ.
+     */
+    public function countActiveReservations(int $productId): int
+    {
+        $db   = Database::connection();
+        $stmt = $db->prepare(
+            "SELECT COUNT(*) FROM rfq_inventory_reservations
+             WHERE product_id = ? AND reservation_status = 'Reserved'"
+        );
+        $stmt->execute([$productId]);
+        return (int) $stmt->fetchColumn();
+    }
 }

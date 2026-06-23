@@ -1,15 +1,28 @@
+<?php
+$statusBadge = [
+    'Reserved'  => 'rfq-badge-warning',
+    'Released'  => 'rfq-badge-neutral',
+    'Converted' => 'rfq-badge-success',
+];
+?>
+
 <section class="card">
-    <h1>Inventory Reservations</h1>
+    <div class="rfq-board-header">
+        <h1>Inventory Reservations</h1>
+        <a href="/modules/inventory/products.php" class="btn rfq-list-clear-btn">&#8592; Back to Inventory</a>
+    </div>
 
     <?php if (!empty($error)): ?>
-        <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
+        <div class="rfq-form-errors"><p><?= htmlspecialchars($error) ?></p></div>
     <?php endif; ?>
 
-    <table class="table mt-3">
+    <table class="table rfq-list-table" style="margin-top:1rem;">
         <thead>
             <tr>
+                <th>#</th>
                 <th>RFQ</th>
                 <th>Product</th>
+                <th>SKU</th>
                 <th>Qty Reserved</th>
                 <th>Status</th>
                 <th>Created</th>
@@ -19,47 +32,46 @@
         <tbody>
             <?php if (empty($reservations)): ?>
                 <tr>
-                    <td colspan="6" class="text-muted">No reservations found.</td>
+                    <td colspan="8" class="rfq-list-empty text-muted">No reservations found.</td>
                 </tr>
             <?php else: ?>
-                <?php foreach ($reservations as $reservation): ?>
-                    <tr>
-                        <td><?= htmlspecialchars($reservation['rfq_title']) ?> (#<?= (int) $reservation['rfq_id'] ?>)</td>
-                        <td><?= htmlspecialchars($reservation['product_name']) ?> (<?= htmlspecialchars($reservation['sku']) ?>)</td>
-                        <td><?= (int) $reservation['quantity_reserved'] ?></td>
-                        <td>
-                            <?php
-                                $statusColor = match ($reservation['reservation_status']) {
-                                    'Reserved' => 'var(--tc-warning)',
-                                    'Converted' => 'var(--tc-success)',
-                                    'Released' => '#666',
-                                    default => '#111',
-                                };
-                            ?>
-                            <span style="color:<?= $statusColor ?>; font-weight:600;">
-                                <?= htmlspecialchars($reservation['reservation_status']) ?>
-                            </span>
-                        </td>
-                        <td><?= date('M j, Y', strtotime($reservation['created_at'])) ?></td>
-                        <td>
-                            <?php if ($reservation['reservation_status'] === 'Reserved'): ?>
-                                <form method="POST" action="/modules/inventory/reservations.php" style="display:inline;">
-                                    <input type="hidden" name="reservation_id" value="<?= (int) $reservation['id'] ?>">
-                                    <input type="hidden" name="action" value="convert">
-                                    <button type="submit" class="btn">Convert (Won)</button>
-                                </form>
-                                <form method="POST" action="/modules/inventory/reservations.php" style="display:inline;">
-                                    <input type="hidden" name="reservation_id" value="<?= (int) $reservation['id'] ?>">
-                                    <input type="hidden" name="action" value="release">
-                                    <button type="submit" class="btn">Release (Lost)</button>
-                                </form>
-                            <?php else: ?>
-                                <span class="text-muted">&mdash;</span>
-                            <?php endif; ?>
-                        </td>
-                    </tr>
+                <?php foreach ($reservations as $r):
+                    $badge = $statusBadge[$r['reservation_status']] ?? 'rfq-badge-neutral';
+                ?>
+                <tr>
+                    <td class="rfq-list-id">#<?= (int)$r['id'] ?></td>
+                    <td>
+                        <a href="/modules/rfq/detail.php?id=<?= (int)$r['rfq_id'] ?>" class="rfq-list-link">
+                            <?= htmlspecialchars($r['rfq_title']) ?>
+                        </a>
+                        <span class="rfq-list-id"> #<?= (int)$r['rfq_id'] ?></span>
+                    </td>
+                    <td><?= htmlspecialchars($r['product_name']) ?></td>
+                    <td class="rfq-list-id"><?= htmlspecialchars($r['sku']) ?></td>
+                    <td><?= (int)$r['quantity_reserved'] ?></td>
+                    <td><span class="rfq-badge <?= $badge ?>"><?= htmlspecialchars($r['reservation_status']) ?></span></td>
+                    <td class="rfq-list-date"><?= date('M j, Y', strtotime($r['created_at'])) ?></td>
+                    <td style="white-space:nowrap;">
+                        <?php if ($r['reservation_status'] === 'Reserved'): ?>
+                            <form method="POST" action="/modules/inventory/products.php?page=reservations" style="display:inline;">
+                                <input type="hidden" name="reservation_id" value="<?= (int)$r['id'] ?>">
+                                <input type="hidden" name="action" value="convert">
+                                <button type="submit" class="btn rfq-badge rfq-badge-success" style="border:none; cursor:pointer; font-size:0.8rem; padding:0.2rem 0.6rem;">Convert</button>
+                            </form>
+                            <form method="POST" action="/modules/inventory/products.php?page=reservations" style="display:inline; margin-left:4px;">
+                                <input type="hidden" name="reservation_id" value="<?= (int)$r['id'] ?>">
+                                <input type="hidden" name="action" value="release">
+                                <button type="submit" class="btn rfq-badge rfq-badge-danger" style="border:none; cursor:pointer; font-size:0.8rem; padding:0.2rem 0.6rem;">Release</button>
+                            </form>
+                        <?php else: ?>
+                            <span class="text-muted">&mdash;</span>
+                        <?php endif; ?>
+                    </td>
+                </tr>
                 <?php endforeach; ?>
             <?php endif; ?>
         </tbody>
     </table>
+
+    <p class="rfq-list-footer"><?= count($reservations ?? []) ?> reservation(s)</p>
 </section>

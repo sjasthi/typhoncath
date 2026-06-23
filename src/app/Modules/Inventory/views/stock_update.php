@@ -1,48 +1,66 @@
 <section class="card">
-    <h1>Update Stock</h1>
+    <div class="rfq-board-header">
+        <h1>Update Stock</h1>
+        <a href="/modules/inventory/products.php" class="btn rfq-list-clear-btn">&#8592; Back to Inventory</a>
+    </div>
 
     <?php if (empty($product)): ?>
         <div class="alert alert-danger">Product not found.</div>
-        <a href="/modules/inventory/products.php" class="btn mt-3">Back to Inventory</a>
     <?php else: ?>
+
         <?php if (!empty($error)): ?>
-            <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
+            <div class="rfq-form-errors"><p><?= htmlspecialchars($error) ?></p></div>
         <?php endif; ?>
 
-        <p class="text-muted">
-            <?= htmlspecialchars($product['product_name']) ?> (SKU: <?= htmlspecialchars($product['sku']) ?>)
-        </p>
+        <!-- Product summary -->
+        <div class="rfq-detail-grid" style="margin-bottom:1.5rem; grid-template-columns: repeat(auto-fit, minmax(140px,1fr));">
+            <div class="rfq-detail-section">
+                <h3 class="rfq-detail-section-title">Product</h3>
+                <p class="rfq-detail-value"><?= htmlspecialchars($product['product_name']) ?></p>
+            </div>
+            <div class="rfq-detail-section">
+                <h3 class="rfq-detail-section-title">SKU</h3>
+                <p class="rfq-detail-value"><?= htmlspecialchars($product['sku']) ?></p>
+            </div>
+            <div class="rfq-detail-section">
+                <h3 class="rfq-detail-section-title">Price</h3>
+                <p class="rfq-detail-value">$<?= number_format((float)$product['price'], 2) ?></p>
+            </div>
+        </div>
 
-        <form method="POST" action="/modules/inventory/stock_update.php" class="mt-3">
-            <input type="hidden" name="product_id" value="<?= (int) $product['id'] ?>">
+        <form method="POST" action="/modules/inventory/products.php?page=stock" class="rfq-form">
+            <input type="hidden" name="product_id" value="<?= (int)$product['id'] ?>">
 
-            <div class="mt-3">
-                <label>Available Quantity</label>
-                <input
-                    type="number"
-                    min="0"
-                    name="available_quantity"
-                    class="form-control"
-                    value="<?= (int) $product['available_quantity'] ?>"
-                    required
-                >
+            <div class="rfq-form-row">
+                <div class="rfq-form-group">
+                    <label class="rfq-form-label">Available Quantity <span class="rfq-form-required">*</span></label>
+                    <input
+                        type="number"
+                        min="0"
+                        name="available_quantity"
+                        class="form-control"
+                        value="<?= (int)$product['available_quantity'] ?>"
+                        required
+                    >
+                    <span class="text-muted" style="font-size:0.82rem;">Units currently available for sale or reservation</span>
+                </div>
+                <div class="rfq-form-group">
+                    <label class="rfq-form-label">Reserved Quantity <span class="rfq-form-required">*</span></label>
+                    <input
+                        type="number"
+                        min="0"
+                        name="reserved_quantity"
+                        class="form-control"
+                        value="<?= (int)$product['reserved_quantity'] ?>"
+                        required
+                    >
+                    <span class="text-muted" style="font-size:0.82rem;">Units held for active RFQ reservations</span>
+                </div>
             </div>
 
-            <div class="mt-3">
-                <label>Reserved Quantity</label>
-                <input
-                    type="number"
-                    min="0"
-                    name="reserved_quantity"
-                    class="form-control"
-                    value="<?= (int) $product['reserved_quantity'] ?>"
-                    required
-                >
-            </div>
-
-            <div class="mt-3">
-                <button type="submit" class="btn btn-primary">Save Stock</button>
-                <a href="/modules/inventory/product_detail.php?id=<?= (int) $product['id'] ?>" class="btn">Cancel</a>
+            <div class="rfq-form-actions">
+                <button type="submit" class="btn btn-primary">Save Stock Levels</button>
+                <a href="/modules/inventory/products.php?page=detail&id=<?= (int)$product['id'] ?>" class="btn rfq-list-clear-btn">Cancel</a>
             </div>
         </form>
     <?php endif; ?>

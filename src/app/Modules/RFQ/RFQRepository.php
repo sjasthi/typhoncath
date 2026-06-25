@@ -133,6 +133,16 @@ class RFQRepository
 
     // ── Quote / Reservation Reads ─────────────────────────────────────────────
 
+    public function findQuoteById(int $id): ?array
+    {
+        $stmt = $this->db->prepare(
+            "SELECT id, rfq_id, quote_amount, discount, validity_start_date, validity_end_date FROM quotes WHERE id = ?"
+        );
+        $stmt->execute([$id]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
     public function getQuotesByRfqId(int $rfqId): array
     {
         $stmt = $this->db->prepare("
@@ -243,6 +253,97 @@ class RFQRepository
 
             $this->db->commit();
             return $reservationId;
+        } catch (\Throwable $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
+    }
+
+    // Restores inventory for any still-Reserved reservations before cascade-deleting the RFQ.
+    public function delete(int $id): void
+    {
+        $this->db->beginTransaction();
+        try {
+            $this->db->prepare("
+                UPDATE inventory i
+                JOIN rfq_inventory_reservations res ON res.product_id = i.product_id
+                SET i.available_quantity = i.available_quantity + res.quantity_reserved,
+                    i.reserved_quantity  = i.reserved_quantity  - res.quantity_reserved
+                WHERE res.rfq_id = ? AND res.reservation_status = 'Reserved'
+            ")->execute([$id]);
+
+            $this->db->prepare("DELETE FROM rfqs WHERE id = ?")->execute([$id]);
+            $this->db->commit();
+        } catch (\Throwable $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
+    }
+
+    public function updateQuote(int $id, array $data): void
+    {
+        $stmt = $this->db->prepare("
+            UPDATE quotes SET quote_amount = ?, discount = ?, validity_start_date = ?, validity_end_date = ?
+            WHERE id = ?
+        ");
+        $stmt->execute([
+            (float)$data['quote_amount'],
+            isset($data['discount']) && $data['discount'] !== '' ? (float)$data['discount'] : 0,
+            $data['validity_start_date'] !== '' ? $data['validity_start_date'] : null,
+            $data['validity_end_date']   !== '' ? $data['validity_end_date']   : null,
+            $id,
+        ]);
+    }
+
+    public function deleteQuote(int $id): void
+    {
+        $this->db->prepare("DELETE FROM quotes WHERE id = ?")->execute([$id]);
+    }
+
+    // Adjusts inventory counters based on status transition, then updates the row.
+    // Reserved → Released: return stock to available.
+    // Reserved → Converted: remove from reserved (product consumed/shipped).
+    // Terminal states (Released, Converted) cannot transition further.
+    public function updateReservationStatus(int $id, string $status): void
+    {
+        $valid = ['Reserved', 'Released', 'Converted'];
+        if (!in_array($status, $valid, true)) return;
+
+        $this->db->beginTransaction();
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT product_id, quantity_reserved, reservation_status FROM rfq_inventory_reservations WHERE id = ?"
+            );
+            $stmt->execute([$id]);
+            $row = $stmt->fetch();
+
+            if (!$row || $row['reservation_status'] !== 'Reserved') {
+                $this->db->rollBack();
+                return;
+            }
+
+            $qty       = (int)$row['quantity_reserved'];
+            $productId = (int)$row['product_id'];
+
+            if ($status === 'Released') {
+                $this->db->prepare("
+                    UPDATE inventory
+                    SET available_quantity = available_quantity + ?,
+                        reserved_quantity  = reserved_quantity  - ?
+                    WHERE product_id = ?
+                ")->execute([$qty, $qty, $productId]);
+            } elseif ($status === 'Converted') {
+                $this->db->prepare("
+                    UPDATE inventory SET reserved_quantity = reserved_quantity - ?
+                    WHERE product_id = ?
+                ")->execute([$qty, $productId]);
+            }
+
+            $this->db->prepare(
+                "UPDATE rfq_inventory_reservations SET reservation_status = ? WHERE id = ?"
+            )->execute([$status, $id]);
+
+            $this->db->commit();
         } catch (\Throwable $e) {
             $this->db->rollBack();
             throw $e;

@@ -38,6 +38,11 @@ $allStages = ['New', 'In Review', 'Quoted', 'Negotiation', 'Won', 'Lost'];
         </div>
         <div class="header-actions">
             <a href="/modules/rfq/edit.php?id=<?= (int)$rfq['id'] ?>" class="btn btn-primary" style="font-size:0.85rem;padding:6px 14px;">Edit</a>
+            <form method="POST" action="/modules/rfq/detail.php?id=<?= (int)$rfq['id'] ?>" style="margin:0;"
+                  onsubmit="return confirm('Delete this RFQ and all its quotes and reservations? This cannot be undone.');">
+                <input type="hidden" name="_action" value="delete">
+                <button type="submit" class="btn btn-danger" style="font-size:0.85rem;padding:6px 14px;">Delete</button>
+            </form>
             <a href="/modules/rfq/pipeline.php" class="btn btn-secondary">&#8592; Back</a>
         </div>
     </div>
@@ -126,6 +131,7 @@ $allStages = ['New', 'In Review', 'Quoted', 'Negotiation', 'Won', 'Lost'];
                 <th>Valid From</th>
                 <th>Valid To</th>
                 <th>Status</th>
+                <th style="width:90px;"></th>
             </tr>
         </thead>
         <tbody>
@@ -164,6 +170,17 @@ $allStages = ['New', 'In Review', 'Quoted', 'Negotiation', 'Won', 'Lost'];
                 <td class="text-muted"><?= $q['validity_start_date'] ? date('M j, Y', strtotime($q['validity_start_date'])) : '—' ?></td>
                 <td class="text-muted"><?= $q['validity_end_date']   ? date('M j, Y', strtotime($q['validity_end_date']))   : '—' ?></td>
                 <td><span class="rfq-badge <?= $qBadge ?>"><?= $qLabel ?></span></td>
+                <td style="display:flex;gap:4px;align-items:center;">
+                    <a href="/modules/rfq/edit_quote.php?id=<?= (int)$q['id'] ?>"
+                       class="btn btn-secondary" style="font-size:0.78rem;padding:3px 8px;">Edit</a>
+                    <form method="POST" action="/modules/rfq/detail.php?id=<?= (int)$rfq['id'] ?>" style="display:inline;"
+                          onsubmit="return confirm('Delete this quote?');">
+                        <input type="hidden" name="_action"  value="delete_quote">
+                        <input type="hidden" name="quote_id" value="<?= (int)$q['id'] ?>">
+                        <input type="hidden" name="rfq_id"   value="<?= (int)$rfq['id'] ?>">
+                        <button type="submit" class="rfq-res-remove-btn" title="Delete quote">&times;</button>
+                    </form>
+                </td>
             </tr>
             <?php endforeach; ?>
         </tbody>
@@ -217,7 +234,23 @@ $allStages = ['New', 'In Review', 'Quoted', 'Negotiation', 'Won', 'Lost'];
                 <td>$<?= number_format((float)$res['price'], 2) ?></td>
                 <td><?= (int)$res['quantity_reserved'] ?></td>
                 <td><strong>$<?= number_format((float)$res['price'] * (int)$res['quantity_reserved'], 2) ?></strong></td>
-                <td><span class="rfq-badge <?= $resBadge ?>"><?= htmlspecialchars($res['reservation_status']) ?></span></td>
+                <td>
+                    <?php if ($res['reservation_status'] === 'Reserved'): ?>
+                    <form method="POST" action="/modules/rfq/detail.php?id=<?= (int)$rfq['id'] ?>" style="margin:0;">
+                        <input type="hidden" name="_action"        value="update_reservation_status">
+                        <input type="hidden" name="reservation_id" value="<?= (int)$res['id'] ?>">
+                        <input type="hidden" name="rfq_id"         value="<?= (int)$rfq['id'] ?>">
+                        <select name="reservation_status" class="rfq-stage-select rfq-badge rfq-badge-info"
+                                onchange="this.form.submit()" title="Change reservation status">
+                            <option value="Reserved"  selected>Reserved</option>
+                            <option value="Released">Released</option>
+                            <option value="Converted">Converted</option>
+                        </select>
+                    </form>
+                    <?php else: ?>
+                        <span class="rfq-badge <?= $resBadge ?>"><?= htmlspecialchars($res['reservation_status']) ?></span>
+                    <?php endif; ?>
+                </td>
                 <td class="text-muted"><?= date('M j, Y', strtotime($res['created_at'])) ?></td>
             </tr>
             <?php endforeach; ?>

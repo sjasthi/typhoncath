@@ -4,7 +4,8 @@ USE typhon_cath_crm;
 CREATE TABLE roles (
     id INT AUTO_INCREMENT PRIMARY KEY,
     role_name VARCHAR(100) NOT NULL UNIQUE,
-    description TEXT
+    description TEXT,
+    owner_user_id INT NULL  -- non-null = custom role scoped to one user
 );
 
 CREATE TABLE users (
@@ -124,6 +125,7 @@ CREATE TABLE campaigns (
     campaign_name VARCHAR(255) NOT NULL,
     campaign_type ENUM('Email', 'SMS Simulation') NOT NULL DEFAULT 'Email',
     status ENUM('Draft', 'Scheduled', 'Sent', 'Completed') DEFAULT 'Draft',
+    scheduled_at DATETIME NULL,
     created_by_user_id INT NOT NULL,
     sent_count INT DEFAULT 0,
     open_rate DECIMAL(5,2),
@@ -145,7 +147,22 @@ CREATE TABLE campaign_audience (
     FOREIGN KEY (contact_id) REFERENCES contacts(id)
 );
 
-select * from accounts;
-select * from users;
-SELECT DATABASE();
-SHOW TABLES;
+CREATE TABLE role_permissions (
+    role_id    INT          NOT NULL,
+    permission VARCHAR(100) NOT NULL,
+    PRIMARY KEY (role_id, permission),
+    FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
+);
+
+CREATE TABLE audience_presets (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    preset_name VARCHAR(255) NOT NULL,
+    segment_name VARCHAR(255) NOT NULL,
+    tag_filter VARCHAR(255) NULL,
+    account_ids TEXT NULL,
+    contact_ids TEXT NULL,
+    created_by_user_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (created_by_user_id) REFERENCES users(id)
+);
+

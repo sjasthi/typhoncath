@@ -15,8 +15,14 @@ if ($id === 0) {
 
 $controller = new RFQController();
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['_action'] ?? '') === 'stage') {
-    $controller->handleUpdateStagePost($id); // always redirects + exits
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    match ($_POST['_action'] ?? '') {
+        'stage'                     => $controller->handleUpdateStagePost($id),
+        'delete'                    => $controller->handleDeletePost($id),
+        'delete_quote'              => $controller->handleDeleteQuotePost((int)($_POST['quote_id'] ?? 0)),
+        'update_reservation_status' => $controller->handleUpdateReservationStatusPost((int)($_POST['reservation_id'] ?? 0)),
+        default                     => null,
+    };
 }
 
 include __DIR__ . '/../../../app/Shared/header.php';

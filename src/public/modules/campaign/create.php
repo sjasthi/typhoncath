@@ -8,7 +8,11 @@ Auth::requireLogin();
 
 $controller = new CampaignController();
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $controller->handleCreatePost(); // redirects + exits on success
+}
+
 include __DIR__ . '/../../../app/Shared/header.php';
 include __DIR__ . '/../../../app/Shared/sidebar.php';
-$controller->index();
+$controller->create();
 include __DIR__ . '/../../../app/Shared/footer.php';

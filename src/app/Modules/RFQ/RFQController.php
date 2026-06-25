@@ -16,25 +16,43 @@ class RFQController
 
     public function index(): void
     {
-        $rfqs    = $this->repo->all();
-        $stages  = RFQRepository::$stages;
-        $grouped = array_fill_keys($stages, []);
+        $grouped                                       = $this->buildBoardGroups();
+        [$winRateData, $valueByStage, $expiringQuotes] = $this->fetchAnalytics();
+        extract($this->fetchList());
 
-        foreach ($rfqs as $rfq) {
+        include __DIR__ . '/views/pipeline_board.php';
+    }
+
+    // Groups all RFQs by stage to populate the kanban board columns.
+    private function buildBoardGroups(): array
+    {
+        $grouped = array_fill_keys(RFQRepository::$stages, []);
+        foreach ($this->repo->allForBoard() as $rfq) {
             $grouped[$rfq['stage']][] = $rfq;
         }
+        return $grouped;
+    }
 
-        $winRateData    = $this->repo->winRateByAccount();
-        $valueByStage   = $this->repo->totalValueByStage();
-        $expiringQuotes = $this->repo->quotesExpiringSoon();
+    // Fetches the three analytics datasets displayed below the kanban board.
+    private function fetchAnalytics(): array
+    {
+        return [
+            $this->repo->winRateByAccount(),
+            $this->repo->totalValueByStage(),
+            $this->repo->quotesExpiringSoon(),
+        ];
+    }
 
+    // Parses and validates GET parameters, then runs the paginated RFQ list query.
+    private function fetchList(): array
+    {
         $listSearch     = trim($_GET['q']        ?? '');
         $listIdSearch   = trim($_GET['id']       ?? '');
-        $rawStages      = $_GET['stage']    ?? [];
+        $rawStages      = $_GET['stage']         ?? [];
         $listStages     = is_array($rawStages) ? $rawStages : [$rawStages];
-        $listSort       = $_GET['sort']     ?? 'created_at';
-        $listDir        = $_GET['dir']      ?? 'DESC';
-        $rawPerPage     = $_GET['per_page'] ?? 25;
+        $listSort       = $_GET['sort']          ?? 'created_at';
+        $listDir        = $_GET['dir']           ?? 'DESC';
+        $rawPerPage     = $_GET['per_page']      ?? 25;
         $listShowAll    = $rawPerPage === 'all';
         $listPerPage    = $listShowAll ? PHP_INT_MAX : (in_array((int)$rawPerPage, [25, 50, 100]) ? (int)$rawPerPage : 25);
         $listPerPageVal = $listShowAll ? 'all' : $listPerPage;
@@ -44,7 +62,10 @@ class RFQController
         $listPage       = min($listPage, max(1, $listPages));
         $listRfqs       = $this->repo->search($listSearch, $listSort, $listDir, $listPerPage, ($listPage - 1) * $listPerPage, $listIdSearch, $listStages);
 
-        include __DIR__ . '/views/pipeline_board.php';
+        return compact(
+            'listSearch', 'listIdSearch', 'listStages', 'listSort', 'listDir',
+            'listPerPage', 'listPerPageVal', 'listPage', 'listPages', 'listTotal', 'listRfqs'
+        );
     }
 
     // ── Detail ────────────────────────────────────────────────────────────────
@@ -69,21 +90,29 @@ class RFQController
 
     private array $createErrors = [];
     private array $createInput  = [
-        'title'       => '',
-        'account_id'  => '',
-        'contact_id'  => '',
-        'description' => '',
-        'stage'       => 'New',
+        'title'                     => '',
+        'account_id'                => '',
+        'contact_id'                => '',
+        'description'               => '',
+        'stage'                     => 'New',
+        'quote_amount'              => '',
+        'quote_discount'            => '',
+        'quote_validity_start_date' => '',
+        'quote_validity_end_date'   => '',
     ];
 
     public function handleCreatePost(): void
     {
         $this->createInput = [
-            'title'       => trim($_POST['title']       ?? ''),
-            'account_id'  => trim($_POST['account_id']  ?? ''),
-            'contact_id'  => trim($_POST['contact_id']  ?? ''),
-            'description' => trim($_POST['description'] ?? ''),
-            'stage'       => $_POST['stage'] ?? 'New',
+            'title'                     => trim($_POST['title']                      ?? ''),
+            'account_id'                => trim($_POST['account_id']                 ?? ''),
+            'contact_id'                => trim($_POST['contact_id']                 ?? ''),
+            'description'               => trim($_POST['description']                ?? ''),
+            'stage'                     => $_POST['stage']                           ?? 'New',
+            'quote_amount'              => trim($_POST['quote_amount']               ?? ''),
+            'quote_discount'            => trim($_POST['quote_discount']             ?? ''),
+            'quote_validity_start_date' => trim($_POST['quote_validity_start_date']  ?? ''),
+            'quote_validity_end_date'   => trim($_POST['quote_validity_end_date']    ?? ''),
         ];
 
         $this->createErrors = $this->service->validateRFQInput($this->createInput);

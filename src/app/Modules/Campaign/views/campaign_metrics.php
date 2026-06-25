@@ -1,4 +1,159 @@
+<?php
+$campaign = $campaign ?? null;
+$audience = $audience ?? [];
+
+if ($campaign === null) {
+    echo '<section class="card"><h1>Campaign Not Found</h1><p class="text-muted">No campaign with that ID.</p></section>';
+    return;
+}
+
+$statusBadge = [
+    'Draft'     => 'rfq-badge-neutral',
+    'Scheduled' => 'rfq-badge-info',
+    'Sent'      => 'rfq-badge-quoted',
+    'Completed' => 'rfq-badge-success',
+];
+$typeBadge = [
+    'Email'          => 'rfq-badge-info',
+    'SMS Simulation' => 'rfq-badge-warning',
+];
+?>
+
+<!-- ── Header ─────────────────────────────────────────── -->
 <section class="card">
-    <h1>Campaign Metrics</h1>
-    <p class="text-muted">TODO: Build the Campaign Metrics UI.</p>
+    <div class="module-header">
+        <div class="rfq-detail-title-row">
+            <h1><?= htmlspecialchars($campaign['campaign_name']) ?></h1>
+            <span class="rfq-badge <?= $statusBadge[$campaign['status']] ?? 'rfq-badge-neutral' ?> rfq-detail-stage">
+                <?= htmlspecialchars($campaign['status']) ?>
+            </span>
+            <span class="rfq-badge <?= $typeBadge[$campaign['campaign_type']] ?? 'rfq-badge-neutral' ?>">
+                <?= htmlspecialchars($campaign['campaign_type']) ?>
+            </span>
+        </div>
+        <div class="header-actions">
+            <a href="/modules/campaign/edit.php?id=<?= (int)$campaign['id'] ?>" class="btn btn-primary" style="font-size:0.85rem;padding:6px 14px;">Edit</a>
+            <a href="/modules/campaign/audience.php?campaign_id=<?= (int)$campaign['id'] ?>" class="btn btn-secondary" style="font-size:0.85rem;padding:6px 14px;">Audience</a>
+            <form method="POST" action="/modules/campaign/detail.php?id=<?= (int)$campaign['id'] ?>" style="margin:0;"
+                  onsubmit="return confirm('Delete this campaign? This cannot be undone.');">
+                <input type="hidden" name="_action" value="delete">
+                <button type="submit" class="btn btn-danger" style="font-size:0.85rem;padding:6px 14px;">Delete</button>
+            </form>
+            <a href="/modules/campaign/campaigns.php" class="btn btn-secondary">&#8592; Back</a>
+        </div>
+    </div>
+
+    <!-- Core info grid -->
+    <div class="rfq-detail-grid">
+
+        <div class="rfq-detail-section">
+            <h3 class="rfq-detail-section-title">Created By</h3>
+            <p class="rfq-detail-value"><?= htmlspecialchars($campaign['created_by_name'] ?? '—') ?></p>
+        </div>
+
+        <div class="rfq-detail-section">
+            <h3 class="rfq-detail-section-title">Created At</h3>
+            <p class="rfq-detail-value"><?= date('M j, Y', strtotime($campaign['created_at'])) ?></p>
+            <p class="rfq-detail-meta"><?= date('g:i a', strtotime($campaign['created_at'])) ?></p>
+        </div>
+
+        <div class="rfq-detail-section">
+            <h3 class="rfq-detail-section-title">Last Updated</h3>
+            <p class="rfq-detail-value"><?= date('M j, Y', strtotime($campaign['updated_at'])) ?></p>
+            <p class="rfq-detail-meta"><?= date('g:i a', strtotime($campaign['updated_at'])) ?></p>
+        </div>
+
+        <?php if ($campaign['scheduled_at'] !== null): ?>
+        <div class="rfq-detail-section">
+            <h3 class="rfq-detail-section-title">Scheduled For</h3>
+            <p class="rfq-detail-value"><?= date('M j, Y', strtotime($campaign['scheduled_at'])) ?></p>
+            <p class="rfq-detail-meta"><?= date('g:i a', strtotime($campaign['scheduled_at'])) ?></p>
+        </div>
+        <?php endif; ?>
+
+    </div>
+</section>
+
+<!-- ── Metrics ─────────────────────────────────────────── -->
+<section class="card">
+    <div class="module-header">
+        <h2 class="rfq-detail-card-title">Performance Metrics</h2>
+        <?php if ($campaign['status'] !== 'Sent' && $campaign['status'] !== 'Completed'): ?>
+        <form method="POST" action="/modules/campaign/detail.php?id=<?= (int)$campaign['id'] ?>" style="margin:0;">
+            <input type="hidden" name="_action" value="simulate">
+            <button type="submit" class="btn btn-primary" style="font-size:0.85rem;padding:6px 14px;">
+                Simulate Send
+            </button>
+        </form>
+        <?php endif; ?>
+    </div>
+
+    <div class="metrics-grid">
+
+        <div class="metric-card">
+            <div class="metric-card-inner">
+                <p class="metric-label">Sent</p>
+                <p class="metric-value"><?= number_format((int)$campaign['sent_count']) ?></p>
+                <p class="metric-sub">recipients</p>
+            </div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-card-inner">
+                <p class="metric-label">Open Rate</p>
+                <p class="metric-value">
+                    <?= $campaign['open_rate'] !== null ? number_format((float)$campaign['open_rate'], 1) . '%' : '—' ?>
+                </p>
+                <p class="metric-sub">of sent</p>
+            </div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-card-inner">
+                <p class="metric-label">Click Rate</p>
+                <p class="metric-value">
+                    <?= $campaign['click_rate'] !== null ? number_format((float)$campaign['click_rate'], 1) . '%' : '—' ?>
+                </p>
+                <p class="metric-sub">of opens</p>
+            </div>
+        </div>
+
+    </div>
+
+    <?php if ($campaign['sent_count'] === 0 || $campaign['sent_count'] === '0'): ?>
+        <p class="text-muted">Campaign has not been sent yet. Metrics will appear once the campaign is sent.</p>
+    <?php endif; ?>
+</section>
+
+<!-- ── Audience ────────────────────────────────────────── -->
+<section class="card">
+    <div class="module-header">
+        <h2 class="rfq-detail-card-title">Audience</h2>
+        <a href="/modules/campaign/audience.php?campaign_id=<?= (int)$campaign['id'] ?>" class="rfq-create-btn" title="Add audience segment">+</a>
+    </div>
+
+    <?php if (empty($audience)): ?>
+        <p class="text-muted">No audience segments defined. <a href="/modules/campaign/audience.php?campaign_id=<?= (int)$campaign['id'] ?>">Add audience →</a></p>
+    <?php else: ?>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Segment</th>
+                <th>Tag Filter</th>
+                <th>Account</th>
+                <th>Contact</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($audience as $row): ?>
+            <tr>
+                <td><?= htmlspecialchars($row['segment_name'] ?? '—') ?></td>
+                <td><?= htmlspecialchars($row['tag_filter']   ?? '—') ?></td>
+                <td><?= htmlspecialchars($row['account_name'] ?? '—') ?></td>
+                <td><?= htmlspecialchars($row['contact_name'] ?? '—') ?></td>
+            </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+    <?php endif; ?>
 </section>

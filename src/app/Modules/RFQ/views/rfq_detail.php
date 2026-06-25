@@ -17,7 +17,7 @@ $allStages = ['New', 'In Review', 'Quoted', 'Negotiation', 'Won', 'Lost'];
 
 <!-- ── Header ─────────────────────────────────────────── -->
 <section class="card">
-    <div class="rfq-board-header">
+    <div class="module-header">
         <div class="rfq-detail-title-row">
             <h1><?= htmlspecialchars($rfq['title']) ?></h1>
 
@@ -36,9 +36,9 @@ $allStages = ['New', 'In Review', 'Quoted', 'Negotiation', 'Won', 'Lost'];
                 </select>
             </form>
         </div>
-        <div style="display:flex;gap:8px;align-items:center;">
+        <div class="header-actions">
             <a href="/modules/rfq/edit.php?id=<?= (int)$rfq['id'] ?>" class="btn btn-primary" style="font-size:0.85rem;padding:6px 14px;">Edit</a>
-            <a href="/modules/rfq/pipeline.php" class="btn rfq-list-clear-btn">&#8592; Back</a>
+            <a href="/modules/rfq/pipeline.php" class="btn btn-secondary">&#8592; Back</a>
         </div>
     </div>
 
@@ -102,7 +102,7 @@ $allStages = ['New', 'In Review', 'Quoted', 'Negotiation', 'Won', 'Lost'];
         $quoteRequired = in_array($rfq['stage'], ['Quoted', 'Negotiation', 'Won', 'Lost'], true);
         $addQuoteTitle = $quoteRequired ? 'Add a quote' : 'Quotes are not required for ' . $rfq['stage'] . ' stage';
     ?>
-    <div class="rfq-board-header">
+    <div class="module-header">
         <h2 class="rfq-detail-card-title">Quotes</h2>
         <a
             href="<?= $quoteRequired ? '/modules/rfq/create_quote.php?rfq_id=' . (int)$rfq['id'] : '#' ?>"
@@ -157,7 +157,7 @@ $allStages = ['New', 'In Review', 'Quoted', 'Negotiation', 'Won', 'Lost'];
                 <td>
                     <span class="rfq-badge <?= $vBadge ?>" title="Catalog value: $<?= number_format($catalogValue, 2) ?>">
                         <?= $vPrefix ?>$<?= number_format(abs($variance), 2) ?>
-                        <span style="opacity:0.7;font-size:0.75em;">(<?= $vPrefix ?><?= $vPct ?>%)</span>
+                        <span class="rfq-badge-pct">(<?= $vPrefix ?><?= $vPct ?>%)</span>
                     </span>
                 </td>
                 <?php endif; ?>
@@ -176,7 +176,7 @@ $allStages = ['New', 'In Review', 'Quoted', 'Negotiation', 'Won', 'Lost'];
     <?php
         $addResTitle = $quoteRequired ? 'Reserve inventory for this RFQ' : 'Inventory reservation not available for ' . $rfq['stage'] . ' stage';
     ?>
-    <div class="rfq-board-header">
+    <div class="module-header">
         <h2 class="rfq-detail-card-title">Inventory Reservations</h2>
         <a
             href="<?= $quoteRequired ? '/modules/rfq/create_reservation.php?rfq_id=' . (int)$rfq['id'] : '#' ?>"
@@ -224,8 +224,8 @@ $allStages = ['New', 'In Review', 'Quoted', 'Negotiation', 'Won', 'Lost'];
         </tbody>
         <tfoot>
             <tr>
-                <td colspan="4" style="text-align:right;color:#6b7280;font-size:0.85rem;padding-top:10px;">Catalog Value</td>
-                <td style="padding-top:10px;"><strong>$<?= number_format($catalogValue, 2) ?></strong></td>
+                <td colspan="4" class="table-footer-label">Catalog Value</td>
+                <td class="table-footer-value"><strong>$<?= number_format($catalogValue, 2) ?></strong></td>
                 <td colspan="2"></td>
             </tr>
         </tfoot>

@@ -198,3 +198,34 @@ INSERT INTO quotes (rfq_id, quote_amount, discount, validity_start_date, validit
 
 -- rfq 37 (Lost)
 (37, 290000.00,  9.00, '2026-01-10', '2026-02-10');
+
+-- ── Campaigns ──────────────────────────────────────────────────────────────────
+INSERT INTO campaigns (campaign_name, campaign_type, status, created_by_user_id, sent_count, open_rate, click_rate, created_at, updated_at) VALUES
+-- Completed: hospital outreach with real metrics
+('Q2 Hospital Outreach',         'Email',          'Completed', 1, 6, 58.30, 21.40, '2026-04-15 09:00:00', '2026-04-15 11:30:00'),
+-- Sent: product launch, open rate tracked but no click data yet
+('Catheter Product Launch 2026', 'Email',          'Sent',      1, 4, 45.00,  NULL, '2026-05-20 10:00:00', '2026-05-20 12:00:00'),
+-- Scheduled: ready to go, no metrics yet
+('Q3 Prospect Warm-Up',          'Email',          'Scheduled', 1, 0,  NULL,  NULL, '2026-06-10 08:00:00', '2026-06-10 08:00:00'),
+-- Draft: SMS still being composed
+('SMS Supply Alert — June',      'SMS Simulation', 'Draft',     1, 0,  NULL,  NULL, '2026-06-22 14:00:00', '2026-06-22 14:00:00');
+
+-- ── Campaign Audience ──────────────────────────────────────────────────────────
+-- Campaign 1 (Q2 Hospital Outreach): hospital accounts + direct contacts
+INSERT INTO campaign_audience (campaign_id, account_id, contact_id, tag_filter, segment_name) VALUES
+(1, 1,    NULL, 'hospital', 'Hospital Accounts'),
+(1, 2,    NULL, NULL,       'Hospital Accounts'),
+(1, 4,    NULL, NULL,       'Hospital Accounts'),
+(1, NULL, 1,    NULL,       'Hospital Contacts'),
+(1, NULL, 2,    NULL,       'Hospital Contacts'),
+(1, NULL, 4,    NULL,       'Hospital Contacts'),
+
+-- Campaign 2 (Catheter Product Launch): all active accounts via tag
+(2, NULL, NULL, 'active',   'Active Accounts'),
+
+-- Campaign 3 (Q3 Prospect Warm-Up): prospects by tag
+(3, NULL, NULL, 'prospect', 'Prospect Accounts'),
+
+-- Campaign 4 (SMS Supply Alert): distributors + specialists
+(4, 12,   NULL, 'distributor', 'Distributors'),
+(4, NULL, NULL, 'specialist',  'Specialist Groups');

@@ -1,8 +1,8 @@
 <section class="card">
 
-    <div class="rfq-board-header">
+    <div class="module-header">
         <h1>Add Quote</h1>
-        <a href="/modules/rfq/detail.php?id=<?= (int)$rfq['id'] ?>" class="btn rfq-list-clear-btn">&#8592; Back</a>
+        <a href="/modules/rfq/detail.php?id=<?= (int)$rfq['id'] ?>" class="btn btn-secondary">&#8592; Back</a>
     </div>
 
     <p class="text-muted">
@@ -11,21 +11,21 @@
     </p>
 
     <?php if (!empty($errors)): ?>
-    <div class="rfq-form-errors">
+    <div class="form-errors">
         <?php foreach ($errors as $error): ?>
             <p><?= htmlspecialchars($error) ?></p>
         <?php endforeach; ?>
     </div>
     <?php endif; ?>
 
-    <form method="POST" action="" class="rfq-form">
+    <form method="POST" action="" class="module-form">
         <input type="hidden" name="rfq_id" value="<?= (int)$rfq['id'] ?>">
 
         <!-- Amount & Discount -->
-        <div class="rfq-form-row">
+        <div class="form-row">
 
-            <div class="rfq-form-group">
-                <label for="q-amount" class="rfq-form-label">Amount <span class="rfq-form-required">*</span></label>
+            <div class="form-group">
+                <label for="q-amount" class="form-label">Amount <span class="form-required">*</span></label>
                 <input
                     type="number"
                     id="q-amount"
@@ -39,8 +39,8 @@
                 >
             </div>
 
-            <div class="rfq-form-group">
-                <label for="q-discount" class="rfq-form-label">Discount <span class="text-muted">(optional)</span></label>
+            <div class="form-group">
+                <label for="q-discount" class="form-label">Discount <span class="text-muted">(optional)</span></label>
                 <input
                     type="number"
                     id="q-discount"
@@ -56,10 +56,10 @@
         </div>
 
         <!-- Validity dates -->
-        <div class="rfq-form-row">
+        <div class="form-row">
 
-            <div class="rfq-form-group">
-                <label for="q-start" class="rfq-form-label">Valid From <span class="text-muted">(optional)</span></label>
+            <div class="form-group">
+                <label for="q-start" class="form-label">Valid From <span class="text-muted">(optional)</span></label>
                 <input
                     type="date"
                     id="q-start"
@@ -69,8 +69,8 @@
                 >
             </div>
 
-            <div class="rfq-form-group">
-                <label for="q-end" class="rfq-form-label">Valid To <span class="text-muted">(optional)</span></label>
+            <div class="form-group">
+                <label for="q-end" class="form-label">Valid To <span class="text-muted">(optional)</span></label>
                 <input
                     type="date"
                     id="q-end"
@@ -82,9 +82,9 @@
 
         </div>
 
-        <div class="rfq-form-actions">
+        <div class="form-actions">
             <button type="submit" class="btn btn-primary">Save Quote</button>
-            <a href="/modules/rfq/detail.php?id=<?= (int)$rfq['id'] ?>" class="btn rfq-list-clear-btn">Cancel</a>
+            <a href="/modules/rfq/detail.php?id=<?= (int)$rfq['id'] ?>" class="btn btn-secondary">Cancel</a>
         </div>
 
     </form>

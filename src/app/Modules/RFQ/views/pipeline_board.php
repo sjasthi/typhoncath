@@ -1,5 +1,5 @@
 <section class="card">
-    <div class="rfq-board-header">
+    <div class="module-header">
         <h1>RFQ Pipeline Board</h1>
         <a href="/modules/rfq/create.php" class="rfq-create-btn" title="Create RFQ">+</a>
     </div>
@@ -180,7 +180,7 @@
 
             <button type="submit" class="btn btn-primary">Filter</button>
             <?php if ($listSearch !== '' || $listIdSearch !== '' || !empty($listStages)): ?>
-                <a href="?sort=<?= urlencode($listSort) ?>&dir=<?= urlencode($listDir) ?>&per_page=<?= urlencode($listPerPageVal) ?>" class="btn rfq-list-clear-btn">Clear</a>
+                <a href="?sort=<?= urlencode($listSort) ?>&dir=<?= urlencode($listDir) ?>&per_page=<?= urlencode($listPerPageVal) ?>" class="btn btn-secondary">Clear</a>
             <?php endif; ?>
         </form>
     </div>

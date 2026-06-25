@@ -1,23 +1,23 @@
 <section class="card">
 
-    <div class="rfq-board-header">
+    <div class="module-header">
         <h1>Edit RFQ</h1>
-        <a href="/modules/rfq/detail.php?id=<?= (int)$rfq['id'] ?>" class="btn rfq-list-clear-btn">&#8592; Back</a>
+        <a href="/modules/rfq/detail.php?id=<?= (int)$rfq['id'] ?>" class="btn btn-secondary">&#8592; Back</a>
     </div>
 
     <?php if (!empty($errors)): ?>
-    <div class="rfq-form-errors">
+    <div class="form-errors">
         <?php foreach ($errors as $error): ?>
             <p><?= htmlspecialchars($error) ?></p>
         <?php endforeach; ?>
     </div>
     <?php endif; ?>
 
-    <form method="POST" action="" class="rfq-form">
+    <form method="POST" action="" class="module-form">
 
         <!-- Title -->
-        <div class="rfq-form-group">
-            <label for="rfq-title" class="rfq-form-label">Title <span class="rfq-form-required">*</span></label>
+        <div class="form-group">
+            <label for="rfq-title" class="form-label">Title <span class="form-required">*</span></label>
             <input
                 type="text"
                 id="rfq-title"
@@ -29,10 +29,10 @@
         </div>
 
         <!-- Account & Contact -->
-        <div class="rfq-form-row">
+        <div class="form-row">
 
-            <div class="rfq-form-group">
-                <label for="rfq-account" class="rfq-form-label">Account <span class="rfq-form-required">*</span></label>
+            <div class="form-group">
+                <label for="rfq-account" class="form-label">Account <span class="form-required">*</span></label>
                 <select id="rfq-account" name="account_id" class="form-control" required>
                     <option value="">— Select account —</option>
                     <?php foreach ($accounts as $account): ?>
@@ -44,8 +44,8 @@
                 </select>
             </div>
 
-            <div class="rfq-form-group">
-                <label for="rfq-contact" class="rfq-form-label">Contact <span class="text-muted">(optional)</span></label>
+            <div class="form-group">
+                <label for="rfq-contact" class="form-label">Contact <span class="text-muted">(optional)</span></label>
                 <select id="rfq-contact" name="contact_id" class="form-control">
                     <option value="">— Select contact —</option>
                     <?php foreach ($contacts as $contact): ?>
@@ -66,8 +66,8 @@
         </div>
 
         <!-- Stage -->
-        <div class="rfq-form-group">
-            <label for="rfq-stage" class="rfq-form-label">Stage</label>
+        <div class="form-group">
+            <label for="rfq-stage" class="form-label">Stage</label>
             <select id="rfq-stage" name="stage" class="form-control rfq-form-stage-select">
                 <?php foreach ($stages as $stage): ?>
                 <option value="<?= $stage ?>" <?= $input['stage'] === $stage ? 'selected' : '' ?>>
@@ -78,8 +78,8 @@
         </div>
 
         <!-- Description -->
-        <div class="rfq-form-group">
-            <label for="rfq-description" class="rfq-form-label">Description <span class="text-muted">(optional)</span></label>
+        <div class="form-group">
+            <label for="rfq-description" class="form-label">Description <span class="text-muted">(optional)</span></label>
             <textarea
                 id="rfq-description"
                 name="description"
@@ -89,9 +89,9 @@
         </div>
 
         <!-- Actions -->
-        <div class="rfq-form-actions">
+        <div class="form-actions">
             <button type="submit" class="btn btn-primary">Save Changes</button>
-            <a href="/modules/rfq/detail.php?id=<?= (int)$rfq['id'] ?>" class="btn rfq-list-clear-btn">Cancel</a>
+            <a href="/modules/rfq/detail.php?id=<?= (int)$rfq['id'] ?>" class="btn btn-secondary">Cancel</a>
         </div>
 
     </form>

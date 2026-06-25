@@ -832,3 +832,68 @@ label { display: block; font-weight: 600; margin-bottom: 0.25rem; }
 .rfq-page-disabled           { color: #bbb; cursor: default; border-color: #f0f0f0; background: #fafafa; }
 .rfq-page-ellipsis           { padding: 0.35rem 0.25rem; font-size: 0.85rem; color: #888; }
 .rfq-pagination-nav          { padding: 0.35rem 0.75rem; }
+
+/* ── Admin Module ────────────────────────────────────── */
+
+.perm-matrix-scroll {
+  overflow-x: auto;
+}
+
+.perm-matrix-table {
+  min-width: 700px;
+  border-collapse: collapse;
+}
+
+.perm-label-col {
+  min-width: 220px;
+  vertical-align: middle;
+}
+
+.perm-role-col {
+  width: 110px;
+  text-align: center;
+  font-size: 0.82rem;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.perm-check-col {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.perm-check {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.perm-check:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.perm-module-row td {
+  background: #f8f9fb;
+  padding: 0.4rem 0.75rem;
+  border-top: 2px solid #e2e4e9;
+}
+
+.perm-label-text {
+  display: block;
+  font-size: 0.88rem;
+}
+
+.perm-key {
+  display: block;
+  font-size: 0.73rem;
+  color: #888;
+  font-family: monospace;
+  margin-top: 1px;
+}
+
+.perm-role-note {
+  font-weight: 400;
+  font-size: 0.72rem;
+  color: #888;
+}

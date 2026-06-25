@@ -146,6 +146,13 @@ CREATE TABLE campaign_audience (
     FOREIGN KEY (contact_id) REFERENCES contacts(id)
 );
 
+CREATE TABLE role_permissions (
+    role_id    INT          NOT NULL,
+    permission VARCHAR(100) NOT NULL,
+    PRIMARY KEY (role_id, permission),
+    FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
+);
+
 CREATE TABLE audience_presets (
     id INT AUTO_INCREMENT PRIMARY KEY,
     preset_name VARCHAR(255) NOT NULL,

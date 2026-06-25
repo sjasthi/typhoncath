@@ -1,20 +1,221 @@
 <?php
 namespace App\Modules\Admin;
 
+use App\Core\Auth;
+
 class AdminController
 {
     private AdminRepository $repo;
+    private UserRepository  $userRepo;
+    private UserService     $userService;
+
+    private array $userErrors = [];
+    private array $userInput  = ['name' => '', 'email' => '', 'role_id' => '', 'password' => ''];
 
     public function __construct()
     {
-        $this->repo = new AdminRepository();
+        $this->repo        = new AdminRepository();
+        $this->userRepo    = new UserRepository();
+        $this->userService = new UserService($this->userRepo);
     }
 
-    // ── Users (placeholder) ───────────────────────────────────────────────────
+    // ── Entry dispatch ────────────────────────────────────────────────────────
 
-    public function users(): void
+    public function dispatch(): void
     {
+        $action = $_GET['action'] ?? 'list';
+        $id     = (int)($_GET['id'] ?? 0);
+
+        match ($action) {
+            'create' => $this->createUser(),
+            'edit'   => $this->editUser($id),
+            default  => $this->listUsers(),
+        };
+    }
+
+    // ── User List ─────────────────────────────────────────────────────────────
+
+    public function listUsers(): void
+    {
+        $users = $this->userRepo->allUsers();
         include __DIR__ . '/views/users.php';
+    }
+
+    // ── Create User ───────────────────────────────────────────────────────────
+
+    public function handleCreateUserPost(): void
+    {
+        $this->userInput = [
+            'name'     => trim($_POST['name']    ?? ''),
+            'email'    => trim($_POST['email']   ?? ''),
+            'password' => $_POST['password']     ?? '',
+            'role_id'  => trim($_POST['role_id'] ?? ''),
+        ];
+
+        $this->userErrors = $this->userService->validateUserInput($this->userInput, false);
+
+        if (empty($this->userErrors) && $this->userRepo->emailExists($this->userInput['email'])) {
+            $this->userErrors[] = 'A user with that email already exists.';
+        }
+
+        if (empty($this->userErrors)) {
+            $this->userService->createUser($this->userInput);
+            $_SESSION['flash'] = ['type' => 'success', 'message' => 'User created successfully.'];
+            header('Location: /admin/users.php');
+            exit;
+        }
+
+        $_SESSION['flash'] = ['type' => 'error', 'message' => 'Please fix the errors below.'];
+    }
+
+    public function createUser(): void
+    {
+        $roles  = $this->repo->allStandardRoles();
+        $errors = $this->userErrors;
+        $input  = $this->userInput;
+        $user   = null;
+        include __DIR__ . '/views/user_form.php';
+    }
+
+    // ── Edit User ─────────────────────────────────────────────────────────────
+
+    public function handleEditUserPost(int $id): void
+    {
+        $this->userInput = [
+            'name'     => trim($_POST['name']    ?? ''),
+            'email'    => trim($_POST['email']   ?? ''),
+            'password' => $_POST['password']     ?? '',
+            'role_id'  => trim($_POST['role_id'] ?? ''),
+        ];
+
+        $this->userErrors = $this->userService->validateUserInput($this->userInput, true);
+
+        if (empty($this->userErrors) && $this->userRepo->emailExists($this->userInput['email'], $id)) {
+            $this->userErrors[] = 'A user with that email already exists.';
+        }
+
+        if (empty($this->userErrors)) {
+            $this->userService->updateUser($id, $this->userInput);
+            $_SESSION['flash'] = ['type' => 'success', 'message' => 'User updated successfully.'];
+            header('Location: /admin/users.php');
+            exit;
+        }
+
+        $_SESSION['flash'] = ['type' => 'error', 'message' => 'Please fix the errors below.'];
+    }
+
+    public function editUser(int $id): void
+    {
+        $user = $this->userRepo->findById($id);
+        if (!$user) {
+            $_SESSION['flash'] = ['type' => 'error', 'message' => 'User not found.'];
+            header('Location: /admin/users.php');
+            exit;
+        }
+
+        $roles  = $this->repo->allStandardRoles();
+        $errors = $this->userErrors;
+        $input  = $this->userErrors ? $this->userInput : [
+            'name'     => $user['name'],
+            'email'    => $user['email'],
+            'role_id'  => $user['role_id'],
+            'password' => '',
+        ];
+        include __DIR__ . '/views/user_form.php';
+    }
+
+    // ── Delete User ───────────────────────────────────────────────────────────
+
+    public function handleDeleteUserPost(int $id): void
+    {
+        $currentUserId = (int)(Auth::user()['id'] ?? 0);
+        if ($id === $currentUserId) {
+            $_SESSION['flash'] = ['type' => 'error', 'message' => 'You cannot delete your own account.'];
+            header('Location: /admin/users.php');
+            exit;
+        }
+
+        $user = $this->userRepo->findById($id);
+        if (!$user) {
+            header('Location: /admin/users.php');
+            exit;
+        }
+
+        $roleId = (int)$user['role_id'];
+
+        // Delete the user first so the FK on users.role_id no longer blocks role deletion.
+        $this->userRepo->delete($id);
+
+        // If they had a custom role, clean it up.
+        // deleteRole() has an owner_user_id IS NOT NULL guard, so system roles are safe.
+        if (!empty($user['owner_user_id'])) {
+            $this->repo->deleteRole($roleId);
+        }
+
+        $_SESSION['flash'] = ['type' => 'success', 'message' => 'User deleted.'];
+        header('Location: /admin/users.php');
+        exit;
+    }
+
+    // ── Custom Role ───────────────────────────────────────────────────────────
+
+    public function handleCreateCustomRolePost(): void
+    {
+        $userId = (int)($_POST['user_id'] ?? 0);
+        $user   = $this->userRepo->findById($userId);
+
+        if (!$user) {
+            $_SESSION['flash'] = ['type' => 'error', 'message' => 'User not found.'];
+            header('Location: /admin/users.php');
+            exit;
+        }
+
+        if (!empty($user['owner_user_id'])) {
+            $_SESSION['flash'] = ['type' => 'error', 'message' => 'User already has a custom role.'];
+            header('Location: /admin/users.php?action=edit&id=' . $userId);
+            exit;
+        }
+
+        $roleName = 'Custom — ' . $user['name'];
+        $roleId   = $this->repo->insertRole($roleName, 'Custom role scoped to ' . $user['name'], $userId);
+
+        $this->userRepo->update($userId, [
+            'name'    => $user['name'],
+            'email'   => $user['email'],
+            'role_id' => $roleId,
+        ]);
+
+        $_SESSION['flash'] = ['type' => 'success', 'message' => 'Custom role created. Set its permissions below.'];
+        header('Location: /admin/permissions.php');
+        exit;
+    }
+
+    public function handleRemoveCustomRolePost(): void
+    {
+        $userId       = (int)($_POST['user_id']  ?? 0);
+        $newRoleId    = (int)($_POST['role_id']   ?? 0);
+        $user         = $this->userRepo->findById($userId);
+
+        if (!$user || !$newRoleId) {
+            $_SESSION['flash'] = ['type' => 'error', 'message' => 'Invalid request.'];
+            header('Location: /admin/users.php');
+            exit;
+        }
+
+        $oldRoleId = (int)$user['role_id'];
+
+        // Reassign to standard role first so the FK is satisfied before deleting the old role.
+        $this->userRepo->update($userId, [
+            'name'    => $user['name'],
+            'email'   => $user['email'],
+            'role_id' => $newRoleId,
+        ]);
+
+        $this->repo->deleteRole($oldRoleId);
+
+        $_SESSION['flash'] = ['type' => 'success', 'message' => 'Custom role removed.'];
+        header('Location: /admin/users.php?action=edit&id=' . $userId);
+        exit;
     }
 
     // ── Permission Matrix ─────────────────────────────────────────────────────
@@ -36,13 +237,11 @@ class AdminController
         }
         $this->repo->savePermissions($matrix);
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Permission matrix saved.'];
-        header('Location: /admin/users.php');
+        header('Location: /admin/permissions.php');
         exit;
     }
 
     // ── Canonical permission list ─────────────────────────────────────────────
-    // This is the single source of truth for what permissions exist in the system.
-    // Adding a new permission here makes it appear in the matrix automatically.
 
     private function buildPermissionList(): array
     {

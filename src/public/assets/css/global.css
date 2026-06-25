@@ -874,7 +874,8 @@ label { display: block; font-weight: 600; margin-bottom: 0.25rem; }
 }
 
 .perm-module-row td {
-  background: #f8f9fb;
+  background: var(--primary-blue);
+  color: #f8f9fb;
   padding: 0.4rem 0.75rem;
   border-top: 2px solid #e2e4e9;
 }

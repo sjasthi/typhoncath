@@ -4,7 +4,8 @@ USE typhon_cath_crm;
 CREATE TABLE roles (
     id INT AUTO_INCREMENT PRIMARY KEY,
     role_name VARCHAR(100) NOT NULL UNIQUE,
-    description TEXT
+    description TEXT,
+    owner_user_id INT NULL  -- non-null = custom role scoped to one user
 );
 
 CREATE TABLE users (

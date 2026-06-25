@@ -13,12 +13,54 @@ class AdminRepository
         $this->db = Database::connection();
     }
 
+    // ── Roles ─────────────────────────────────────────────────────────────────
+
     public function allRoles(): array
     {
-        $stmt = $this->db->prepare("SELECT id, role_name, description FROM roles ORDER BY id ASC");
+        $stmt = $this->db->prepare(
+            "SELECT id, role_name, description, owner_user_id FROM roles ORDER BY id ASC"
+        );
         $stmt->execute();
         return $stmt->fetchAll();
     }
+
+    // Only the 5 system roles — used to populate dropdowns.
+    public function allStandardRoles(): array
+    {
+        $stmt = $this->db->prepare(
+            "SELECT id, role_name FROM roles WHERE owner_user_id IS NULL ORDER BY id ASC"
+        );
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    public function findRoleById(int $id): ?array
+    {
+        $stmt = $this->db->prepare(
+            "SELECT id, role_name, description, owner_user_id FROM roles WHERE id = ?"
+        );
+        $stmt->execute([$id]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
+    public function insertRole(string $name, string $description, int $ownerUserId): int
+    {
+        $this->db->prepare(
+            "INSERT INTO roles (role_name, description, owner_user_id) VALUES (?, ?, ?)"
+        )->execute([$name, $description, $ownerUserId]);
+        return (int)$this->db->lastInsertId();
+    }
+
+    public function deleteRole(int $id): void
+    {
+        // Only delete custom roles — guard prevents deleting system roles.
+        $this->db->prepare(
+            "DELETE FROM roles WHERE id = ? AND owner_user_id IS NOT NULL"
+        )->execute([$id]);
+    }
+
+    // ── Permissions ───────────────────────────────────────────────────────────
 
     // Returns a lookup set keyed as "role_id:permission" for O(1) matrix rendering.
     public function rolePermissionsMap(): array

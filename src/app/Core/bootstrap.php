@@ -17,6 +17,8 @@ declare(strict_types=1);
 
 session_start();
 
+define('APP_PATH', __DIR__ . '/../');
+
 // This part:
 
 // spl_autoload_register(...)

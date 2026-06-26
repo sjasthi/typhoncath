@@ -9,7 +9,7 @@ class CampaignController
     private CampaignService    $service;
 
     // Validation state persisted across handlePost → render calls in the same request.
-    private array $formInput      = ['campaign_name' => '', 'campaign_type' => 'Email', 'status' => 'Draft'];
+    private array $formInput      = ['campaign_name' => '', 'campaign_type' => 'Email', 'status' => 'Draft', 'scheduled_at' => null];
     private array $formErrors     = [];
     private array $audienceErrors = [];
     private array $audienceInput  = [];
@@ -26,6 +26,19 @@ class CampaignController
     {
         [$campaigns, $listSearch, $listStatuses, $totalCount, $page, $perPage] = $this->fetchList();
         include __DIR__ . '/views/campaigns_list.php';
+    }
+
+    // ── Dashboard ──────────────────────────────────────────────────────────────
+
+    public function dashboard(): void
+    {
+        $stats          = $this->repo->dashboardStats();
+        $upcoming       = $this->repo->upcomingScheduledSends();
+        $topPerformers  = $this->repo->topPerformers();
+        $reEngagement   = $this->repo->reEngagementCandidates();
+        $engagementGap  = $this->repo->engagementGap();
+        $momentum       = $this->repo->campaignMomentum();
+        include __DIR__ . '/views/campaign_dashboard.php';
     }
 
     // ── Create ─────────────────────────────────────────────────────────────────

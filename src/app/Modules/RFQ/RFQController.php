@@ -16,11 +16,19 @@ class RFQController
 
     public function index(): void
     {
-        $grouped                                       = $this->buildBoardGroups();
-        [$winRateData, $valueByStage, $expiringQuotes] = $this->fetchAnalytics();
+        $grouped = $this->buildBoardGroups();
         extract($this->fetchList());
 
         include __DIR__ . '/views/pipeline_board.php';
+    }
+
+    // ── Summary (analytics tables on their own page) ───────────────────────────
+
+    public function summary(): void
+    {
+        $grouped = $this->buildBoardGroups();
+        [$winRateData, $valueByStage, $expiringQuotes] = $this->fetchAnalytics();
+        include __DIR__ . '/views/rfq_summary.php';
     }
 
     // Groups all RFQs by stage to populate the kanban board columns.

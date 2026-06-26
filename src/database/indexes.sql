@@ -26,3 +26,11 @@ CREATE INDEX idx_quotes_validity_end_date ON quotes(validity_end_date);
 
 -- getReservationsByRfqId joins on product_id
 CREATE INDEX idx_reservations_product_id ON rfq_inventory_reservations(product_id);
+
+-- Campaign dashboard queries
+-- upcomingScheduledSends: WHERE status='Scheduled' AND scheduled_at >= NOW() ORDER BY scheduled_at ASC
+CREATE INDEX idx_campaigns_status_scheduled_at ON campaigns(status, scheduled_at);
+-- topPerformers: WHERE status IN (...) AND open_rate IS NOT NULL ORDER BY open_rate DESC, sent_count DESC
+CREATE INDEX idx_campaigns_status_open_rate ON campaigns(status, open_rate, sent_count);
+-- campaignsWithMetrics: ORDER BY open_rate DESC
+CREATE INDEX idx_campaigns_open_rate ON campaigns(open_rate);

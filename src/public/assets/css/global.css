@@ -118,6 +118,13 @@ h1, h2, h3, h4, h5, h6 { color: #111; font-weight: 700; }
   text-decoration: none;
 }
 
+.app-nav-sub {
+  font-size: 0.82rem !important;
+  font-weight: 400 !important;
+  padding-left: 1.75rem !important;
+  opacity: 0.8;
+}
+
 .app-main {
   flex: 1;
   padding: 2rem;
@@ -897,4 +904,98 @@ label { display: block; font-weight: 600; margin-bottom: 0.25rem; }
   font-weight: 400;
   font-size: 0.72rem;
   color: #888;
+}
+
+/* ── Campaign Dashboard ───────────────────────────────────────────────────── */
+
+.camp-stat-cards {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.camp-stat-card {
+  flex: 1 1 140px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.camp-stat-label {
+  font-size: 0.78rem;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.35rem;
+}
+
+.camp-stat-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #111;
+  line-height: 1;
+}
+
+.camp-stat-scheduled { color: #1a56db; }
+.camp-stat-sent      { color: #198754; }
+
+/* Crossfilter dual-row controls */
+.camp-crossfilter-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.camp-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.camp-filter-label {
+  font-size: 0.8rem;
+  color: #6b7280;
+  white-space: nowrap;
+  min-width: 88px;
+}
+
+.camp-crossfilter-count {
+  margin-top: 0.5rem;
+  font-size: 0.82rem;
+  color: #6b7280;
+}
+
+/* Inline rate bar for top performers */
+.camp-rate-bar-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  min-width: 80px;
+}
+
+.camp-rate-bar {
+  display: inline-block;
+  height: 6px;
+  border-radius: 3px;
+  min-width: 2px;
+  flex-shrink: 0;
+}
+
+.camp-rate-val {
+  font-size: 0.82rem;
+  white-space: nowrap;
+  color: #374151;
+}
+
+/* Small description text under a table heading */
+.camp-data-desc {
+  font-size: 0.82rem;
+  margin: 0 0 0.75rem;
+  line-height: 1.4;
 }

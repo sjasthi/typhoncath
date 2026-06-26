@@ -332,6 +332,130 @@ class CampaignRepository
         ]);
     }
 
+    // ── Dashboard Queries ──────────────────────────────────────────────────────
+    // idx_campaigns_status_scheduled_at covers (status, scheduled_at) for WHERE + ORDER BY.
+
+    public function upcomingScheduledSends(int $limit = 20): array
+    {
+        $stmt = $this->db->prepare("
+            SELECT c.id, c.campaign_name, c.campaign_type, c.scheduled_at,
+                   DATEDIFF(c.scheduled_at, NOW()) AS days_until,
+                   u.name AS created_by_name
+            FROM campaigns c
+            LEFT JOIN users u ON u.id = c.created_by_user_id
+            WHERE c.status = 'Scheduled' AND c.scheduled_at >= NOW()
+            ORDER BY c.scheduled_at ASC
+            LIMIT {$limit}
+        ");
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    // Top-performing Sent/Completed campaigns ordered by open_rate DESC.
+    // idx_campaigns_status_open_rate covers (status, open_rate, sent_count).
+    public function topPerformers(int $limit = 50): array
+    {
+        $stmt = $this->db->prepare("
+            SELECT id, campaign_name, campaign_type, status,
+                   sent_count, open_rate, click_rate, scheduled_at
+            FROM campaigns
+            WHERE status IN ('Sent', 'Completed') AND open_rate IS NOT NULL
+            ORDER BY open_rate DESC, sent_count DESC
+            LIMIT {$limit}
+        ");
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    // Contacts/accounts that appear in sent campaigns with 0 click-through — cold list.
+    // Grouped by recipient; ordered by most zero-click campaigns first.
+    public function reEngagementCandidates(int $limit = 20): array
+    {
+        $stmt = $this->db->prepare("
+            SELECT
+                CASE WHEN ca.contact_id IS NOT NULL
+                     THEN CONCAT(con.first_name, ' ', con.last_name)
+                     ELSE a.account_name
+                END AS recipient_name,
+                CASE WHEN ca.contact_id IS NOT NULL THEN 'Contact' ELSE 'Account' END AS recipient_type,
+                COUNT(DISTINCT ca.campaign_id) AS campaigns_targeted,
+                SUM(CASE WHEN c.click_rate IS NULL OR c.click_rate = 0 THEN 1 ELSE 0 END) AS zero_click_campaigns,
+                ROUND(AVG(c.open_rate), 1) AS avg_open_rate,
+                DATE(MAX(c.created_at)) AS last_targeted_at
+            FROM campaign_audience ca
+            JOIN campaigns c ON c.id = ca.campaign_id
+                AND c.status IN ('Sent', 'Completed')
+            LEFT JOIN contacts con ON con.id = ca.contact_id
+            LEFT JOIN accounts a   ON a.id   = ca.account_id
+            WHERE ca.contact_id IS NOT NULL OR ca.account_id IS NOT NULL
+            GROUP BY ca.contact_id, ca.account_id
+            HAVING SUM(CASE WHEN c.click_rate IS NULL OR c.click_rate = 0 THEN 1 ELSE 0 END) > 0
+            ORDER BY zero_click_campaigns DESC, campaigns_targeted DESC
+            LIMIT {$limit}
+        ");
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    // Weekly campaign activity for the momentum chart — last N weeks.
+    public function campaignMomentum(int $weeks = 12): array
+    {
+        $stmt = $this->db->prepare("
+            SELECT
+                YEARWEEK(created_at, 1) AS week_key,
+                DATE_FORMAT(MIN(created_at), '%b %d') AS week_label,
+                COUNT(*) AS campaigns_created,
+                SUM(status IN ('Sent', 'Completed')) AS campaigns_sent,
+                COALESCE(SUM(CASE WHEN status IN ('Sent','Completed') THEN sent_count ELSE 0 END), 0) AS total_recipients,
+                ROUND(AVG(CASE WHEN status IN ('Sent','Completed') AND open_rate  IS NOT NULL THEN open_rate  END), 1) AS avg_open_rate,
+                ROUND(AVG(CASE WHEN status IN ('Sent','Completed') AND click_rate IS NOT NULL THEN click_rate END), 1) AS avg_click_rate
+            FROM campaigns
+            WHERE created_at >= DATE_SUB(NOW(), INTERVAL {$weeks} WEEK)
+            GROUP BY YEARWEEK(created_at, 1)
+            ORDER BY week_key ASC
+        ");
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    // Campaigns with largest open→click drop-off (high gap = good subject, weak CTA).
+    // Ordered by engagement_gap DESC so worst content/CTA problems surface first.
+    public function engagementGap(int $limit = 20): array
+    {
+        $stmt = $this->db->prepare("
+            SELECT id, campaign_name, campaign_type, sent_count,
+                   open_rate, click_rate,
+                   ROUND(open_rate - click_rate, 1) AS engagement_gap,
+                   CASE WHEN open_rate > 0
+                        THEN ROUND((click_rate / open_rate) * 100, 1)
+                        ELSE 0 END AS ctr_ratio
+            FROM campaigns
+            WHERE status IN ('Sent', 'Completed')
+              AND open_rate IS NOT NULL
+              AND click_rate IS NOT NULL
+            ORDER BY engagement_gap DESC
+            LIMIT {$limit}
+        ");
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    // Summary stats for the dashboard stat cards.
+    public function dashboardStats(): array
+    {
+        $stmt = $this->db->prepare("
+            SELECT
+                COUNT(*) AS total,
+                SUM(status = 'Scheduled') AS scheduled,
+                SUM(status IN ('Sent','Completed')) AS sent_completed,
+                ROUND(AVG(CASE WHEN status IN ('Sent','Completed') AND open_rate  IS NOT NULL THEN open_rate  END), 1) AS avg_open_rate,
+                ROUND(AVG(CASE WHEN status IN ('Sent','Completed') AND click_rate IS NOT NULL THEN click_rate END), 1) AS avg_click_rate
+            FROM campaigns
+        ");
+        $stmt->execute();
+        return $stmt->fetch() ?: [];
+    }
+
     // ── Private Helpers ────────────────────────────────────────────────────────
 
     private function buildWhere(string $q, array $statuses): array

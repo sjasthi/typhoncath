@@ -521,11 +521,11 @@ Move beyond simple CRUD and build the actual business workflows inside each modu
 
 ### Max — Customer Management
 
-- [ ] Build Account Detail view.
-- [ ] Build Interaction History view.
-- [ ] Allow calls, emails, notes, and meetings to be logged.
-- [ ] Show interactions under the correct account/contact.
-- [ ] Add customer search by name, email, and tags.
+- [X] Build Account Detail view.
+- [X] Build Interaction History view.
+- [X] Allow calls, emails, notes, and meetings to be logged.
+- [X] Show interactions under the correct account/contact.
+- [X] Add customer search by name, email, and tags.
 
 ### Trevor — RFQ / Pipeline Management
 

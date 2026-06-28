@@ -499,10 +499,10 @@ Build the first create/edit/read flows for each module.
 
 ### FP5 Deliverables
 
-- [ ] Create/edit forms for each active module
-- [ ] Basic validation
-- [ ] Database insert/update/read working
-- [ ] Shared Bootstrap layout applied
+- [x] Create/edit forms for each active module
+- [x] Basic validation
+- [x] Database insert/update/read working
+- [] Shared Bootstrap layout applied
 
 ---
 
@@ -533,7 +533,7 @@ Move beyond simple CRUD and build the actual business workflows inside each modu
 - [x] Allow quote amount, discount, and validity period to be stored.
 - [x] Add RFQ stage update controls.
 - [x] Allow RFQs to move through New, In Review, Quoted, Negotiation, Won, and Lost.
-- [x] Add Deal Won conversion behavior.
+- [] Add Deal Won conversion behavior.
 
 ### Casey — Inventory Management
 

@@ -34,3 +34,10 @@ CREATE INDEX idx_campaigns_status_scheduled_at ON campaigns(status, scheduled_at
 CREATE INDEX idx_campaigns_status_open_rate ON campaigns(status, open_rate, sent_count);
 -- campaignsWithMetrics: ORDER BY open_rate DESC
 CREATE INDEX idx_campaigns_open_rate ON campaigns(open_rate);
+
+-- campaignMomentum: WHERE created_at BETWEEN — covering index with status for the SUM()
+CREATE INDEX idx_campaigns_created_at_status ON campaigns(created_at, status);
+
+-- campaignMomentum segment subqueries: IN (SELECT DISTINCT campaign_id FROM campaign_audience WHERE account_id/contact_id IS NOT NULL)
+CREATE INDEX idx_campaign_audience_campaign_account ON campaign_audience(campaign_id, account_id);
+CREATE INDEX idx_campaign_audience_campaign_contact ON campaign_audience(campaign_id, contact_id);

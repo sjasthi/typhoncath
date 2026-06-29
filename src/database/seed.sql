@@ -200,6 +200,133 @@ ON DUPLICATE KEY UPDATE
     segment_name = VALUES(segment_name);
 
 
+-- ── Campaign enrichment (IDs 5–30) ──────────────────────────────────────────
+-- 26 campaigns across 12 weeks to populate momentum chart and surface insights:
+--   Top performers   → IDs 13 (80% open, 46.7% click), 16 (SMS 71.4%/57.1%), 18 (60%/40%)
+--   Engagement drop-off → IDs 7, 17, 22, 26 (high open, low click = weak CTA)
+--   Re-engagement    → IDs 8, 11, 15, 20 (zero/null click — cold recipients)
+--   Upcoming sends   → IDs 27, 28, 29 (Scheduled with future scheduled_at)
+
+INSERT INTO campaigns (id, campaign_name, campaign_type, status, created_by_user_id, sent_count, open_rate, click_rate, scheduled_at, created_at, updated_at) VALUES
+-- Week 1 (Apr 7) ──────────────────────────────────────────────────────────────
+(5,  'Spring Cardiology Outreach',      'Email',          'Completed', (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 8,  '62.5', '28.1', NULL,                  '2026-04-07 09:00:00', '2026-04-07 14:00:00'),
+(6,  'PICC Line Clinical Update',       'Email',          'Completed', (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 10, '44.0', '11.2', NULL,                  '2026-04-08 10:00:00', '2026-04-08 13:30:00'),
+-- Week 2 (Apr 14) ─────────────────────────────────────────────────────────────
+(7,  'ICU Supply Newsletter Q2',        'Email',          'Completed', (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 12, '71.4',  '8.3', NULL,                  '2026-04-14 09:00:00', '2026-04-14 15:00:00'),
+(8,  'SMS: Foley Restock Alert',        'SMS Simulation', 'Completed', (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 6,  '50.0', '0.00', NULL,                  '2026-04-15 11:00:00', '2026-04-15 12:00:00'),
+-- Week 3 (Apr 21) ─────────────────────────────────────────────────────────────
+(9,  'Vascular Access Product Brief',   'Email',          'Completed', (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 9,  '33.3', '22.2', NULL,                  '2026-04-21 09:30:00', '2026-04-21 14:00:00'),
+(10, 'Specialty Catheter Feature',      'Email',          'Completed', (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 7,  '57.1', '14.3', NULL,                  '2026-04-22 10:00:00', '2026-04-22 13:00:00'),
+-- Week 4 (Apr 28) ─────────────────────────────────────────────────────────────
+(11, 'Q2 Win-Back: Lapsed Contacts',    'Email',          'Completed', (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 11, '63.6',  NULL,  NULL,                  '2026-04-28 09:00:00', '2026-04-28 14:00:00'),
+(12, 'SMS: Conference Reminder',        'SMS Simulation', 'Completed', (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 8,  '62.5', '25.0', NULL,                  '2026-04-29 08:00:00', '2026-04-29 10:00:00'),
+-- Week 5 (May 5) ──────────────────────────────────────────────────────────────
+(13, 'New Product Announcement',        'Email',          'Completed', (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 15, '80.0', '46.7', NULL,                  '2026-05-06 09:00:00', '2026-05-06 16:00:00'),
+(14, 'Dialysis Catheter Whitepaper',    'Email',          'Completed', (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 6,  '66.7', '16.7', NULL,                  '2026-05-07 10:00:00', '2026-05-07 13:30:00'),
+-- Week 6 (May 12) ─────────────────────────────────────────────────────────────
+(15, 'May Hospital Segment Push',       'Email',          'Completed', (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 10, '40.0',  NULL,  NULL,                  '2026-05-12 09:00:00', '2026-05-12 14:00:00'),
+(16, 'SMS: Q2 Clinical Trial Alert',   'SMS Simulation', 'Completed', (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 7,  '71.4', '57.1', NULL,                  '2026-05-13 10:00:00', '2026-05-13 12:00:00'),
+-- Week 7 (May 19) ─────────────────────────────────────────────────────────────
+(17, 'Cardiology Conference Follow-up', 'Email',          'Completed', (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 9,  '88.9', '11.1', NULL,                  '2026-05-19 08:00:00', '2026-05-19 15:00:00'),
+(18, 'Distributor Partner Update',      'Email',          'Sent',      (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 5,  '60.0', '40.0', NULL,                  '2026-05-20 10:00:00', '2026-05-20 12:30:00'),
+-- Week 8 (May 26) ─────────────────────────────────────────────────────────────
+(19, 'Arterial Line Technical Brief',   'Email',          'Completed', (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 8,  '37.5', '12.5', NULL,                  '2026-05-26 09:00:00', '2026-05-26 13:00:00'),
+(20, 'SMS: Inventory Alert June',       'SMS Simulation', 'Sent',      (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 12, '58.3', '0.00', NULL,                  '2026-05-27 11:00:00', '2026-05-27 12:00:00'),
+-- Week 9 (Jun 2) ──────────────────────────────────────────────────────────────
+(21, 'June Surgical Suite Campaign',    'Email',          'Completed', (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 11, '54.5', '27.3', NULL,                  '2026-06-03 09:00:00', '2026-06-03 14:00:00'),
+(22, 'CVC Clinical Evidence Pack',      'Email',          'Sent',      (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 8,  '75.0', '12.5', NULL,                  '2026-06-04 10:00:00', '2026-06-04 13:00:00'),
+-- Week 10 (Jun 9) ─────────────────────────────────────────────────────────────
+(23, 'Q3 Hospital Pipeline Activation', 'Email',          'Sent',      (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 9,  '44.4', '33.3', NULL,                  '2026-06-10 09:00:00', '2026-06-10 12:00:00'),
+(24, 'SMS: New Sales Rep Introduction', 'SMS Simulation', 'Sent',      (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 10, '50.0', '30.0', NULL,                  '2026-06-11 10:00:00', '2026-06-11 11:30:00'),
+-- Week 11 (Jun 16) ────────────────────────────────────────────────────────────
+(25, 'Mid-Year Loyalty Reward Email',   'Email',          'Sent',      (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 7,  '71.4', '28.6', NULL,                  '2026-06-17 09:00:00', '2026-06-17 13:00:00'),
+(26, 'Catheter Safety Bulletin',        'Email',          'Sent',      (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 6,  '83.3', '16.7', NULL,                  '2026-06-18 10:00:00', '2026-06-18 12:00:00'),
+-- Week 12 (Jun 23) — upcoming scheduled sends ─────────────────────────────────
+(27, 'Q3 Prospect Welcome Series',      'Email',          'Scheduled', (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 0,  NULL,   NULL,   '2026-07-07 09:00:00', '2026-06-24 10:00:00', '2026-06-24 10:00:00'),
+(28, 'SMS: Summer Product Preview',     'SMS Simulation', 'Scheduled', (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 0,  NULL,   NULL,   '2026-07-01 10:00:00', '2026-06-25 09:00:00', '2026-06-25 09:00:00'),
+(29, 'Cardiology Q3 Annual Review',     'Email',          'Scheduled', (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 0,  NULL,   NULL,   '2026-07-14 09:00:00', '2026-06-26 08:00:00', '2026-06-26 08:00:00'),
+(30, 'Q3 Full Territory Campaign',      'Email',          'Draft',     (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 0,  NULL,   NULL,   NULL,                  '2026-06-26 14:00:00', '2026-06-26 14:00:00')
+ON DUPLICATE KEY UPDATE
+    campaign_name  = VALUES(campaign_name),
+    campaign_type  = VALUES(campaign_type),
+    status         = VALUES(status),
+    sent_count     = VALUES(sent_count),
+    open_rate      = VALUES(open_rate),
+    click_rate     = VALUES(click_rate),
+    scheduled_at   = VALUES(scheduled_at),
+    created_at     = VALUES(created_at),
+    updated_at     = VALUES(updated_at);
+
+-- Campaign audience for enriched campaigns (IDs 11–50)
+-- Zero-click campaigns 8, 11, 15, 20 are seeded with overlapping contacts/accounts
+-- so the re-engagement panel surfaces clear priority tiers:
+--   Kevin Nguyen / Valley General (acct 6)  → 4 cold campaigns → High
+--   Linda Hoffman / Sunrise NR (acct 11)    → 3 cold campaigns → High
+--   Maria Chen / Regional Heart (acct 3)    → 2 cold campaigns → Medium
+
+INSERT INTO campaign_audience (id, campaign_id, account_id, contact_id, tag_filter, segment_name) VALUES
+-- Campaign 7: ICU Newsletter (drop-off — 71.4% open, 8.3% click)
+(11, 7, 1,    NULL, NULL,          'Hospital Accounts'),
+(12, 7, 2,    NULL, NULL,          'Hospital Accounts'),
+(13, 7, 4,    NULL, NULL,          'Hospital Accounts'),
+(14, 7, NULL, 2,    NULL,          'Hospital Contacts'),
+(15, 7, NULL, 4,    NULL,          'Hospital Contacts'),
+-- Campaign 8: SMS Foley Alert (zero click → re-engagement)
+(16, 8, NULL, 6,    NULL,          'LTC & Supply Contacts'),
+(17, 8, NULL, 11,   NULL,          'LTC & Supply Contacts'),
+(18, 8, 6,    NULL, NULL,          'LTC & Supply Accounts'),
+(19, 8, 11,   NULL, NULL,          'LTC & Supply Accounts'),
+-- Campaign 11: Q2 Win-Back (null click → re-engagement)
+(20, 11, NULL, 3,   NULL,          'Lapsed Contacts'),
+(21, 11, NULL, 6,   NULL,          'Lapsed Contacts'),
+(22, 11, NULL, 11,  NULL,          'Lapsed Contacts'),
+(23, 11, 3,    NULL, NULL,         'Lapsed Accounts'),
+(24, 11, 6,    NULL, NULL,         'Lapsed Accounts'),
+-- Campaign 13: New Product Announcement (top performer)
+(25, 13, NULL, NULL, 'active',     'All Active Accounts'),
+-- Campaign 15: May Hospital Push (null click → re-engagement)
+(26, 15, NULL, 3,   NULL,          'Hospital Contacts'),
+(27, 15, NULL, 6,   NULL,          'Hospital Contacts'),
+(28, 15, 3,    NULL, NULL,         'Hospital Accounts'),
+(29, 15, 6,    NULL, NULL,         'Hospital Accounts'),
+-- Campaign 16: SMS Clinical Trial Alert (top performer SMS)
+(30, 16, NULL, NULL, 'specialist', 'Specialist Segment'),
+-- Campaign 17: Cardiology Conference Follow-up (drop-off — 88.9% open, 11.1% click)
+(31, 17, NULL, 3,   NULL,          'Cardiology Contacts'),
+(32, 17, NULL, 5,   NULL,          'Cardiology Contacts'),
+(33, 17, 3,    NULL, NULL,         'Cardiology Accounts'),
+(34, 17, 5,    NULL, NULL,         'Cardiology Accounts'),
+-- Campaign 18: Distributor Partner Update (top performer — 60% open, 40% click)
+(35, 18, 12,   NULL, 'distributor','Distributors'),
+(36, 18, NULL, 12,  NULL,          'Distributor Contacts'),
+-- Campaign 20: SMS Inventory Alert (zero click → re-engagement)
+(37, 20, NULL, 6,   NULL,          'Supply Contacts'),
+(38, 20, NULL, 11,  NULL,          'LTC Contacts'),
+(39, 20, 6,    NULL, NULL,         'Supply Accounts'),
+(40, 20, 11,   NULL, NULL,         'LTC Accounts'),
+-- Campaign 21: June Surgical Suite Campaign
+(41, 21, 7,    NULL, NULL,         'Surgical Accounts'),
+(42, 21, NULL, 7,   NULL,          'Surgical Contacts'),
+-- Campaign 22: CVC Evidence Pack (drop-off — 75% open, 12.5% click)
+(43, 22, NULL, NULL, 'hospital',   'Hospital Segment'),
+-- Campaign 23: Q3 Hospital Pipeline Activation
+(44, 23, NULL, NULL, 'active',     'Active Hospitals'),
+-- Campaign 25: Mid-Year Loyalty Reward
+(45, 25, NULL, NULL, 'active',     'Active Accounts'),
+-- Campaign 26: Catheter Safety Bulletin (drop-off — 83.3% open, 16.7% click)
+(46, 26, NULL, NULL, 'hospital',   'All Hospital Segment'),
+-- Scheduled campaigns
+(47, 27, NULL, NULL, 'prospect',   'Prospect Segment'),
+(48, 28, NULL, NULL, 'active',     'Active SMS List'),
+(49, 29, NULL, 3,    NULL,         'Cardiology Contacts'),
+(50, 29, NULL, 5,    NULL,         'Cardiology Contacts')
+ON DUPLICATE KEY UPDATE
+    campaign_id  = VALUES(campaign_id),
+    account_id   = VALUES(account_id),
+    contact_id   = VALUES(contact_id),
+    tag_filter   = VALUES(tag_filter),
+    segment_name = VALUES(segment_name);
+
 -- Role permissions. Uses role_name lookup instead of hard-coded role IDs.
 
 INSERT IGNORE INTO role_permissions (role_id, permission)

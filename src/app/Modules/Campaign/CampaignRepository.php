@@ -398,25 +398,68 @@ class CampaignRepository
     }
 
     // Weekly campaign activity for the momentum chart — last N weeks.
-    public function campaignMomentum(int $weeks = 12): array
-    {
-        $stmt = $this->db->prepare("
-            SELECT
-                YEARWEEK(created_at, 1) AS week_key,
-                DATE_FORMAT(MIN(created_at), '%b %d') AS week_label,
-                COUNT(*) AS campaigns_created,
-                SUM(status IN ('Sent', 'Completed')) AS campaigns_sent,
-                COALESCE(SUM(CASE WHEN status IN ('Sent','Completed') THEN sent_count ELSE 0 END), 0) AS total_recipients,
-                ROUND(AVG(CASE WHEN status IN ('Sent','Completed') AND open_rate  IS NOT NULL THEN open_rate  END), 1) AS avg_open_rate,
-                ROUND(AVG(CASE WHEN status IN ('Sent','Completed') AND click_rate IS NOT NULL THEN click_rate END), 1) AS avg_click_rate
-            FROM campaigns
-            WHERE created_at >= DATE_SUB(NOW(), INTERVAL {$weeks} WEEK)
-            GROUP BY YEARWEEK(created_at, 1)
-            ORDER BY week_key ASC
-        ");
-        $stmt->execute();
-        return $stmt->fetchAll();
+    // $groupBy: 'week' (YEARWEEK buckets) or 'day' (DATE buckets) for short ranges.
+    // $segment: 'all' | 'accounts' | 'contacts' — filters to campaigns with that audience type.
+    // Hits idx_campaigns_created_at_status; segment subqueries hit idx_campaign_audience_campaign_account/contact.
+public function campaignMomentum(
+    string $from    = '',
+    string $to      = '',
+    string $groupBy = 'week',
+    string $segment = 'all'
+): array {
+    if ($from === '') $from = date('Y-m-d', strtotime('-12 weeks'));
+    if ($to   === '') $to   = date('Y-m-d 23:59:59');
+
+    $activityDate = "COALESCE(c.scheduled_at, c.updated_at, c.created_at)";
+
+    if ($groupBy === 'day') {
+        $groupExpr = "DATE({$activityDate})";
+        $labelExpr = "DATE_FORMAT({$activityDate}, '%a %b %d')";
+    } else {
+        $groupExpr = "YEARWEEK({$activityDate}, 1)";
+        $labelExpr = "DATE_FORMAT(MIN({$activityDate}), '%b %d')";
     }
+
+    $segmentClause = '';
+    if ($segment === 'accounts') {
+        $segmentClause = 'AND c.id IN (
+            SELECT DISTINCT campaign_id
+            FROM campaign_audience
+            WHERE account_id IS NOT NULL
+        )';
+    } elseif ($segment === 'contacts') {
+        $segmentClause = 'AND c.id IN (
+            SELECT DISTINCT campaign_id
+            FROM campaign_audience
+            WHERE contact_id IS NOT NULL
+        )';
+    }
+
+    $stmt = $this->db->prepare("
+        SELECT
+            {$groupExpr} AS period_key,
+            {$labelExpr} AS period_label,
+
+            COUNT(*) AS campaigns_sent,
+
+            COALESCE(SUM(c.sent_count), 0) AS total_recipients,
+
+            ROUND(AVG(c.open_rate), 1) AS avg_open_rate,
+            ROUND(AVG(c.click_rate), 1) AS avg_click_rate,
+
+            ROUND(AVG(c.open_rate - c.click_rate), 1) AS avg_engagement_gap
+
+        FROM campaigns c
+        WHERE c.status IN ('Sent', 'Completed')
+          AND {$activityDate} BETWEEN ? AND ?
+          {$segmentClause}
+        GROUP BY {$groupExpr}
+        ORDER BY period_key ASC
+    ");
+
+    $stmt->execute([$from, $to]);
+    return $stmt->fetchAll();
+}
 
     // Campaigns with largest open→click drop-off (high gap = good subject, weak CTA).
     // Ordered by engagement_gap DESC so worst content/CTA problems surface first.

@@ -999,3 +999,23 @@ label { display: block; font-weight: 600; margin-bottom: 0.25rem; }
   margin: 0 0 0.75rem;
   line-height: 1.4;
 }
+
+/* Momentum chart filter bar */
+.camp-momentum-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.6rem 0 0.5rem;
+  border-top: 1px solid #f0f0f0;
+  margin-top: 0.25rem;
+}
+
+.camp-date-input {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  color: #374151;
+  background: #fff;
+  height: 30px;
+}

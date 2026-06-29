@@ -42,8 +42,7 @@ class Permissions
             return true;
         }
 
-        // TODO: Load permission map from config/permissions.php.
-        return false;
+        return in_array($permission, $user['permissions'] ?? [], true);
     }
 
     public static function require(string $permission): void

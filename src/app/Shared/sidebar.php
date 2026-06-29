@@ -8,9 +8,7 @@
             <a href="/dashboard.php">Dashboard</a>
             <a href="/modules/customer/accounts.php">Customers</a>
             <a href="/modules/rfq/pipeline.php">RFQ Pipeline</a>
-            <a href="/modules/rfq/summary.php" class="app-nav-sub">↳ RFQ Summary</a>
             <a href="/modules/campaign/campaigns.php">Campaigns</a>
-            <a href="/modules/campaign/dashboard.php" class="app-nav-sub">↳ Campaign Dashboard</a>
             <a href="/modules/inventory/products.php">Inventory</a>
             <a href="/admin/users.php">Admin</a>
             <a href="/logout.php">Logout</a>

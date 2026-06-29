@@ -47,6 +47,7 @@ class InventoryRepository
         $db = Database::connection();
         $stmt = $db->prepare(
             "SELECT p.id, p.product_name, p.sku, p.price, p.description,
+                    p.created_at, p.updated_at,
                     i.id AS inventory_id, i.available_quantity, i.reserved_quantity
              FROM products p
              LEFT JOIN inventory i ON i.product_id = p.id

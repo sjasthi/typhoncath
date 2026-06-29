@@ -2,7 +2,7 @@
 namespace App\Modules\Campaign;
 
 use App\Core\Auth;
-
+use App\Core\Permissions;
 class CampaignController
 {
     private CampaignRepository $repo;
@@ -89,6 +89,13 @@ class CampaignController
     // Renders the edit form; re-populates with $this->formInput and $this->formErrors on validation failure.
     public function edit(int $id): void
     {
+    if (!Permissions::can('campaigns.edit')) {
+    http_response_code(403);
+
+    include __DIR__ . '/../../../app/Shared/error_403.php';
+    include __DIR__ . '/../../../app/Shared/footer.php';
+    exit;
+}
         $campaign = $this->repo->findById($id);
         if (!$campaign) {
             $_SESSION['flash'] = ['type' => 'error', 'message' => 'Campaign not found.'];
@@ -229,16 +236,33 @@ class CampaignController
 
     public function handleDeletePost(int $id): void
     {
+    if (!Permissions::can('campaigns.delete')) {
+    http_response_code(403);
+    include __DIR__ . '/../../../app/Shared/header.php';
+    include __DIR__ . '/../../../app/Shared/sidebar.php';
+    include __DIR__ . '/../../../app/Shared/error_403.php';
+    include __DIR__ . '/../../../app/Shared/footer.php';
+    exit;
+}
+    {
         $this->repo->delete($id);
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Campaign deleted.'];
         header('Location: /modules/campaign/campaigns.php');
         exit;
     }
-
+}
     // ── Simulate Send ──────────────────────────────────────────────────────────
 
     public function handleSimulatePost(int $id): void
     {
+    if (!Permissions::can('campaigns.metrics')) {
+    http_response_code(403);
+    include __DIR__ . '/../../../app/Shared/header.php';
+    include __DIR__ . '/../../../app/Shared/sidebar.php';
+    include __DIR__ . '/../../../app/Shared/error_403.php';
+    include __DIR__ . '/../../../app/Shared/footer.php';
+    exit;
+}
         $this->service->simulateSend($id);
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Campaign send simulated successfully.'];
         header('Location: /modules/campaign/detail.php?id=' . $id);

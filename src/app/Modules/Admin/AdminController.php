@@ -283,6 +283,7 @@ class AdminController
             ['module' => 'Campaigns',    'action' => 'campaigns.create',            'label' => 'Create Campaigns'],
             ['module' => 'Campaigns',    'action' => 'campaigns.edit',              'label' => 'Edit Campaigns'],
             ['module' => 'Campaigns',    'action' => 'campaigns.delete',            'label' => 'Delete Campaigns'],
+            // TODO: rename label to 'Simulate Send' — campaigns.metrics only gates handleSimulatePost(), metrics viewing is open to anyone with campaigns.view
             ['module' => 'Campaigns',    'action' => 'campaigns.metrics',           'label' => 'Simulate & View Metrics'],
             // Inventory
             ['module' => 'Inventory',    'action' => 'inventory.view',              'label' => 'View Inventory'],

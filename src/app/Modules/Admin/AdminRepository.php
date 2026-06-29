@@ -60,6 +60,17 @@ class AdminRepository
         )->execute([$id]);
     }
 
+    // Deletes any custom role owned by $userId that no user is currently assigned to.
+    // Cleans up orphans left by a failed previous custom-role creation attempt.
+    public function deleteOrphanedCustomRoleForUser(int $userId): void
+    {
+        $this->db->prepare(
+            "DELETE FROM roles
+             WHERE owner_user_id = ?
+               AND id NOT IN (SELECT u.role_id FROM users u)"
+        )->execute([$userId]);
+    }
+
     // ── Permissions ───────────────────────────────────────────────────────────
 
     // Returns a lookup set keyed as "role_id:permission" for O(1) matrix rendering.

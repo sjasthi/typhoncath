@@ -176,14 +176,24 @@ class AdminController
             exit;
         }
 
-        $roleName = 'Custom — ' . $user['name'];
-        $roleId   = $this->repo->insertRole($roleName, 'Custom role scoped to ' . $user['name'], $userId);
+        // Remove any orphaned custom role for this user (leftover from a prior failed attempt)
+        // before inserting — roles.role_name has a UNIQUE constraint that would otherwise crash.
+        $this->repo->deleteOrphanedCustomRoleForUser($userId);
 
-        $this->userRepo->update($userId, [
-            'name'    => $user['name'],
-            'email'   => $user['email'],
-            'role_id' => $roleId,
-        ]);
+        try {
+            $roleName = 'Custom — ' . $user['name'];
+            $roleId   = $this->repo->insertRole($roleName, 'Custom role scoped to ' . $user['name'], $userId);
+
+            $this->userRepo->update($userId, [
+                'name'    => $user['name'],
+                'email'   => $user['email'],
+                'role_id' => $roleId,
+            ]);
+        } catch (\Throwable $e) {
+            $_SESSION['flash'] = ['type' => 'error', 'message' => 'Failed to create custom role: ' . $e->getMessage()];
+            header('Location: /admin/users.php?action=edit&id=' . $userId);
+            exit;
+        }
 
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Custom role created. Set its permissions below.'];
         header('Location: /admin/permissions.php');

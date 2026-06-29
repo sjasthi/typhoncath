@@ -92,6 +92,23 @@ class InventoryService
     }
 
     /**
+     * Business rule: delete a product.
+     * Blocked if the product has active (Reserved) reservations —
+     * those must be released or converted first.
+     */
+    public function deleteProduct(int $id): bool
+    {
+        $active = $this->repo->countActiveReservations($id);
+        if ($active > 0) {
+            throw new \RuntimeException(
+                "Cannot delete — this product has {$active} active reservation(s). " .
+                "Release or convert them first."
+            );
+        }
+        return $this->repo->delete($id);
+    }
+
+    /**
      * Get all inventory reservations, joined with product/RFQ info.
      */
     public function getReservations(): array

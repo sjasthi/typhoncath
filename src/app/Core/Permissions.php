@@ -38,12 +38,15 @@ class Permissions
             return false;
         }
 
-        if (($user['role'] ?? '') === 'Admin' || ($user['role'] ?? '') === 'Super Admin') {
+        $role = $user['role'] ?? '';
+        $map  = require __DIR__ . '/../../config/permissions.php';
+        $rolePermissions = $map[$role] ?? [];
+
+        if (in_array('*', $rolePermissions, true)) {
             return true;
         }
 
-        // TODO: Load permission map from config/permissions.php.
-        return false;
+        return in_array($permission, $rolePermissions, true);
     }
 
     public static function require(string $permission): void

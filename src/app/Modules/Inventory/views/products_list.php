@@ -1,28 +1,45 @@
+<?php
+$statusBadge = [
+    'In Stock'  => 'rfq-badge-success',
+    'Low Stock' => 'rfq-badge-warning',
+    'No Stock'  => 'rfq-badge-danger',
+];
+?>
+
 <section class="card">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-        <h1>Products List</h1>
-        <a href="/modules/inventory/product_detail.php" class="btn btn-primary">+ Add Product</a>
+    <div class="rfq-board-header">
+        <h1>Inventory</h1>
+        <a href="/modules/inventory/products.php?page=detail" class="btn btn-primary">+ Add Product</a>
     </div>
 
-    <form method="GET" style="display:flex; gap:0.75rem; align-items:center; margin-bottom:1rem;">
+    <!-- Search / filter toolbar -->
+    <form method="GET" class="rfq-list-toolbar" style="flex-direction:row; flex-wrap:wrap; align-items:center; gap:0.5rem; margin-bottom:1rem;">
         <input
             type="text"
             name="search"
-            class="form-control"
+            class="form-control rfq-list-search-input"
             placeholder="Search by name or SKU"
             value="<?= htmlspecialchars($search ?? '') ?>"
-            style="max-width:300px;"
+            style="max-width:280px; margin-bottom:0;"
         >
-        <label style="display:flex; align-items:center; gap:0.4rem;">
-            <input type="checkbox" name="low_stock" value="1"
+        <label style="display:flex; align-items:center; gap:0.4rem; font-weight:600; font-size:0.9rem; margin:0;">
+            <input
+                type="checkbox"
+                name="low_stock"
+                value="1"
                 <?= ($lowStockOnly ?? false) ? 'checked' : '' ?>
-                onchange="this.form.submit()">
+                onchange="this.form.submit()"
+            >
             Low Stock Only
         </label>
         <button type="submit" class="btn">Search</button>
+        <?php if (!empty($search) || !empty($lowStockOnly)): ?>
+            <a href="/modules/inventory/products.php" class="btn rfq-list-clear-btn">Clear</a>
+        <?php endif; ?>
     </form>
 
-    <table class="table">
+    <!-- Product table -->
+    <table class="table rfq-list-table">
         <thead>
             <tr>
                 <th>SKU</th>
@@ -37,32 +54,39 @@
         <tbody>
             <?php if (empty($products)): ?>
                 <tr>
-                    <td colspan="7" class="text-muted">No products found.</td>
+                    <td colspan="7" class="rfq-list-empty text-muted">No products found.</td>
                 </tr>
             <?php else: ?>
-                <?php foreach ($products as $product): ?>
-                    <tr style="<?= $product['low_stock'] ? 'background:#fffbeb;' : '' ?>">
-                        <td><?= htmlspecialchars($product['sku']) ?></td>
-                        <td><?= htmlspecialchars($product['product_name']) ?></td>
-                        <td>$<?= number_format((float) $product['price'], 2) ?></td>
-                        <td><?= (int) $product['available_quantity'] ?></td>
-                        <td><?= (int) $product['reserved_quantity'] ?></td>
-                        <td>
-                            <?php if ($product['low_stock']): ?>
-                                <span style="color:var(--tc-warning); font-weight:600;">Low Stock</span>
-                            <?php else: ?>
-                                <span style="color:var(--tc-success); font-weight:600;">In Stock</span>
-                            <?php endif; ?>
-                        </td>
-                        <td>
-                            <a href="/modules/inventory/product_detail.php?id=<?= (int) $product['id'] ?>" class="btn">Edit</a>
-                            <a href="/modules/inventory/stock_update.php?id=<?= (int) $product['id'] ?>" class="btn">Update Stock</a>
-                        </td>
-                    </tr>
+                <?php foreach ($products as $p):
+                    $available = (int) $p['available_quantity'];
+                    if ($available === 0)       $statusLabel = 'No Stock';
+                    elseif ($p['low_stock'])    $statusLabel = 'Low Stock';
+                    else                        $statusLabel = 'In Stock';
+                    $badgeClass = $statusBadge[$statusLabel];
+                ?>
+                <tr>
+                    <td class="rfq-list-id"><?= htmlspecialchars($p['sku']) ?></td>
+                    <td>
+                        <a href="/modules/inventory/products.php?page=detail&id=<?= (int)$p['id'] ?>" class="rfq-list-link">
+                            <?= htmlspecialchars($p['product_name']) ?>
+                        </a>
+                    </td>
+                    <td>$<?= number_format((float)$p['price'], 2) ?></td>
+                    <td><?= $available ?></td>
+                    <td><?= (int)$p['reserved_quantity'] ?></td>
+                    <td><span class="rfq-badge <?= $badgeClass ?>"><?= $statusLabel ?></span></td>
+                    <td style="white-space:nowrap;">
+                        <a href="/modules/inventory/products.php?page=detail&id=<?= (int)$p['id'] ?>" class="btn" style="font-size:0.85rem; padding:4px 10px;">Edit</a>
+                        <a href="/modules/inventory/products.php?page=stock&id=<?= (int)$p['id'] ?>" class="btn" style="font-size:0.85rem; padding:4px 10px;">Stock</a>
+                        <a href="/modules/inventory/products.php?page=delete&id=<?= (int)$p['id'] ?>" class="btn" style="font-size:0.85rem; padding:4px 10px; background:#fde8e8; color:#b91c1c; border-color:#fca5a5;">Delete</a>
+                    </td>
+                </tr>
                 <?php endforeach; ?>
             <?php endif; ?>
         </tbody>
     </table>
+
+    <p class="rfq-list-footer"><?= count($products ?? []) ?> product(s)</p>
 </section>
 
 <script src="/assets/js/inventory.js"></script>

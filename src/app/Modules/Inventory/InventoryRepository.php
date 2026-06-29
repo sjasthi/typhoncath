@@ -13,10 +13,12 @@ class InventoryRepository
     {
         $db = Database::connection();
 
+        $lowStockJoin = $lowStockOnly ? " AND i.available_quantity < 10" : "";
+
         $sql = "SELECT p.id, p.product_name, p.sku, p.price, p.description,
                        i.available_quantity, i.reserved_quantity
                 FROM products p
-                LEFT JOIN inventory i ON i.product_id = p.id
+                LEFT JOIN inventory i ON i.product_id = p.id{$lowStockJoin}
                 WHERE 1=1";
 
         $params = [];
@@ -26,10 +28,6 @@ class InventoryRepository
             $like = '%' . $search . '%';
             $params[] = $like;
             $params[] = $like;
-        }
-
-        if ($lowStockOnly) {
-            $sql .= " AND i.available_quantity < 10";
         }
 
         $sql .= " ORDER BY p.product_name ASC";

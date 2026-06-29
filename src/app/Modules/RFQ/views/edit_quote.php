@@ -1,7 +1,7 @@
 <section class="card">
 
     <div class="module-header">
-        <h1>Add Quote</h1>
+        <h1>Edit Quote</h1>
         <a href="/modules/rfq/detail.php?id=<?= (int)$rfq['id'] ?>" class="btn btn-secondary">&#8592; Back</a>
     </div>
 
@@ -64,7 +64,7 @@
                     type="date"
                     id="q-start"
                     name="validity_start_date"
-                    value="<?= htmlspecialchars($input['validity_start_date']) ?>"
+                    value="<?= htmlspecialchars($input['validity_start_date'] ?? '') ?>"
                     class="form-control"
                 >
             </div>
@@ -75,7 +75,7 @@
                     type="date"
                     id="q-end"
                     name="validity_end_date"
-                    value="<?= htmlspecialchars($input['validity_end_date']) ?>"
+                    value="<?= htmlspecialchars($input['validity_end_date'] ?? '') ?>"
                     class="form-control"
                 >
             </div>
@@ -83,7 +83,7 @@
         </div>
 
         <div class="form-actions">
-            <button type="submit" class="btn btn-primary">Save Quote</button>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
             <a href="/modules/rfq/detail.php?id=<?= (int)$rfq['id'] ?>" class="btn btn-secondary">Cancel</a>
         </div>
 

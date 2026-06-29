@@ -26,7 +26,7 @@ function getAllRFQ(){
             });
         }
 
-        document.querySelectorAll('.rfq-sort-link, .rfq-list-clear-btn, .rfq-page-btn, .rfq-pagination-nav').forEach(function (el) {
+        document.querySelectorAll('.rfq-sort-link, .btn-secondary, .rfq-page-btn, .rfq-pagination-nav').forEach(function (el) {
             el.addEventListener('click', function () {
                 sessionStorage.setItem(SCROLL_KEY, window.scrollY);
             });

@@ -1,6 +1,8 @@
 <?php
 namespace App\Core;
 
+use PDO;
+
 class Auth
 {
     // Checks whether someone is logged in.
@@ -24,26 +26,39 @@ class Auth
             exit;
         }
     }
-    // attempts to login, we need real auth which looks like 
-    // user submits -> db call -> looks up user table and then returns boolean
-
-    // password_verify($password, $user['password_hash'])
     public static function attempt(string $email, string $password): bool
     {
-        // TODO: Replace with real database lookup.
-        // Seed login example: admin@typhoncath.test / password
-        if ($email === 'admin@typhoncath.test' && $password === 'password') {
-            $_SESSION['user'] = [
-                'id' => 1,
-                'name' => 'Demo Admin',
-                'email' => $email,
-                'role' => 'Admin',
-            ];
+        $db   = Database::connection();
+        $stmt = $db->prepare("
+            SELECT u.id, u.name, u.email, u.password_hash, u.role_id, r.role_name
+            FROM users u
+            JOIN roles r ON r.id = u.role_id
+            WHERE u.email = ?
+            LIMIT 1
+        ");
+        $stmt->execute([strtolower(trim($email))]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            return true;
+        if (!$user || !password_verify($password, $user['password_hash'])) {
+            return false;
         }
 
-        return false;
+        $permStmt = $db->prepare("SELECT permission FROM role_permissions WHERE role_id = ?");
+        $permStmt->execute([$user['role_id']]);
+        $permissions = $permStmt->fetchAll(PDO::FETCH_COLUMN);
+
+        // Regenerate session ID on login to prevent session fixation.
+        session_regenerate_id(true);
+
+        $_SESSION['user'] = [
+            'id'          => (int)$user['id'],
+            'name'        => $user['name'],
+            'email'       => $user['email'],
+            'role'        => $user['role_name'],
+            'permissions' => $permissions,
+        ];
+
+        return true;
     }
     // clears the session and logs them out
     public static function logout(): void

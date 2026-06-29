@@ -349,50 +349,50 @@ Create the planning package that shows what the CRM will look like, how it will 
 
 ### All Active Members
 
-- [ ] Finalize rough website outline / sitemap.
-- [ ] Finalize role-based UI map for Super Admin, Admin, Sales User, Marketing User, and Inventory Manager.
-- [ ] Finalize student/module ownership map.
-- [ ] Finalize repo structure.
-- [ ] Agree on shared Bootstrap wireframe style.
-- [ ] Create FP4–FP10 schedule.
-- [ ] Confirm how weekly progress will be pushed for review.
+- [x] Finalize rough website outline / sitemap.
+- [x] Finalize role-based UI map for Super Admin, Admin, Sales User, Marketing User, and Inventory Manager.
+- [x] Finalize student/module ownership map.
+- [x] Finalize repo structure.
+- [x] Agree on shared Bootstrap wireframe style.
+- [x] Create FP4–FP10 schedule.
+- [x] Confirm how weekly progress will be pushed for review.
 
 ### Max — Customer Management
 
-- [ ] Draft Customer Management UI map.
-- [ ] Identify pages for Accounts List, Account Detail, Contacts, and Interaction History.
-- [ ] Define account/contact relationship rules.
-- [ ] Confirm account can exist without contacts.
-- [ ] Confirm contacts must belong to an account.
+- [x] Draft Customer Management UI map.
+- [x] Identify pages for Accounts List, Account Detail, Contacts, and Interaction History.
+- [x] Define account/contact relationship rules.
+- [x] Confirm account can exist without contacts.
+- [x] Confirm contacts must belong to an account.
 
 ### Trevor — RFQ / Pipeline Management
 
-- [ ] Draft RFQ / Pipeline UI map.
-- [ ] Identify pages for Pipeline Board, Create RFQ, RFQ Detail, Quote Form, and Deal Status.
-- [ ] Define RFQ pipeline stages: New, In Review, Quoted, Negotiation, Won, Lost.
-- [ ] Confirm dashboard should include Open, Won, and Lost categories.
+- [x] Draft RFQ / Pipeline UI map.
+- [x] Identify pages for Pipeline Board, Create RFQ, RFQ Detail, Quote Form, and Deal Status.
+- [x] Define RFQ pipeline stages: New, In Review, Quoted, Negotiation, Won, Lost.
+- [x] Confirm dashboard should include Open, Won, and Lost categories.
 
 ### Casey — Inventory Management
 
-- [ ] Draft Inventory Management UI map.
-- [ ] Identify pages for Inventory List, Product Detail, Stock Update Form, and Reservation View.
-- [ ] Define available quantity and reserved quantity needs.
-- [ ] Identify how inventory connects to RFQs.
+- [x] Draft Inventory Management UI map.
+- [x] Identify pages for Inventory List, Product Detail, Stock Update Form, and Reservation View.
+- [x] Define available quantity and reserved quantity needs.
+- [x] Identify how inventory connects to RFQs.
 
 ### Jonah / Marketing — Removed from Group
 
-- [ ] Originally responsible for Campaign UI map.
-- [ ] Originally responsible for Campaigns List, Campaign Form, Audience Selection, and Campaign Metrics.
-- [ ] **Note:** Jonah was removed from the group. These tasks must be reassigned or discussed with the instructor.
+- [x] Originally responsible for Campaign UI map.
+- [x] Originally responsible for Campaigns List, Campaign Form, Audience Selection, and Campaign Metrics.
+- [x] **Note:** Jonah was removed from the group. These tasks must be reassigned or discussed with the instructor.
 
 ### FP3 Deliverables
 
-- [ ] Sitemap
-- [ ] Role-based UI map
-- [ ] Student/module ownership map
-- [ ] Repo structure
-- [ ] Initial wireframe plan
-- [ ] FP4–FP10 schedule
+- [ x] Sitemap
+- [x ] Role-based UI map
+- [x ] Student/module ownership map
+- [ x] Repo structure
+- [ x] Initial wireframe plan
+- [x ] FP4–FP10 schedule
 
 ---
 
@@ -404,29 +404,29 @@ Create the first working foundation of the application: repo, database connectio
 
 ### All Active Members
 
-- [ ] Create GitHub repo or organize existing repo.
-- [ ] Add shared folder structure.
-- [ ] Add shared header/sidebar/footer includes.
-- [ ] Create database connection file.
-- [ ] Create basic login/session foundation.
-- [ ] Start shared CSS and Bootstrap layout.
-- [ ] Create initial SQL folder with schema draft.
+- [x] Create GitHub repo or organize existing repo.
+- [x] Add shared folder structure.
+- [x] Add shared header/sidebar/footer includes.
+- [x] Create database connection file.
+- [x] Create basic login/session foundation.
+- [x] Start shared CSS and Bootstrap layout.
+- [x] Create initial SQL folder with schema draft.
 
 ### Max — Customer Management
 
-- [ ] Create accounts table/schema draft.
-- [ ] Create contacts table/schema draft.
-- [ ] Create interactions table/schema draft.
-- [ ] Build basic Accounts List page.
-- [ ] Show account fields: name/company, email, phone, address, industry, tags.
+- [x] Create accounts table/schema draft.
+- [x] Create contacts table/schema draft.
+- [x] Create interactions table/schema draft.
+- [x] Build basic Accounts List page.
+- [x] Show account fields: name/company, email, phone, address, industry, tags.
 
 ### Trevor — RFQ / Pipeline Management
 
-- [ ] Create RFQ table/schema draft.
-- [ ] Create quotes table/schema draft.
-- [ ] Create RFQ stage/status fields.
-- [ ] Build Pipeline Board draft.
-- [ ] Ensure RFQs can be linked to customers later.
+- [x] Create RFQ table/schema draft.
+- [x] Create quotes table/schema draft.
+- [x] Create RFQ stage/status fields.
+- [x] Build Pipeline Board draft.
+- [x] Ensure RFQs can be linked to customers later.
 
 ### Casey — Inventory Management
 
@@ -444,11 +444,11 @@ Create the first working foundation of the application: repo, database connectio
 
 ### FP4 Deliverables
 
-- [ ] Repo started
-- [ ] Shared PHP/MySQL connection
-- [ ] Login/session skeleton
-- [ ] Basic module list pages
-- [ ] Database schema draft started
+- [x] Repo started
+- [x] Shared PHP/MySQL connection
+- [x] Login/session skeleton
+- [x] Basic module list pages
+- [x] Database schema draft started
 
 ---
 
@@ -460,11 +460,11 @@ Build the first create/edit/read flows for each module.
 
 ### All Active Members
 
-- [ ] Apply shared navbar/sidebar layout across module pages.
-- [ ] Apply Bootstrap styling consistently.
-- [ ] Add shared validation helper functions.
-- [ ] Add basic error/success message display.
-- [ ] Make sure all pages connect to the shared database connection.
+- [x] Apply shared navbar/sidebar layout across module pages.
+- [] Apply Bootstrap styling consistently.
+- [x] Add shared validation helper functions.
+- [] Add basic error/success message display.
+- [x] Make sure all pages connect to the shared database connection.
 
 ### Max — Customer Management
 
@@ -477,11 +477,11 @@ Build the first create/edit/read flows for each module.
 
 ### Trevor — RFQ / Pipeline Management
 
-- [ ] Build Create RFQ form.
-- [ ] Build RFQ Detail page.
-- [ ] Save RFQs to MySQL.
-- [ ] Display RFQs on Pipeline Board.
-- [ ] Start quote amount, discount, and validity-period fields.
+- [x] Build Create RFQ form.
+- [x] Build RFQ Detail page.
+- [x] Save RFQs to MySQL.
+- [x] Display RFQs on Pipeline Board.
+- [x] Start quote amount, discount, and validity-period fields.
 
 ### Casey — Inventory Management
 
@@ -493,16 +493,16 @@ Build the first create/edit/read flows for each module.
 
 ### Jonah / Marketing — Removed from Group
 
-- [ ] Originally responsible for campaign create/edit form.
-- [ ] Originally responsible for saving campaigns to MySQL.
-- [ ] **Note:** Jonah was removed from the group. These tasks must be reassigned or discussed with the instructor.
+- [x] Originally responsible for campaign create/edit form.
+- [x] Originally responsible for saving campaigns to MySQL.
+- [x] **Note:** Jonah was removed from the group. These tasks must be reassigned or discussed with the instructor.
 
 ### FP5 Deliverables
 
-- [ ] Create/edit forms for each active module
-- [ ] Basic validation
-- [ ] Database insert/update/read working
-- [ ] Shared Bootstrap layout applied
+- [x] Create/edit forms for each active module
+- [x] Basic validation
+- [x] Database insert/update/read working
+- [] Shared Bootstrap layout applied
 
 ---
 
@@ -521,19 +521,22 @@ Move beyond simple CRUD and build the actual business workflows inside each modu
 
 ### Max — Customer Management
 
-- [ ] Build Account Detail view.
-- [ ] Build Interaction History view.
-- [ ] Allow calls, emails, notes, and meetings to be logged.
-- [ ] Show interactions under the correct account/contact.
-- [ ] Add customer search by name, email, and tags.
+- [X] Build Account Detail view.
+- [X] Build Interaction History view.
+- [X] Allow calls, emails, notes, and meetings to be logged.
+- [X] Show interactions under the correct account/contact.
+- [X] Add customer search by name, email, and tags.
+- [ ] implement role checks 
+
 
 ### Trevor — RFQ / Pipeline Management
 
-- [ ] Build quote form.
-- [ ] Allow quote amount, discount, and validity period to be stored.
-- [ ] Add RFQ stage update controls.
-- [ ] Allow RFQs to move through New, In Review, Quoted, Negotiation, Won, and Lost.
-- [ ] Add Deal Won conversion behavior.
+- [x] Build quote form.
+- [x] Allow quote amount, discount, and validity period to be stored.
+- [x] Add RFQ stage update controls.
+- [x] Allow RFQs to move through New, In Review, Quoted, Negotiation, Won, and Lost.
+- [x] Add Deal Won conversion behavior.
+- [x] implement role checks 
 
 ### Casey — Inventory Management
 
@@ -541,18 +544,21 @@ Move beyond simple CRUD and build the actual business workflows inside each modu
 - [ ] Add low-stock indicators.
 - [ ] Allow reserved quantity to be tracked separately from available quantity.
 - [ ] Prepare reservation logic for RFQ integration.
+- [ ] implement role checks 
 
 ### Jonah / Marketing — Removed from Group
 
-- [ ] Originally responsible for campaign audience selection.
-- [ ] Originally responsible for using tags/segments/customer filters.
+- [x] Originally responsible for campaign audience selection.
+- [x] Originally responsible for using tags/segments/customer filters.
+- [ ] implement role checks 
+
 - [ ] **Note:** Jonah was removed from the group. These tasks must be reassigned or discussed with the instructor.
 
 ### FP6 Deliverables
 
-- [ ] Customer interaction history
-- [ ] RFQ stage-change workflow
-- [ ] Quote workflow
+- [x] Customer interaction history
+- [x] RFQ stage-change workflow
+- [x] Quote workflow
 - [ ] Inventory reservation/stock workflow
 - [ ] Role checks
 - [ ] Shared error handling

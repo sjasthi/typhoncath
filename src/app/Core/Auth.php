@@ -30,7 +30,7 @@ class Auth
     {
         $db   = Database::connection();
         $stmt = $db->prepare("
-            SELECT u.id, u.name, u.email, u.password_hash, r.role_name
+            SELECT u.id, u.name, u.email, u.password_hash, u.role_id, r.role_name
             FROM users u
             JOIN roles r ON r.id = u.role_id
             WHERE u.email = ?
@@ -43,14 +43,19 @@ class Auth
             return false;
         }
 
+        $permStmt = $db->prepare("SELECT permission FROM role_permissions WHERE role_id = ?");
+        $permStmt->execute([$user['role_id']]);
+        $permissions = $permStmt->fetchAll(PDO::FETCH_COLUMN);
+
         // Regenerate session ID on login to prevent session fixation.
         session_regenerate_id(true);
 
         $_SESSION['user'] = [
-            'id'    => (int)$user['id'],
-            'name'  => $user['name'],
-            'email' => $user['email'],
-            'role'  => $user['role_name'],
+            'id'          => (int)$user['id'],
+            'name'        => $user['name'],
+            'email'       => $user['email'],
+            'role'        => $user['role_name'],
+            'permissions' => $permissions,
         ];
 
         return true;

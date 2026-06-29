@@ -259,7 +259,10 @@ class AdminController
             ['module' => 'Contacts',     'action' => 'contacts.edit',               'label' => 'Edit Contacts'],
             ['module' => 'Contacts',     'action' => 'contacts.delete',             'label' => 'Delete Contacts'],
             // Interactions
+            ['module' => 'Interactions', 'action' => 'interactions.view',           'label' => 'View Interactions'],
             ['module' => 'Interactions', 'action' => 'interactions.create',         'label' => 'Log Interactions'],
+            ['module' => 'Interactions', 'action' => 'interactions.edit',           'label' => 'Edit Interactions'],
+            ['module' => 'Interactions', 'action' => 'interactions.delete',         'label' => 'Delete Interactions'],
             // RFQ
             ['module' => 'RFQ',          'action' => 'rfqs.view',                   'label' => 'View RFQs'],
             ['module' => 'RFQ',          'action' => 'rfqs.create',                 'label' => 'Create RFQs'],
@@ -267,10 +270,12 @@ class AdminController
             ['module' => 'RFQ',          'action' => 'rfqs.delete',                 'label' => 'Delete RFQs'],
             ['module' => 'RFQ',          'action' => 'rfqs.update_stage',           'label' => 'Change Stage'],
             // Quotes
+            ['module' => 'Quotes',       'action' => 'quotes.view',                 'label' => 'View Quotes'],
             ['module' => 'Quotes',       'action' => 'quotes.create',               'label' => 'Create Quotes'],
             ['module' => 'Quotes',       'action' => 'quotes.edit',                 'label' => 'Edit Quotes'],
             ['module' => 'Quotes',       'action' => 'quotes.delete',               'label' => 'Delete Quotes'],
             // Reservations
+            ['module' => 'Reservations', 'action' => 'reservations.view',           'label' => 'View Reservations'],
             ['module' => 'Reservations', 'action' => 'reservations.create',         'label' => 'Create Reservations'],
             ['module' => 'Reservations', 'action' => 'reservations.update_status',  'label' => 'Update Reservation Status'],
             // Campaigns
@@ -287,9 +292,11 @@ class AdminController
             ['module' => 'Inventory',    'action' => 'inventory.reserve',           'label' => 'Reserve Inventory'],
             // Reports
             ['module' => 'Reports',      'action' => 'reports.view',                'label' => 'View Reports'],
+            // References
+            ['module' => 'References',   'action' => 'references.view',             'label' => 'View References'],
             // Admin
             ['module' => 'Admin',        'action' => 'admin.manage_users',          'label' => 'Manage Users'],
-            ['module' => 'Admin',        'action' => 'admin.manage_roles',          'label' => 'Manage Roles & Permissions'],
+            ['module' => 'Admin',        'action' => 'admin.manage_permissions',    'label' => 'Manage Roles & Permissions'],
         ];
     }
 }

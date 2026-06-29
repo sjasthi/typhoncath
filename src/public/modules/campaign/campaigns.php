@@ -6,9 +6,10 @@ use App\Modules\Campaign\CampaignController;
 
 Auth::requireLogin();
 
-$controller = new CampaignController();
+
 
 include __DIR__ . '/../../../app/Shared/header.php';
 include __DIR__ . '/../../../app/Shared/sidebar.php';
+$controller = new CampaignController();
 $controller->index();
 include __DIR__ . '/../../../app/Shared/footer.php';

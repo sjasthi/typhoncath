@@ -6,6 +6,7 @@ use App\Modules\RFQ\RFQController;
 
 Auth::requireLogin();
 
+
 $quoteId = (int)($_GET['id'] ?? 0);
 if ($quoteId === 0) {
     header('Location: /modules/rfq/pipeline.php');

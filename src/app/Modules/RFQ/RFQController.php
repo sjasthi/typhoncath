@@ -1,5 +1,6 @@
 <?php
 namespace App\Modules\RFQ;
+use App\Core\Permissions;
 
 class RFQController
 {
@@ -16,9 +17,9 @@ class RFQController
 
     public function index(): void
     {
-        $grouped                                       = $this->buildBoardGroups();
-        [$winRateData, $valueByStage, $expiringQuotes] = $this->fetchAnalytics();
+        $grouped = $this->buildBoardGroups();
         extract($this->fetchList());
+        [$winRateData, $valueByStage, $expiringQuotes] = $this->fetchAnalytics();
 
         include __DIR__ . '/views/pipeline_board.php';
     }
@@ -231,6 +232,14 @@ class RFQController
 
     public function handleDeletePost(int $id): void
     {
+    if (!Permissions::can('rfqs.delete')) {
+        http_response_code(403);
+        include __DIR__ . '/../../../app/Shared/header.php';
+        include __DIR__ . '/../../../app/Shared/sidebar.php';
+        include __DIR__ . '/../../../app/Shared/error_403.php';
+        include __DIR__ . '/../../../app/Shared/footer.php';
+        exit;
+    }
         $this->repo->delete($id);
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'RFQ deleted.'];
         header('Location: /modules/rfq/pipeline.php');
@@ -241,6 +250,14 @@ class RFQController
 
     public function handleUpdateStagePost(int $id): void
     {
+    if (!Permissions::can('rfqs.update_stage')) {
+        http_response_code(403);
+        include __DIR__ . '/../../../app/Shared/header.php';
+        include __DIR__ . '/../../../app/Shared/sidebar.php';
+        include __DIR__ . '/../../../app/Shared/error_403.php';
+        include __DIR__ . '/../../../app/Shared/footer.php';
+        exit;
+    }
         $stage = $_POST['stage'] ?? '';
 
         if (!$this->service->isValidStage($stage)) {

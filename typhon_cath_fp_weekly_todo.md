@@ -526,6 +526,8 @@ Move beyond simple CRUD and build the actual business workflows inside each modu
 - [X] Allow calls, emails, notes, and meetings to be logged.
 - [X] Show interactions under the correct account/contact.
 - [X] Add customer search by name, email, and tags.
+- [ ] implement role checks 
+
 
 ### Trevor — RFQ / Pipeline Management
 
@@ -533,7 +535,8 @@ Move beyond simple CRUD and build the actual business workflows inside each modu
 - [x] Allow quote amount, discount, and validity period to be stored.
 - [x] Add RFQ stage update controls.
 - [x] Allow RFQs to move through New, In Review, Quoted, Negotiation, Won, and Lost.
-- [] Add Deal Won conversion behavior.
+- [x] Add Deal Won conversion behavior.
+- [x] implement role checks 
 
 ### Casey — Inventory Management
 
@@ -541,11 +544,14 @@ Move beyond simple CRUD and build the actual business workflows inside each modu
 - [ ] Add low-stock indicators.
 - [ ] Allow reserved quantity to be tracked separately from available quantity.
 - [ ] Prepare reservation logic for RFQ integration.
+- [ ] implement role checks 
 
 ### Jonah / Marketing — Removed from Group
 
 - [x] Originally responsible for campaign audience selection.
 - [x] Originally responsible for using tags/segments/customer filters.
+- [ ] implement role checks 
+
 - [ ] **Note:** Jonah was removed from the group. These tasks must be reassigned or discussed with the instructor.
 
 ### FP6 Deliverables

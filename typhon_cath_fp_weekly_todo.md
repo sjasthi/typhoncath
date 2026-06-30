@@ -468,12 +468,12 @@ Build the first create/edit/read flows for each module.
 
 ### Max — Customer Management
 
-- [ ] Build account create form.
+- [X] Build account create form.
 - [ ] Build account edit form.
 - [ ] Build contact create/edit forms.
-- [ ] Save accounts to MySQL.
-- [ ] Save contacts to MySQL.
-- [ ] Display saved accounts and contacts from MySQL.
+- [X] Save accounts to MySQL.
+- [X] Save contacts to MySQL.
+- [X] Display saved accounts and contacts from MySQL.
 
 ### Trevor — RFQ / Pipeline Management
 

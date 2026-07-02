@@ -25,7 +25,10 @@ if ($id === 0) {
 $controller = new RFQController();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $controller->handleUpdatePost($id); // redirects + exits on success
+    match ($_POST['_action'] ?? '') {
+        'delete_reservation' => $controller->handleDeleteReservationPost((int)($_POST['reservation_id'] ?? 0)),
+        default              => $controller->handleUpdatePost($id),
+    };
 }
 
 include __DIR__ . '/../../../app/Shared/header.php';

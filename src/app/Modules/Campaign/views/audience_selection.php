@@ -1,4 +1,103 @@
-<!-- TODO: ADD CUSTOM AUDIENCE SO THAT USERS CAN SAVE GROUPS -->
+<style>
+.rfq-search-dropdown { flex: 1; }
+
+.rfq-search-results {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-top: 2px solid var(--primary-blue);
+    border-radius: 0 0 6px 6px;
+    max-height: 220px;
+    overflow-y: auto;
+    margin-top: 1px;
+}
+
+.rfq-search-option {
+    padding: 0.55rem 0.75rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: #374151;
+    border-bottom: 1px solid #f3f4f6;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.rfq-search-option:last-child { border-bottom: none; }
+
+.rfq-search-option:hover,
+.rfq-search-option--focused {
+    background: #f5f9ff;
+    color: var(--primary-blue);
+}
+
+.rfq-search-option--checked {
+    background: #f0f9ff;
+    font-weight: 500;
+}
+
+.rfq-option-check {
+    width: 1rem;
+    text-align: center;
+    color: var(--primary-blue);
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.rfq-search-option--empty {
+    padding: 0.55rem 0.75rem;
+    color: #9ca3af;
+    cursor: default;
+    font-style: italic;
+    font-size: 0.875rem;
+}
+
+.rfq-search-input--selected {
+    background: #f0f9ff;
+    border-color: var(--primary-blue) !important;
+}
+
+.audience-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 6px;
+    min-height: 0;
+}
+
+.audience-chip {
+    background: #e0f0ff;
+    color: var(--primary-blue);
+    border: 1px solid var(--primary-blue);
+    border-radius: 4px;
+    padding: 2px 6px 2px 8px;
+    font-size: 0.78rem;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.audience-chip-remove {
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    color: var(--primary-blue);
+    border: none;
+    background: none;
+    padding: 0;
+    opacity: 0.7;
+}
+
+.audience-chip-remove:hover { opacity: 1; }
+</style>
+
+<!--
+    TODO: CUSTOM AUDIENCE SEGMENTS — QUICK SELECTION
+    Allow users to define named audience groups (e.g. "Enterprise Accounts", "VIP Contacts")
+    that appear as one-click options when building a campaign audience, instead of manually
+    picking accounts/contacts every time. Preset save/apply is scaffolded but not surfaced
+    prominently. Consider: segment list on campaign creation, not just inside the audience
+    editor after the fact. May also want tag-based auto-segments (anyone with tag X).
+-->
 
 <?php
 $campaign           = $campaign           ?? null;
@@ -116,15 +215,34 @@ foreach ($currentAudience as $row) {
                 <label for="audience-accounts" class="form-label">
                     Specific Accounts <span class="text-muted">(optional)</span>
                 </label>
+
                 <?php if (empty($accounts)): ?>
                     <p class="text-muted">No accounts found.</p>
                 <?php else: ?>
-                <select id="audience-accounts" name="account_ids[]" class="form-control" multiple size="6">
-                    <?php
-                    $selectedAccountIds = isset($_POST['account_ids'])
-                        ? array_map('intval', $_POST['account_ids'])
-                        : ($prefill['account_ids'] ?? []);
-                    ?>
+                <?php
+                $selectedAccountIds = isset($_POST['account_ids'])
+                    ? array_map('intval', $_POST['account_ids'])
+                    : ($prefill['account_ids'] ?? []);
+                ?>
+                <div class="form-input-row">
+                    <div class="rfq-search-dropdown">
+                        <input
+                            type="text"
+                            id="audience-accounts-search"
+                            class="form-control rfq-search-input"
+                            placeholder="Search accounts…"
+                            autocomplete="off"
+                        >
+                    </div>
+                    <a
+                        href="/modules/customer/accounts.php"
+                        class="rfq-create-btn"
+                        title="Add a new account"
+                    >+</a>
+                </div>
+                <div class="rfq-search-results" id="audience-accounts-results" style="display:none;"></div>
+                <div class="audience-chips" id="audience-accounts-chips"></div>
+                <select id="audience-accounts" name="account_ids[]" multiple style="display:none;">
                     <?php foreach ($accounts as $account): ?>
                     <option value="<?= (int)$account['id'] ?>"
                         <?= in_array((int)$account['id'], $selectedAccountIds, true) ? 'selected' : '' ?>>
@@ -132,7 +250,6 @@ foreach ($currentAudience as $row) {
                     </option>
                     <?php endforeach; ?>
                 </select>
-                <span class="field-hint">Hold Ctrl / Cmd to select multiple</span>
                 <?php endif; ?>
             </div>
 
@@ -148,7 +265,25 @@ foreach ($currentAudience as $row) {
                 <?php if (empty($contacts)): ?>
                     <p class="text-muted">No contacts found.</p>
                 <?php else: ?>
-                <select id="audience-contacts" name="contact_ids[]" class="form-control" multiple size="6">
+                <div class="form-input-row">
+                    <div class="rfq-search-dropdown">
+                        <input
+                            type="text"
+                            id="audience-contacts-search"
+                            class="form-control rfq-search-input"
+                            placeholder="Search contacts…"
+                            autocomplete="off"
+                        >
+                    </div>
+                    <a
+                        href="/modules/customer/accounts.php"
+                        class="rfq-create-btn"
+                        title="Add a new contact"
+                    >+</a>
+                </div>
+                <div class="rfq-search-results" id="audience-contacts-results" style="display:none;"></div>
+                <div class="audience-chips" id="audience-contacts-chips"></div>
+                <select id="audience-contacts" name="contact_ids[]" multiple style="display:none;">
                     <?php foreach ($contacts as $contact): ?>
                     <option value="<?= (int)$contact['id'] ?>"
                         <?= in_array((int)$contact['id'], $selectedContactIds, true) ? 'selected' : '' ?>>
@@ -159,7 +294,6 @@ foreach ($currentAudience as $row) {
                     </option>
                     <?php endforeach; ?>
                 </select>
-                <span class="field-hint">Hold Ctrl / Cmd to select multiple</span>
                 <?php endif; ?>
             </div>
 
@@ -338,6 +472,140 @@ foreach ($currentAudience as $row) {
     }
     if (importPresetCancel && importPresetPanel) {
         importPresetCancel.addEventListener('click', () => { importPresetPanel.style.display = 'none'; });
+    }
+
+    // ── Multi-select search dropdowns (same pattern as RFQ) ─────────────────
+
+    function initMultiSearchDropdown(searchEl, selectEl, resultsEl, chipsEl, items) {
+        let focusedIdx = -1;
+        const itemMap = {};
+        items.forEach(i => { itemMap[String(i.id)] = i; });
+
+        function getSelectedIds() {
+            return new Set(Array.from(selectEl.selectedOptions).map(o => String(o.value)));
+        }
+
+        function toggleId(id) {
+            const opt = selectEl.querySelector(`option[value="${id}"]`);
+            if (!opt) return;
+            opt.selected = !opt.selected;
+            renderChips();
+            renderResults(searchEl.value);
+            selectEl.dispatchEvent(new Event('change'));
+        }
+
+        function renderChips() {
+            const selected = getSelectedIds();
+            chipsEl.innerHTML = '';
+            selected.forEach(id => {
+                const item = itemMap[id];
+                if (!item) return;
+                const chip = document.createElement('span');
+                chip.className = 'audience-chip';
+                const label = document.createTextNode(item.label + ' ');
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'audience-chip-remove';
+                btn.title = 'Remove';
+                btn.textContent = '×';
+                btn.addEventListener('click', () => toggleId(id));
+                chip.appendChild(label);
+                chip.appendChild(btn);
+                chipsEl.appendChild(chip);
+            });
+        }
+
+        function renderResults(query) {
+            const q = query.toLowerCase();
+            const selected = getSelectedIds();
+            const filtered = q ? items.filter(i => i.label.toLowerCase().includes(q)) : items;
+            resultsEl.innerHTML = '';
+            focusedIdx = -1;
+
+            if (filtered.length === 0) {
+                resultsEl.innerHTML = '<div class="rfq-search-option--empty">No results</div>';
+            } else {
+                filtered.forEach(item => {
+                    const isChecked = selected.has(String(item.id));
+                    const div = document.createElement('div');
+                    div.className = 'rfq-search-option' + (isChecked ? ' rfq-search-option--checked' : '');
+                    div.dataset.id = item.id;
+
+                    const check = document.createElement('span');
+                    check.className = 'rfq-option-check';
+                    check.textContent = isChecked ? '✓' : '';
+
+                    div.appendChild(check);
+                    div.appendChild(document.createTextNode(item.label));
+                    div.addEventListener('mousedown', e => {
+                        e.preventDefault();
+                        toggleId(String(item.id));
+                    });
+                    resultsEl.appendChild(div);
+                });
+            }
+        }
+
+        searchEl.addEventListener('input', function () {
+            renderResults(this.value);
+            resultsEl.style.display = '';
+        });
+
+        searchEl.addEventListener('focus', function () {
+            renderResults(this.value);
+            resultsEl.style.display = '';
+        });
+
+        searchEl.addEventListener('blur', function () {
+            setTimeout(() => { resultsEl.style.display = 'none'; }, 150);
+        });
+
+        searchEl.addEventListener('keydown', function (e) {
+            const opts = resultsEl.querySelectorAll('.rfq-search-option');
+            if (!opts.length) return;
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                focusedIdx = Math.min(focusedIdx + 1, opts.length - 1);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                focusedIdx = Math.max(focusedIdx - 1, 0);
+            } else if (e.key === 'Enter' && focusedIdx >= 0) {
+                e.preventDefault();
+                toggleId(opts[focusedIdx].dataset.id);
+                return;
+            } else if (e.key === 'Escape') {
+                resultsEl.style.display = 'none';
+                return;
+            } else {
+                return;
+            }
+
+            opts.forEach((o, i) => o.classList.toggle('rfq-search-option--focused', i === focusedIdx));
+            if (opts[focusedIdx]) opts[focusedIdx].scrollIntoView({ block: 'nearest' });
+        });
+
+        renderChips();
+    }
+
+    const ACCOUNTS = <?= json_encode(array_map(fn($a) => ['id' => $a['id'], 'label' => $a['account_name']], $accounts)) ?>;
+    const CONTACTS = <?= json_encode(array_map(fn($c) => [
+        'id'    => $c['id'],
+        'label' => trim($c['first_name'] . ' ' . $c['last_name']) . ($c['account_name'] ? ' — ' . $c['account_name'] : ''),
+    ], $contacts)) ?>;
+
+    const accountSearchInput  = document.getElementById('audience-accounts-search');
+    const accountResultsEl    = document.getElementById('audience-accounts-results');
+    const accountChipsEl      = document.getElementById('audience-accounts-chips');
+    if (accountSearchInput && accountSelect && accountResultsEl && accountChipsEl) {
+        initMultiSearchDropdown(accountSearchInput, accountSelect, accountResultsEl, accountChipsEl, ACCOUNTS);
+    }
+
+    const contactSearchInput  = document.getElementById('audience-contacts-search');
+    const contactResultsEl    = document.getElementById('audience-contacts-results');
+    const contactChipsEl      = document.getElementById('audience-contacts-chips');
+    if (contactSearchInput && contactSelect && contactResultsEl && contactChipsEl) {
+        initMultiSearchDropdown(contactSearchInput, contactSelect, contactResultsEl, contactChipsEl, CONTACTS);
     }
 })();
 </script>

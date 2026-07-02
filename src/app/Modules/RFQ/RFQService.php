@@ -35,8 +35,8 @@ class RFQService
         if (trim($input['title'] ?? '') === '')
             $errors[] = 'Title is required.';
 
-        if (trim($input['account_id'] ?? '') === '')
-            $errors[] = 'Account is required.';
+        if (trim($input['account_id'] ?? '') === '' && trim($input['contact_id'] ?? '') === '')
+            $errors[] = 'At least one of Account or Contact is required.';
 
         if (!$this->isValidStage($input['stage'] ?? ''))
             $errors[] = 'Invalid stage selected.';
@@ -91,7 +91,7 @@ class RFQService
     {
         $rfqId = $this->repo->insert([
             'title'              => $rfqData['title'],
-            'account_id'         => (int)$rfqData['account_id'],
+            'account_id'         => ($rfqData['account_id'] ?? '') !== '' ? (int)$rfqData['account_id'] : null,
             'contact_id'         => ($rfqData['contact_id'] ?? '') !== '' ? (int)$rfqData['contact_id'] : null,
             'description'        => $rfqData['description'] ?? '',
             'stage'              => $rfqData['stage'],
@@ -118,7 +118,7 @@ class RFQService
     {
         $this->repo->update($rfqId, [
             'title'       => $data['title'],
-            'account_id'  => (int)$data['account_id'],
+            'account_id'  => ($data['account_id'] ?? '') !== '' ? (int)$data['account_id'] : null,
             'contact_id'  => ($data['contact_id'] ?? '') !== '' ? (int)$data['contact_id'] : null,
             'description' => $data['description'] ?? '',
             'stage'       => $data['stage'],

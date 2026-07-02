@@ -219,11 +219,12 @@ class RFQController
             ];
         }
 
-        $accounts = $this->repo->allAccounts();
-        $contacts = $this->repo->allContacts();
-        $stages   = RFQRepository::$stages;
-        $errors   = $this->editErrors;
-        $input    = $this->editInput;
+        $accounts     = $this->repo->allAccounts();
+        $contacts     = $this->repo->allContacts();
+        $stages       = RFQRepository::$stages;
+        $errors       = $this->editErrors;
+        $input        = $this->editInput;
+        $reservations = $this->repo->getReservationsByRfqId($id);
 
         include __DIR__ . '/views/edit_rfq.php';
     }
@@ -397,6 +398,58 @@ class RFQController
         $_SESSION['flash'] = ['type' => 'success', 'message' => 'Reservation status updated.'];
         header('Location: /modules/rfq/detail.php?id=' . $rfqId);
         exit;
+    }
+
+    // ── Delete / Edit Reservation ─────────────────────────────────────────────
+
+    public function handleDeleteReservationPost(int $reservationId): void
+    {
+        $rfqId      = (int)($_POST['rfq_id'] ?? 0);
+        $redirectTo = $_POST['redirect_to'] ?? 'edit';
+        $this->repo->deleteReservation($reservationId);
+        $_SESSION['flash'] = ['type' => 'success', 'message' => 'Reservation removed.'];
+        $url = $redirectTo === 'detail'
+            ? '/modules/rfq/detail.php?id=' . $rfqId
+            : '/modules/rfq/edit.php?id=' . $rfqId;
+        header('Location: ' . $url);
+        exit;
+    }
+
+    private array $editResErrors = [];
+    private ?int  $editResNewQty = null;
+
+    public function handleEditReservationPost(int $reservationId): void
+    {
+        $rfqId  = (int)($_POST['rfq_id'] ?? 0);
+        $newQty = (int)trim($_POST['quantity_reserved'] ?? 0);
+
+        if ($newQty < 1) {
+            $this->editResErrors = ['Quantity must be at least 1.'];
+            $this->editResNewQty = $newQty;
+            $_SESSION['flash'] = ['type' => 'error', 'message' => 'Please fix the errors below.'];
+            return;
+        }
+
+        $this->repo->updateReservation($reservationId, $newQty);
+        $_SESSION['flash'] = ['type' => 'success', 'message' => 'Reservation updated.'];
+        header('Location: /modules/rfq/edit.php?id=' . $rfqId);
+        exit;
+    }
+
+    public function editReservation(int $reservationId): void
+    {
+        $reservation = $this->repo->findReservationById($reservationId);
+        if (!$reservation) {
+            http_response_code(404);
+            echo '<section class="card"><h1>Reservation Not Found</h1></section>';
+            return;
+        }
+
+        $rfq    = $this->repo->findById((int)$reservation['rfq_id']);
+        $errors = $this->editResErrors;
+        $input  = ['quantity_reserved' => $this->editResNewQty ?? $reservation['quantity_reserved']];
+
+        include __DIR__ . '/views/edit_reservation.php';
     }
 
     // ── Add Reservation ───────────────────────────────────────────────────────

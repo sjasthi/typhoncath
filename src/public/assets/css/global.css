@@ -407,6 +407,65 @@ label { display: block; font-weight: 600; margin-bottom: 0.25rem; }
 
 .rfq-create-btn:hover { background: #1648c0; }
 
+/* RFQ searchable dropdown */
+.rfq-search-dropdown {
+  flex: 1;
+}
+
+.rfq-search-results {
+  width: calc(100% - 44px);
+  max-height: 240px;
+  overflow-y: auto;
+  margin-top: 0.25rem;
+
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  box-shadow: 0 8px 20px rgba(17, 24, 39, 0.12);
+
+  z-index: 20;
+}
+
+.rfq-search-option {
+  padding: 0.65rem 0.8rem;
+  font-size: 0.92rem;
+  color: #111827;
+  cursor: pointer;
+  border-bottom: 1px solid #f3f4f6;
+  background: #fff;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.rfq-search-option:last-child {
+  border-bottom: none;
+}
+
+.rfq-search-option:hover,
+.rfq-search-option:focus,
+.rfq-search-option--focused {
+  background: var(--primary-blue);
+  color: #fff;
+  outline: none;
+}
+
+.rfq-search-option:active {
+  background: #1648c0;
+  color: #fff;
+}
+
+.rfq-search-option--empty {
+  padding: 0.65rem 0.8rem;
+  color: #6b7280;
+  background: #fff;
+  font-size: 0.9rem;
+  font-style: italic;
+  cursor: default;
+}
+
+.rfq-search-input--selected {
+  background: #f0f7ff;
+  border-color: var(--primary-blue) !important;
+}
 
 .rfq-main-view {
   display: grid;

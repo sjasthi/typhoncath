@@ -66,7 +66,7 @@ CREATE TABLE interactions (
 
 CREATE TABLE rfqs (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    account_id INT NOT NULL,
+    account_id INT NULL,
     contact_id INT NULL,
     created_by_user_id INT NOT NULL,
     title VARCHAR(255) NOT NULL,

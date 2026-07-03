@@ -83,6 +83,7 @@ class RFQRepository
                 a.id            AS account_id,
                 a.account_name, a.email AS account_email, a.phone AS account_phone,
                 c.id            AS contact_id,
+                c.account_id    AS contact_account_id,
                 CONCAT(c.first_name, ' ', c.last_name) AS contact_name,
                 c.email         AS contact_email,
                 c.phone         AS contact_phone,
@@ -161,7 +162,7 @@ class RFQRepository
     {
         $stmt = $this->db->prepare("
             SELECT
-                res.id, res.quantity_reserved, res.reservation_status, res.created_at,
+                res.id, res.product_id, res.quantity_reserved, res.reservation_status, res.created_at,
                 p.product_name, p.sku, p.price
             FROM rfq_inventory_reservations res
             JOIN products p ON p.id = res.product_id
@@ -181,7 +182,7 @@ class RFQRepository
             VALUES (?, ?, ?, ?, ?, ?)
         ");
         $stmt->execute([
-            (int)$data['account_id'],
+            $data['account_id'] !== null ? (int)$data['account_id'] : null,
             $data['contact_id'] !== null ? (int)$data['contact_id'] : null,
             (int)$data['created_by_user_id'],
             $data['title'],
@@ -200,7 +201,7 @@ class RFQRepository
         ");
         $stmt->execute([
             $data['title'],
-            (int)$data['account_id'],
+            $data['account_id'] !== null ? (int)$data['account_id'] : null,
             $data['contact_id'] !== null ? (int)$data['contact_id'] : null,
             $data['description'],
             $data['stage'],
@@ -342,6 +343,85 @@ class RFQRepository
             $this->db->prepare(
                 "UPDATE rfq_inventory_reservations SET reservation_status = ? WHERE id = ?"
             )->execute([$status, $id]);
+
+            $this->db->commit();
+        } catch (\Throwable $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
+    }
+
+    public function findReservationById(int $id): ?array
+    {
+        $stmt = $this->db->prepare("
+            SELECT
+                res.id, res.rfq_id, res.product_id, res.quantity_reserved, res.reservation_status,
+                p.product_name, p.sku, p.price,
+                COALESCE(i.available_quantity, 0) AS available_quantity
+            FROM rfq_inventory_reservations res
+            JOIN products p ON p.id = res.product_id
+            LEFT JOIN inventory i ON i.product_id = res.product_id
+            WHERE res.id = ?
+        ");
+        $stmt->execute([$id]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
+    // If status is Reserved, returns stock to available_quantity before deleting.
+    public function deleteReservation(int $id): void
+    {
+        $this->db->beginTransaction();
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT product_id, quantity_reserved, reservation_status FROM rfq_inventory_reservations WHERE id = ?"
+            );
+            $stmt->execute([$id]);
+            $res = $stmt->fetch();
+
+            if ($res && $res['reservation_status'] === 'Reserved') {
+                $this->db->prepare("
+                    UPDATE inventory
+                    SET available_quantity = available_quantity + ?,
+                        reserved_quantity  = reserved_quantity  - ?
+                    WHERE product_id = ?
+                ")->execute([$res['quantity_reserved'], $res['quantity_reserved'], $res['product_id']]);
+            }
+
+            $this->db->prepare("DELETE FROM rfq_inventory_reservations WHERE id = ?")->execute([$id]);
+            $this->db->commit();
+        } catch (\Throwable $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
+    }
+
+    // Adjusts inventory by the quantity delta (only for Reserved status).
+    public function updateReservation(int $id, int $newQty): void
+    {
+        $this->db->beginTransaction();
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT product_id, quantity_reserved, reservation_status FROM rfq_inventory_reservations WHERE id = ?"
+            );
+            $stmt->execute([$id]);
+            $res = $stmt->fetch();
+
+            if ($res && $res['reservation_status'] === 'Reserved') {
+                $diff = $newQty - (int)$res['quantity_reserved'];
+                if ($diff !== 0) {
+                    $this->db->prepare("
+                        UPDATE inventory
+                        SET available_quantity = available_quantity - ?,
+                            reserved_quantity  = reserved_quantity  + ?
+                        WHERE product_id = ?
+                    ")->execute([$diff, $diff, $res['product_id']]);
+                }
+            }
+
+            $this->db->prepare(
+                "UPDATE rfq_inventory_reservations SET quantity_reserved = ? WHERE id = ?"
+            )->execute([$newQty, $id]);
 
             $this->db->commit();
         } catch (\Throwable $e) {

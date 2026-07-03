@@ -52,19 +52,31 @@ $allStages = ['New', 'In Review', 'Quoted', 'Negotiation', 'Won', 'Lost'];
 
         <div class="rfq-detail-section">
             <h3 class="rfq-detail-section-title">Account</h3>
-            <p class="rfq-detail-value"><?= htmlspecialchars($rfq['account_name']) ?></p>
-            <?php if ($rfq['account_email']): ?>
-                <p class="rfq-detail-meta"><?= htmlspecialchars($rfq['account_email']) ?></p>
-            <?php endif; ?>
-            <?php if ($rfq['account_phone']): ?>
-                <p class="rfq-detail-meta"><?= htmlspecialchars($rfq['account_phone']) ?></p>
+            <?php if ($rfq['account_id']): ?>
+                <p class="rfq-detail-value">
+                    <a href="/modules/customer/account_detail.php?id=<?= (int)$rfq['account_id'] ?>">
+                        <?= htmlspecialchars($rfq['account_name']) ?>
+                    </a>
+                </p>
+                <?php if ($rfq['account_email']): ?>
+                    <p class="rfq-detail-meta"><?= htmlspecialchars($rfq['account_email']) ?></p>
+                <?php endif; ?>
+                <?php if ($rfq['account_phone']): ?>
+                    <p class="rfq-detail-meta"><?= htmlspecialchars($rfq['account_phone']) ?></p>
+                <?php endif; ?>
+            <?php else: ?>
+                <p class="text-muted">—</p>
             <?php endif; ?>
         </div>
 
         <div class="rfq-detail-section">
             <h3 class="rfq-detail-section-title">Contact</h3>
-            <?php if ($rfq['contact_name'] && trim($rfq['contact_name']) !== ''): ?>
-                <p class="rfq-detail-value"><?= htmlspecialchars($rfq['contact_name']) ?></p>
+            <?php if ($rfq['contact_id'] && trim($rfq['contact_name']) !== ''): ?>
+                <p class="rfq-detail-value">
+                    <a href="/modules/customer/account_detail.php?id=<?= (int)$rfq['contact_account_id'] ?>">
+                        <?= htmlspecialchars($rfq['contact_name']) ?>
+                    </a>
+                </p>
                 <?php if ($rfq['contact_title']): ?>
                     <p class="rfq-detail-meta"><?= htmlspecialchars($rfq['contact_title']) ?></p>
                 <?php endif; ?>
@@ -216,6 +228,7 @@ $allStages = ['New', 'In Review', 'Quoted', 'Negotiation', 'Won', 'Lost'];
                 <th>Total</th>
                 <th>Status</th>
                 <th>Reserved On</th>
+                <th style="width:90px;"></th>
             </tr>
         </thead>
         <tbody>
@@ -252,6 +265,20 @@ $allStages = ['New', 'In Review', 'Quoted', 'Negotiation', 'Won', 'Lost'];
                     <?php endif; ?>
                 </td>
                 <td class="text-muted"><?= date('M j, Y', strtotime($res['created_at'])) ?></td>
+                <td style="display:flex;gap:4px;align-items:center;">
+                    <?php if ($res['reservation_status'] === 'Reserved'): ?>
+                    <a href="/modules/rfq/edit_reservation.php?id=<?= (int)$res['id'] ?>"
+                       class="btn btn-secondary" style="font-size:0.78rem;padding:3px 8px;">Edit</a>
+                    <?php endif; ?>
+                    <form method="POST" action="/modules/rfq/detail.php?id=<?= (int)$rfq['id'] ?>" style="display:inline;"
+                          onsubmit="return confirm('Remove this reservation?<?= $res['reservation_status'] === 'Reserved' ? ' Stock will be returned to inventory.' : '' ?>');">
+                        <input type="hidden" name="_action"        value="delete_reservation">
+                        <input type="hidden" name="reservation_id" value="<?= (int)$res['id'] ?>">
+                        <input type="hidden" name="rfq_id"         value="<?= (int)$rfq['id'] ?>">
+                        <input type="hidden" name="redirect_to"    value="detail">
+                        <button type="submit" class="rfq-res-remove-btn" title="Remove reservation">&times;</button>
+                    </form>
+                </td>
             </tr>
             <?php endforeach; ?>
         </tbody>
@@ -259,7 +286,7 @@ $allStages = ['New', 'In Review', 'Quoted', 'Negotiation', 'Won', 'Lost'];
             <tr>
                 <td colspan="4" class="table-footer-label">Catalog Value</td>
                 <td class="table-footer-value"><strong>$<?= number_format($catalogValue, 2) ?></strong></td>
-                <td colspan="2"></td>
+                <td colspan="3"></td>
             </tr>
         </tfoot>
     </table>

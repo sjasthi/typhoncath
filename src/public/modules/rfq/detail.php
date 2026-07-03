@@ -21,6 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'delete'                    => $controller->handleDeletePost($id),
         'delete_quote'              => $controller->handleDeleteQuotePost((int)($_POST['quote_id'] ?? 0)),
         'update_reservation_status' => $controller->handleUpdateReservationStatusPost((int)($_POST['reservation_id'] ?? 0)),
+        'delete_reservation'        => $controller->handleDeleteReservationPost((int)($_POST['reservation_id'] ?? 0)),
         default                     => null,
     };
 }

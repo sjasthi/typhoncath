@@ -1,0 +1,1 @@
+ALTER TABLE rfqs MODIFY account_id INT NULL;

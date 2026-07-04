@@ -88,7 +88,7 @@
                         <input type="hidden" name="account_id" id="rfq-account-val" value="<?= htmlspecialchars($input['account_id']) ?>">
                     </div>
                     <a
-                        href="/modules/customer/accounts.php"
+                        href="/modules/customer/create_account.php"
                         class="rfq-create-btn"
                         title="Add a new account"
                     >+</a>
@@ -111,7 +111,7 @@
                     </div>
                     <a
                         id="rfq-contact-add-btn"
-                        href="/modules/customer/accounts.php"
+                        href="/modules/customer/create_account.php"
                         class="rfq-create-btn"
                         title="Add a new contact"
                     >+</a>

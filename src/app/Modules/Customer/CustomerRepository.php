@@ -101,4 +101,33 @@ class CustomerRepository
             'id' => $id
         ]);
     }
+
+    // A contact must belong to an account (contacts.account_id is NOT NULL).
+    public function createContact(array $data): void
+    {
+        $db = Database::connection();
+
+        $stmt = $db->prepare("
+            INSERT INTO contacts
+            (
+                account_id,
+                first_name,
+                last_name,
+                email,
+                phone,
+                title
+            )
+            VALUES
+            (
+                :account_id,
+                :first_name,
+                :last_name,
+                :email,
+                :phone,
+                :title
+            )
+        ");
+
+        $stmt->execute($data);
+    }
 }

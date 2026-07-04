@@ -220,6 +220,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_interaction'])
 
 /*
 |--------------------------------------------------------------------------
+| DELETE ACCOUNT
+|--------------------------------------------------------------------------
+*/
+$deleteError = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_account'])) {
+
+    try {
+        // Contacts cascade automatically; interactions do not, so clear them first.
+        $db->prepare("DELETE FROM interactions WHERE account_id=:id")
+           ->execute(['id' => $accountId]);
+
+        $db->prepare("DELETE FROM accounts WHERE id=:id")
+           ->execute(['id' => $accountId]);
+
+        header("Location: accounts.php");
+        exit;
+
+    } catch (\PDOException $e) {
+        // Blocked by a foreign key — the account still has linked RFQs or campaigns.
+        $deleteError = 'This customer cannot be deleted because it still has linked RFQs or campaigns. '
+                     . 'Remove or reassign those first.';
+    }
+}
+
+/*
+|--------------------------------------------------------------------------
 | LOAD DATA
 |--------------------------------------------------------------------------
 */
@@ -242,39 +269,53 @@ include __DIR__ . '/../../../app/Shared/sidebar.php';
 ?>
 
 <style>
+/* Local: repeating item cards for contacts + interactions (not a global component) */
 .card-box {
-    border:1px solid #ddd;
-    padding:10px;
-    margin-bottom:10px;
-    border-radius:6px;
+    border: 1px solid #e0e0e0;
+    padding: 0.85rem 1rem;
+    margin-bottom: 0.75rem;
+    border-radius: 6px;
 }
 .inline-actions {
-    display:flex;
-    gap:10px;
-    margin-top:8px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-top: 0.6rem;
 }
 </style>
 
 <section class="card">
 
-<h1><?= htmlspecialchars($account['account_name']) ?></h1>
+<div class="page-header">
+    <h1><?= htmlspecialchars($account['account_name']) ?></h1>
+    <div class="header-actions">
+        <a href="accounts.php" class="button btn-ghost">&#8592; Back</a>
+        <?php if (!$editMode): ?>
+        <a class="button button-primary" href="?id=<?= $accountId ?>&edit=1">Edit Account</a>
+        <form method="POST" style="display:inline;margin:0;"
+              onsubmit="return confirm('Delete this customer and all its contacts and interactions? This cannot be undone.');">
+            <button type="submit" name="delete_account" class="button button-danger">Delete</button>
+        </form>
+        <?php endif; ?>
+    </div>
+</div>
 
-<a href="accounts.php">← Back</a>
-
-<?php if (!$editMode): ?>
-    <a class="btn btn-primary" href="?id=<?= $accountId ?>&edit=1">Edit Account</a>
+<?php if (!empty($deleteError)): ?>
+<div class="form-errors">
+    <p><?= htmlspecialchars($deleteError) ?></p>
+</div>
 <?php endif; ?>
 
 <form method="POST">
 
-<table class="table">
+<table class="data-table">
 
 <?php
 function field($label,$name,$value,$editMode){
     echo "<tr><th>$label</th><td>";
 
     if ($editMode) {
-        echo "<input name='$name' value='".htmlspecialchars($value)."' style='width:100%'>";
+        echo "<input name='$name' class='form-control' value='".htmlspecialchars($value)."'>";
     } else {
         echo htmlspecialchars($value);
     }
@@ -294,7 +335,10 @@ field("Tags","tags",$account['tags'],$editMode);
 </table>
 
 <?php if ($editMode): ?>
-<button name="update_account" class="btn btn-primary">Save</button>
+<div class="form-actions">
+    <button name="update_account" class="button button-primary">Save</button>
+    <a href="?id=<?= $accountId ?>" class="button btn-ghost">Cancel</a>
+</div>
 <?php endif; ?>
 
 </form>
@@ -307,12 +351,30 @@ field("Tags","tags",$account['tags'],$editMode);
 <h2>Contacts</h2>
 
 <!-- ADD CONTACT -->
-<form method="POST">
-    <input name="first_name" placeholder="First Name" required>
-    <input name="last_name" placeholder="Last Name" required>
-    <input name="email" placeholder="Email">
-    <input name="phone" placeholder="Phone">
-    <button name="add_contact" class="btn btn-primary">Add Contact</button>
+<form method="POST" class="form">
+    <div class="form-row">
+        <div class="form-group">
+            <label for="c-first" class="form-label">First Name <span class="form-required">*</span></label>
+            <input id="c-first" name="first_name" class="form-control" placeholder="First Name" required>
+        </div>
+        <div class="form-group">
+            <label for="c-last" class="form-label">Last Name <span class="form-required">*</span></label>
+            <input id="c-last" name="last_name" class="form-control" placeholder="Last Name" required>
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="form-group">
+            <label for="c-email" class="form-label">Email</label>
+            <input id="c-email" name="email" class="form-control" placeholder="Email">
+        </div>
+        <div class="form-group">
+            <label for="c-phone" class="form-label">Phone</label>
+            <input id="c-phone" name="phone" class="form-control" placeholder="Phone">
+        </div>
+    </div>
+    <div class="form-actions">
+        <button name="add_contact" class="button button-primary">Add Contact</button>
+    </div>
 </form>
 
 <br>
@@ -323,31 +385,51 @@ field("Tags","tags",$account['tags'],$editMode);
 
 <?php if (isset($_GET['edit_contact']) && $_GET['edit_contact'] == $c['id']): ?>
 
-<form method="POST">
+<form method="POST" class="form">
     <input type="hidden" name="contact_id" value="<?= $c['id'] ?>">
 
-    <input name="first_name" value="<?= htmlspecialchars($c['first_name']) ?>">
-    <input name="last_name" value="<?= htmlspecialchars($c['last_name']) ?>">
-    <input name="email" value="<?= htmlspecialchars($c['email']) ?>">
-    <input name="phone" value="<?= htmlspecialchars($c['phone']) ?>">
+    <div class="form-row">
+        <div class="form-group">
+            <label class="form-label">First Name</label>
+            <input name="first_name" class="form-control" value="<?= htmlspecialchars($c['first_name']) ?>">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Last Name</label>
+            <input name="last_name" class="form-control" value="<?= htmlspecialchars($c['last_name']) ?>">
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="form-group">
+            <label class="form-label">Email</label>
+            <input name="email" class="form-control" value="<?= htmlspecialchars($c['email']) ?>">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Phone</label>
+            <input name="phone" class="form-control" value="<?= htmlspecialchars($c['phone']) ?>">
+        </div>
+    </div>
 
-    <button name="update_contact">Save</button>
-    <a href="?id=<?= $accountId ?>">Cancel</a>
+    <div class="form-actions">
+        <button name="update_contact" class="button button-primary">Save</button>
+        <a href="?id=<?= $accountId ?>" class="button btn-ghost">Cancel</a>
+    </div>
 </form>
 
 <?php else: ?>
 
 <strong><?= htmlspecialchars($c['first_name'].' '.$c['last_name']) ?></strong>
-<div><?= htmlspecialchars($c['email']) ?></div>
-<div><?= htmlspecialchars($c['phone']) ?></div>
+<div class="text-muted"><?= htmlspecialchars($c['email']) ?></div>
+<div class="text-muted"><?= htmlspecialchars($c['phone']) ?></div>
 
 <div class="inline-actions">
 
-    <a href="?id=<?= $accountId ?>&edit_contact=<?= $c['id'] ?>">✏️ Edit</a>
+    <a href="?id=<?= $accountId ?>&edit_contact=<?= $c['id'] ?>"
+       class="button btn-ghost" style="font-size:0.78rem;padding:3px 10px;">Edit</a>
 
     <form method="POST" style="display:inline;">
         <input type="hidden" name="contact_id" value="<?= $c['id'] ?>">
-        <button name="delete_contact" onclick="return confirm('Delete contact?')">🗑 Delete</button>
+        <button name="delete_contact" class="button button-danger" style="font-size:0.78rem;padding:3px 10px;"
+                onclick="return confirm('Delete contact?')">Delete</button>
     </form>
 
 </div>
@@ -365,24 +447,31 @@ field("Tags","tags",$account['tags'],$editMode);
 
 <h2>Log Interaction</h2>
 
-<form method="POST">
+<form method="POST" class="form">
 
-<input name="subject" placeholder="Subject" style="width:100%;margin-bottom:10px;">
+    <div class="form-group">
+        <label for="i-subject" class="form-label">Subject</label>
+        <input id="i-subject" name="subject" class="form-control" placeholder="Subject">
+    </div>
 
-<select name="interaction_type">
-    <option>Call</option>
-    <option>Email</option>
-    <option>Meeting</option>
-    <option>Note</option>
-</select>
+    <div class="form-group">
+        <label for="i-type" class="form-label">Type</label>
+        <select id="i-type" name="interaction_type" class="form-control">
+            <option>Call</option>
+            <option>Email</option>
+            <option>Meeting</option>
+            <option>Note</option>
+        </select>
+    </div>
 
-<br><br>
+    <div class="form-group">
+        <label for="i-notes" class="form-label">Notes</label>
+        <textarea id="i-notes" name="notes" rows="5" class="form-control"></textarea>
+    </div>
 
-<textarea name="notes" style="width:100%;height:120px;"></textarea>
-
-<br><br>
-
-<button name="add_interaction" class="btn btn-primary">Save Interaction</button>
+    <div class="form-actions">
+        <button name="add_interaction" class="button button-primary">Save Interaction</button>
+    </div>
 
 </form>
 
@@ -396,37 +485,50 @@ field("Tags","tags",$account['tags'],$editMode);
 
 <?php if (isset($_GET['edit_interaction']) && $_GET['edit_interaction'] == $i['id']): ?>
 
-<form method="POST">
+<form method="POST" class="form">
     <input type="hidden" name="interaction_id" value="<?= $i['id'] ?>">
 
-    <input name="subject" value="<?= htmlspecialchars($i['interaction_subject']) ?>">
+    <div class="form-group">
+        <label class="form-label">Subject</label>
+        <input name="subject" class="form-control" value="<?= htmlspecialchars($i['interaction_subject']) ?>">
+    </div>
 
-    <select name="interaction_type">
-        <option <?= $i['interaction_type']=='Call'?'selected':'' ?>>Call</option>
-        <option <?= $i['interaction_type']=='Email'?'selected':'' ?>>Email</option>
-        <option <?= $i['interaction_type']=='Meeting'?'selected':'' ?>>Meeting</option>
-        <option <?= $i['interaction_type']=='Note'?'selected':'' ?>>Note</option>
-    </select>
+    <div class="form-group">
+        <label class="form-label">Type</label>
+        <select name="interaction_type" class="form-control">
+            <option <?= $i['interaction_type']=='Call'?'selected':'' ?>>Call</option>
+            <option <?= $i['interaction_type']=='Email'?'selected':'' ?>>Email</option>
+            <option <?= $i['interaction_type']=='Meeting'?'selected':'' ?>>Meeting</option>
+            <option <?= $i['interaction_type']=='Note'?'selected':'' ?>>Note</option>
+        </select>
+    </div>
 
-    <textarea name="notes"><?= htmlspecialchars($i['notes']) ?></textarea>
+    <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea name="notes" rows="4" class="form-control"><?= htmlspecialchars($i['notes']) ?></textarea>
+    </div>
 
-    <button name="update_interaction">Save</button>
-    <a href="?id=<?= $accountId ?>">Cancel</a>
+    <div class="form-actions">
+        <button name="update_interaction" class="button button-primary">Save</button>
+        <a href="?id=<?= $accountId ?>" class="button btn-ghost">Cancel</a>
+    </div>
 </form>
 
 <?php else: ?>
 
 <strong><?= htmlspecialchars($i['interaction_type']) ?></strong>
-<div><?= htmlspecialchars($i['interaction_subject']) ?></div>
+<div class="text-muted"><?= htmlspecialchars($i['interaction_subject']) ?></div>
 <div><?= nl2br(htmlspecialchars($i['notes'])) ?></div>
 
 <div class="inline-actions">
 
-    <a href="?id=<?= $accountId ?>&edit_interaction=<?= $i['id'] ?>">✏️ Edit</a>
+    <a href="?id=<?= $accountId ?>&edit_interaction=<?= $i['id'] ?>"
+       class="button btn-ghost" style="font-size:0.78rem;padding:3px 10px;">Edit</a>
 
     <form method="POST" style="display:inline;">
         <input type="hidden" name="interaction_id" value="<?= $i['id'] ?>">
-        <button name="delete_interaction" onclick="return confirm('Delete interaction?')">🗑 Delete</button>
+        <button name="delete_interaction" class="button button-danger" style="font-size:0.78rem;padding:3px 10px;"
+                onclick="return confirm('Delete interaction?')">Delete</button>
     </form>
 
 </div>

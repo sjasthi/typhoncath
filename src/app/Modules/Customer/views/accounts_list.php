@@ -1,70 +1,12 @@
 <section class="card">
 
-    <div class="rfq-board-header">
+    <div class="page-header">
         <h1>Customer Accounts</h1>
 
-        <button
-            type="button"
-            class="rfq-create-btn"
-            onclick="toggleCustomerForm()">
-            +
-        </button>
+        <a href="create_account.php" class="add-btn" title="Add a new customer">+</a>
     </div>
 
-    <div id="customerForm" style="display:none; margin-bottom:20px;">
-
-        <h2>Add Customer</h2>
-
-        <form method="POST">
-
-            <input
-                type="text"
-                name="account_name"
-                placeholder="Customer Name"
-                required>
-
-            <input
-                type="email"
-                name="email"
-                placeholder="Email">
-
-            <input
-                type="text"
-                name="phone"
-                placeholder="Phone">
-
-            <input
-                type="text"
-                name="address"
-                placeholder="Address">
-
-            <input
-                type="text"
-                name="industry"
-                placeholder="Industry">
-
-            <input
-                type="text"
-                name="source"
-                placeholder="Source">
-
-            <input
-                type="text"
-                name="tags"
-                placeholder="Tags">
-
-            <button
-                type="submit"
-                name="add_account"
-                class="btn btn-primary">
-                Add Customer
-            </button>
-
-        </form>
-
-    </div>
-
-    <div class="rfq-list-toolbar">
+    <div class="toolbar">
 
         <h2 class="rfq-list-title">
             All Customers
@@ -95,13 +37,13 @@
 
             <button
                 type="submit"
-                class="btn btn-primary">
+                class="button button-primary">
                 Filter
             </button>
 
             <a
                 href="accounts.php"
-                class="btn rfq-list-clear-btn">
+                class="button btn-ghost">
                 Clear
             </a>
 
@@ -109,7 +51,7 @@
 
     </div>
 
-    <table class="table">
+    <table class="data-table">
 
         <thead>
             <tr>
@@ -119,7 +61,6 @@
                 <th>Industry</th>
                 <th>Source</th>
                 <th>Tags</th>
-                <th>Actions</th>
             </tr>
         </thead>
 
@@ -128,7 +69,7 @@
         <?php if (empty($accounts)): ?>
 
             <tr>
-                <td colspan="7">
+                <td colspan="6">
                     No customers found.
                 </td>
             </tr>
@@ -139,11 +80,11 @@
 
                 <tr>
 
-                 <td>
-				    <a href="account_detail.php?id=<?= $account['id'] ?>">
-				        <?= htmlspecialchars($account['account_name']) ?>
-				    </a>
-				</td>
+                    <td>
+                        <a href="account_detail.php?id=<?= $account['id'] ?>">
+                            <?= htmlspecialchars($account['account_name']) ?>
+                        </a>
+                    </td>
 
                     <td>
                         <?= htmlspecialchars($account['email']) ?>
@@ -165,29 +106,6 @@
                         <?= htmlspecialchars($account['tags']) ?>
                     </td>
 
-                    <td>
-
-                        <form method="POST">
-
-                            <input
-                                type="hidden"
-                                name="account_id"
-                                value="<?= $account['id'] ?>">
-
-                            <button
-                                type="submit"
-                                name="delete_account"
-                                class="btn btn-danger"
-                                onclick="return confirm('Delete this customer?');">
-
-                                Delete
-
-                            </button>
-
-                        </form>
-
-                    </td>
-
                 </tr>
 
             <?php endforeach; ?>
@@ -199,19 +117,3 @@
     </table>
 
 </section>
-
-<script>
-function toggleCustomerForm()
-{
-    const form = document.getElementById('customerForm');
-
-    if (form.style.display === 'none')
-    {
-        form.style.display = 'block';
-    }
-    else
-    {
-        form.style.display = 'none';
-    }
-}
-</script>

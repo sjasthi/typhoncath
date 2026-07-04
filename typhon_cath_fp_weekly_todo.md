@@ -469,8 +469,8 @@ Build the first create/edit/read flows for each module.
 ### Max — Customer Management
 
 - [X] Build account create form.
-- [ ] Build account edit form.
-- [ ] Build contact create/edit forms.
+- [X] Build account edit form.
+- [X] Build contact create/edit forms.
 - [X] Save accounts to MySQL.
 - [X] Save contacts to MySQL.
 - [X] Display saved accounts and contacts from MySQL.

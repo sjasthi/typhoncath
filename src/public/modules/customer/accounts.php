@@ -9,32 +9,8 @@ Auth::requireLogin();
 
 $repo = new CustomerRepository();
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-
-    if (isset($_POST['add_account'])) {
-
-        $repo->create([
-            'account_name' => $_POST['account_name'],
-            'email'        => $_POST['email'],
-            'phone'        => $_POST['phone'],
-            'address'      => $_POST['address'],
-            'industry'     => $_POST['industry'],
-            'source'       => $_POST['source'],
-            'tags'         => $_POST['tags']
-        ]);
-
-        header('Location: accounts.php');
-        exit;
-    }
-
-    if (isset($_POST['delete_account'])) {
-
-        $repo->delete((int)$_POST['account_id']);
-
-        header('Location: accounts.php');
-        exit;
-    }
-}
+// Create moved to create_account.php; delete moved to account_detail.php.
+// This page is now list + search only.
 
 $accounts = $repo->search(
     $_GET['search'] ?? '',

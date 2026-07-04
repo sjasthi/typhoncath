@@ -236,7 +236,7 @@ foreach ($currentAudience as $row) {
                     </div>
                     <a
                         href="/modules/customer/accounts.php"
-                        class="rfq-create-btn"
+                        class="add-btn"
                         title="Add a new account"
                     >+</a>
                 </div>
@@ -277,7 +277,7 @@ foreach ($currentAudience as $row) {
                     </div>
                     <a
                         href="/modules/customer/accounts.php"
-                        class="rfq-create-btn"
+                        class="add-btn"
                         title="Add a new contact"
                     >+</a>
                 </div>

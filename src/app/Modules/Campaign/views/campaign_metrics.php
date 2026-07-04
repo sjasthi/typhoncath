@@ -8,26 +8,26 @@ if ($campaign === null) {
 }
 
 $statusBadge = [
-    'Draft'     => 'rfq-badge-neutral',
-    'Scheduled' => 'rfq-badge-info',
-    'Sent'      => 'rfq-badge-quoted',
-    'Completed' => 'rfq-badge-success',
+    'Draft'     => 'badge-neutral',
+    'Scheduled' => 'badge-info',
+    'Sent'      => 'badge-quoted',
+    'Completed' => 'badge-success',
 ];
 $typeBadge = [
-    'Email'          => 'rfq-badge-info',
-    'SMS Simulation' => 'rfq-badge-warning',
+    'Email'          => 'badge-info',
+    'SMS Simulation' => 'badge-warning',
 ];
 ?>
 
 <!-- ── Header ─────────────────────────────────────────── -->
 <section class="card">
     <div class="module-header">
-        <div class="rfq-detail-title-row">
+        <div class="detail-title-row">
             <h1><?= htmlspecialchars($campaign['campaign_name']) ?></h1>
-            <span class="rfq-badge <?= $statusBadge[$campaign['status']] ?? 'rfq-badge-neutral' ?> rfq-detail-stage">
+            <span class="badge <?= $statusBadge[$campaign['status']] ?? 'badge-neutral' ?> detail-stage">
                 <?= htmlspecialchars($campaign['status']) ?>
             </span>
-            <span class="rfq-badge <?= $typeBadge[$campaign['campaign_type']] ?? 'rfq-badge-neutral' ?>">
+            <span class="badge <?= $typeBadge[$campaign['campaign_type']] ?? 'badge-neutral' ?>">
                 <?= htmlspecialchars($campaign['campaign_type']) ?>
             </span>
         </div>
@@ -44,30 +44,30 @@ $typeBadge = [
     </div>
 
     <!-- Core info grid -->
-    <div class="rfq-detail-grid">
+    <div class="detail-grid">
 
-        <div class="rfq-detail-section">
-            <h3 class="rfq-detail-section-title">Created By</h3>
-            <p class="rfq-detail-value"><?= htmlspecialchars($campaign['created_by_name'] ?? '—') ?></p>
+        <div class="detail-section">
+            <h3 class="detail-section-title">Created By</h3>
+            <p class="detail-value"><?= htmlspecialchars($campaign['created_by_name'] ?? '—') ?></p>
         </div>
 
-        <div class="rfq-detail-section">
-            <h3 class="rfq-detail-section-title">Created At</h3>
-            <p class="rfq-detail-value"><?= date('M j, Y', strtotime($campaign['created_at'])) ?></p>
-            <p class="rfq-detail-meta"><?= date('g:i a', strtotime($campaign['created_at'])) ?></p>
+        <div class="detail-section">
+            <h3 class="detail-section-title">Created At</h3>
+            <p class="detail-value"><?= date('M j, Y', strtotime($campaign['created_at'])) ?></p>
+            <p class="detail-meta"><?= date('g:i a', strtotime($campaign['created_at'])) ?></p>
         </div>
 
-        <div class="rfq-detail-section">
-            <h3 class="rfq-detail-section-title">Last Updated</h3>
-            <p class="rfq-detail-value"><?= date('M j, Y', strtotime($campaign['updated_at'])) ?></p>
-            <p class="rfq-detail-meta"><?= date('g:i a', strtotime($campaign['updated_at'])) ?></p>
+        <div class="detail-section">
+            <h3 class="detail-section-title">Last Updated</h3>
+            <p class="detail-value"><?= date('M j, Y', strtotime($campaign['updated_at'])) ?></p>
+            <p class="detail-meta"><?= date('g:i a', strtotime($campaign['updated_at'])) ?></p>
         </div>
 
         <?php if ($campaign['scheduled_at'] !== null): ?>
-        <div class="rfq-detail-section">
-            <h3 class="rfq-detail-section-title">Scheduled For</h3>
-            <p class="rfq-detail-value"><?= date('M j, Y', strtotime($campaign['scheduled_at'])) ?></p>
-            <p class="rfq-detail-meta"><?= date('g:i a', strtotime($campaign['scheduled_at'])) ?></p>
+        <div class="detail-section">
+            <h3 class="detail-section-title">Scheduled For</h3>
+            <p class="detail-value"><?= date('M j, Y', strtotime($campaign['scheduled_at'])) ?></p>
+            <p class="detail-meta"><?= date('g:i a', strtotime($campaign['scheduled_at'])) ?></p>
         </div>
         <?php endif; ?>
 
@@ -77,7 +77,7 @@ $typeBadge = [
 <!-- ── Metrics ─────────────────────────────────────────── -->
 <section class="card">
     <div class="module-header">
-        <h2 class="rfq-detail-card-title">Performance Metrics</h2>
+        <h2 class="detail-card-title">Performance Metrics</h2>
         <?php if ($campaign['status'] !== 'Sent' && $campaign['status'] !== 'Completed'): ?>
         <form method="POST" action="/modules/campaign/detail.php?id=<?= (int)$campaign['id'] ?>" style="margin:0;">
             <input type="hidden" name="_action" value="simulate">
@@ -128,8 +128,8 @@ $typeBadge = [
 <!-- ── Audience ────────────────────────────────────────── -->
 <section class="card">
     <div class="module-header">
-        <h2 class="rfq-detail-card-title">Audience</h2>
-        <a href="/modules/campaign/audience.php?campaign_id=<?= (int)$campaign['id'] ?>" class="rfq-create-btn" title="Add audience segment">+</a>
+        <h2 class="detail-card-title">Audience</h2>
+        <a href="/modules/campaign/audience.php?campaign_id=<?= (int)$campaign['id'] ?>" class="add-btn" title="Add audience segment">+</a>
     </div>
 
     <?php if (empty($audience)): ?>

@@ -4,14 +4,14 @@ $listSearch   = $listSearch   ?? trim($_GET['q']      ?? '');
 $listStatuses = $listStatuses ?? (array)($_GET['status'] ?? []);
 
 $statusBadge = [
-    'Draft'     => 'rfq-badge-neutral',
-    'Scheduled' => 'rfq-badge-info',
-    'Sent'      => 'rfq-badge-quoted',
-    'Completed' => 'rfq-badge-success',
+    'Draft'     => 'badge-neutral',
+    'Scheduled' => 'badge-info',
+    'Sent'      => 'badge-quoted',
+    'Completed' => 'badge-success',
 ];
 $typeBadge = [
-    'Email'          => 'rfq-badge-info',
-    'SMS Simulation' => 'rfq-badge-warning',
+    'Email'          => 'badge-info',
+    'SMS Simulation' => 'badge-warning',
 ];
 ?>
 
@@ -74,12 +74,12 @@ $typeBadge = [
                     </a>
                 </td>
                 <td>
-                    <span class="rfq-badge <?= $typeBadge[$c['campaign_type']] ?? 'rfq-badge-neutral' ?>">
+                    <span class="badge <?= $typeBadge[$c['campaign_type']] ?? 'badge-neutral' ?>">
                         <?= htmlspecialchars($c['campaign_type']) ?>
                     </span>
                 </td>
                 <td>
-                    <span class="rfq-badge <?= $statusBadge[$c['status']] ?? 'rfq-badge-neutral' ?>">
+                    <span class="badge <?= $statusBadge[$c['status']] ?? 'badge-neutral' ?>">
                         <?= htmlspecialchars($c['status']) ?>
                     </span>
                 </td>
@@ -117,21 +117,21 @@ $typeBadge = [
 
 <?php
 $typeBadge = [
-    'Email'          => 'rfq-badge-info',
-    'SMS Simulation' => 'rfq-badge-warning',
+    'Email'          => 'badge-info',
+    'SMS Simulation' => 'badge-warning',
 ];
 
 function campDaysUntilBadge(int $days): string {
-    if ($days <= 3)  return 'rfq-badge-danger';
-    if ($days <= 7)  return 'rfq-badge-warning';
-    if ($days <= 14) return 'rfq-badge-info';
-    return 'rfq-badge-neutral';
+    if ($days <= 3)  return 'badge-danger';
+    if ($days <= 7)  return 'badge-warning';
+    if ($days <= 14) return 'badge-info';
+    return 'badge-neutral';
 }
 
 function campGapBadge(float $gap): string {
-    if ($gap <= 10) return 'rfq-badge-success';
-    if ($gap <= 25) return 'rfq-badge-warning';
-    return 'rfq-badge-danger';
+    if ($gap <= 10) return 'badge-success';
+    if ($gap <= 25) return 'badge-warning';
+    return 'badge-danger';
 }
 
 function campRateBar(float $pct): string {
@@ -201,13 +201,13 @@ function campRateBar(float $pct): string {
                     </a>
                 </td>
                 <td>
-                    <span class="rfq-badge <?= $typeBadge[$row['campaign_type']] ?? 'rfq-badge-neutral' ?>">
+                    <span class="badge <?= $typeBadge[$row['campaign_type']] ?? 'badge-neutral' ?>">
                         <?= htmlspecialchars($row['campaign_type']) ?>
                     </span>
                 </td>
                 <td class="rfq-list-date"><?= date('M j, Y g:i A', strtotime($row['scheduled_at'])) ?></td>
                 <td>
-                    <span class="rfq-badge <?= campDaysUntilBadge($days) ?>">
+                    <span class="badge <?= campDaysUntilBadge($days) ?>">
                         <?= $days === 0 ? 'Today' : ($days === 1 ? 'Tomorrow' : $days . ' days') ?>
                     </span>
                 </td>
@@ -255,7 +255,7 @@ function campRateBar(float $pct): string {
                             </a>
                         </td>
                         <td>
-                            <span class="rfq-badge <?= $typeBadge[$row['campaign_type']] ?? 'rfq-badge-neutral' ?>">
+                            <span class="badge <?= $typeBadge[$row['campaign_type']] ?? 'badge-neutral' ?>">
                                 <?= htmlspecialchars($row['campaign_type']) ?>
                             </span>
                         </td>
@@ -296,13 +296,13 @@ function campRateBar(float $pct): string {
                             ? round((int)$row['zero_click_campaigns'] / (int)$row['campaigns_targeted'] * 100)
                             : 0;
                         $coldBadge = (int)$row['zero_click_campaigns'] >= 3
-                            ? 'rfq-badge-danger'
-                            : ((int)$row['zero_click_campaigns'] >= 2 ? 'rfq-badge-warning' : 'rfq-badge-neutral');
+                            ? 'badge-danger'
+                            : ((int)$row['zero_click_campaigns'] >= 2 ? 'badge-warning' : 'badge-neutral');
                         $coldLabel = (int)$row['zero_click_campaigns'] >= 3 ? 'High' : ((int)$row['zero_click_campaigns'] >= 2 ? 'Medium' : 'Low');
                     ?>
                     <tr>
                         <td>
-                            <span class="rfq-badge <?= $row['recipient_type'] === 'Contact' ? 'rfq-badge-info' : 'rfq-badge-quoted' ?>" style="margin-right:.35rem;font-size:.68rem">
+                            <span class="badge <?= $row['recipient_type'] === 'Contact' ? 'badge-info' : 'badge-quoted' ?>" style="margin-right:.35rem;font-size:.68rem">
                                 <?= $row['recipient_type'] === 'Contact' ? 'C' : 'A' ?>
                             </span>
                             <?= htmlspecialchars($row['recipient_name'] ?? '—') ?>
@@ -313,7 +313,7 @@ function campRateBar(float $pct): string {
                             <span class="text-muted" style="font-size:.78rem">(<?= $zeroPct ?>%)</span>
                         </td>
                         <td><?= $row['avg_open_rate'] !== null ? number_format((float)$row['avg_open_rate'], 1) . '%' : '—' ?></td>
-                        <td><span class="rfq-badge <?= $coldBadge ?>"><?= $coldLabel ?></span></td>
+                        <td><span class="badge <?= $coldBadge ?>"><?= $coldLabel ?></span></td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
@@ -356,12 +356,12 @@ function campRateBar(float $pct): string {
                         <td><?= number_format((float)$row['open_rate'],  1) ?>%</td>
                         <td><?= number_format((float)$row['click_rate'], 1) ?>%</td>
                         <td>
-                            <span class="rfq-badge <?= campGapBadge($gap) ?>">
+                            <span class="badge <?= campGapBadge($gap) ?>">
                                 <?= number_format($gap, 1) ?>pt gap
                             </span>
                         </td>
                         <td>
-                            <span class="rfq-badge <?= $ctrRatio >= 50 ? 'rfq-badge-success' : ($ctrRatio >= 25 ? 'rfq-badge-warning' : 'rfq-badge-danger') ?>">
+                            <span class="badge <?= $ctrRatio >= 50 ? 'badge-success' : ($ctrRatio >= 25 ? 'badge-warning' : 'badge-danger') ?>">
                                 <?= number_format($ctrRatio, 1) ?>%
                             </span>
                         </td>

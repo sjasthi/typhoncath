@@ -12,10 +12,6 @@ $statusBadge = [
         <a href="/modules/inventory/products.php" class="btn rfq-list-clear-btn">&#8592; Back to Inventory</a>
     </div>
 
-    <?php if (!empty($error)): ?>
-        <div class="rfq-form-errors"><p><?= htmlspecialchars($error) ?></p></div>
-    <?php endif; ?>
-
     <table class="table rfq-list-table" style="margin-top:1rem;">
         <thead>
             <tr>

@@ -10,20 +10,6 @@ $pageTitle = $isEdit ? 'Edit Product' : 'Add Product';
         <a href="/modules/inventory/products.php" class="btn rfq-list-clear-btn">&#8592; Back to Inventory</a>
     </div>
 
-    <!-- Flash-style inline alerts -->
-    <?php if (!empty($_GET['saved'])): ?>
-        <div class="alert alert-success">Product saved successfully.</div>
-    <?php endif; ?>
-    <?php if (!empty($errors ?? [])): ?>
-        <div class="rfq-form-errors">
-            <?php foreach ($errors as $e): ?>
-                <p><?= htmlspecialchars($e) ?></p>
-            <?php endforeach; ?>
-        </div>
-    <?php elseif (!empty($error)): ?>
-        <div class="rfq-form-errors"><p><?= htmlspecialchars($error) ?></p></div>
-    <?php endif; ?>
-
     <form method="POST" action="/modules/inventory/products.php?page=detail" class="rfq-form">
         <?php if ($isEdit): ?>
             <input type="hidden" name="id" value="<?= (int)$product['id'] ?>">

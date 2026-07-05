@@ -42,7 +42,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_account'])) {
         'id'           => $accountId
     ]);
 
-    header("Location: account_detail.php?id=$accountId&updated=1");
+    $_SESSION['flash'] = ['type' => 'success', 'message' => 'Account updated.'];
+    header("Location: account_detail.php?id=$accountId");
     exit;
 }
 
@@ -78,6 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_contact'])) {
         'phone'      => trim($_POST['phone'])
     ]);
 
+    $_SESSION['flash'] = ['type' => 'success', 'message' => 'Contact added.'];
     header("Location: account_detail.php?id=$accountId");
     exit;
 }
@@ -107,6 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_contact'])) {
         'phone'      => trim($_POST['phone'])
     ]);
 
+    $_SESSION['flash'] = ['type' => 'success', 'message' => 'Contact updated.'];
     header("Location: account_detail.php?id=$accountId");
     exit;
 }
@@ -118,15 +121,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_contact'])) {
 */
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_contact'])) {
 
-    $stmt = $db->prepare("
-        DELETE FROM contacts
-        WHERE id=:id AND account_id=:account_id
-    ");
+    try {
+        $stmt = $db->prepare("
+            DELETE FROM contacts
+            WHERE id=:id AND account_id=:account_id
+        ");
 
-    $stmt->execute([
-        'id' => $_POST['contact_id'],
-        'account_id' => $accountId
-    ]);
+        $stmt->execute([
+            'id' => $_POST['contact_id'],
+            'account_id' => $accountId
+        ]);
+
+        $_SESSION['flash'] = ['type' => 'success', 'message' => 'Contact deleted.'];
+    } catch (\PDOException $e) {
+        // Blocked by a foreign key — the contact is still used by a campaign audience.
+        $_SESSION['flash'] = ['type' => 'error', 'message' =>
+            'This contact cannot be deleted because it is still part of a campaign audience. '
+            . 'Remove it from that campaign first.'];
+    }
 
     header("Location: account_detail.php?id=$accountId");
     exit;
@@ -166,6 +178,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_interaction'])) {
         'notes' => $_POST['notes'] ?? ''
     ]);
 
+    $_SESSION['flash'] = ['type' => 'success', 'message' => 'Interaction logged.'];
     header("Location: account_detail.php?id=$accountId");
     exit;
 }
@@ -193,6 +206,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_interaction'])
         'account_id' => $accountId
     ]);
 
+    $_SESSION['flash'] = ['type' => 'success', 'message' => 'Interaction updated.'];
     header("Location: account_detail.php?id=$accountId");
     exit;
 }
@@ -214,6 +228,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_interaction'])
         'account_id' => $accountId
     ]);
 
+    $_SESSION['flash'] = ['type' => 'success', 'message' => 'Interaction deleted.'];
     header("Location: account_detail.php?id=$accountId");
     exit;
 }
@@ -223,8 +238,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_interaction'])
 | DELETE ACCOUNT
 |--------------------------------------------------------------------------
 */
-$deleteError = '';
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_account'])) {
 
     try {
@@ -235,13 +248,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_account'])) {
         $db->prepare("DELETE FROM accounts WHERE id=:id")
            ->execute(['id' => $accountId]);
 
+        $_SESSION['flash'] = ['type' => 'success', 'message' => 'Customer deleted.'];
         header("Location: accounts.php");
         exit;
 
     } catch (\PDOException $e) {
         // Blocked by a foreign key — the account still has linked RFQs or campaigns.
-        $deleteError = 'This customer cannot be deleted because it still has linked RFQs or campaigns. '
-                     . 'Remove or reassign those first.';
+        $_SESSION['flash'] = ['type' => 'error', 'message' =>
+            'This customer cannot be deleted because it still has linked RFQs or campaigns. '
+            . 'Remove or reassign those first.'];
     }
 }
 
@@ -299,12 +314,6 @@ include __DIR__ . '/../../../app/Shared/sidebar.php';
         <?php endif; ?>
     </div>
 </div>
-
-<?php if (!empty($deleteError)): ?>
-<div class="form-errors">
-    <p><?= htmlspecialchars($deleteError) ?></p>
-</div>
-<?php endif; ?>
 
 <form method="POST">
 

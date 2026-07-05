@@ -387,12 +387,12 @@ Create the planning package that shows what the CRM will look like, how it will 
 
 ### FP3 Deliverables
 
-- [ x] Sitemap
-- [x ] Role-based UI map
-- [x ] Student/module ownership map
-- [ x] Repo structure
-- [ x] Initial wireframe plan
-- [x ] FP4–FP10 schedule
+- [x] Sitemap
+- [x] Role-based UI map
+- [x] Student/module ownership map
+- [x] Repo structure
+- [x] Initial wireframe plan
+- [x] FP4–FP10 schedule
 
 ---
 
@@ -430,16 +430,16 @@ Create the first working foundation of the application: repo, database connectio
 
 ### Casey — Inventory Management
 
-- [ ] Create products table/schema draft.
-- [ ] Create inventory/stock fields.
-- [ ] Include available quantity and reserved quantity.
-- [ ] Build basic Inventory List page.
-- [ ] Include fields for product name, SKU, price, and description.
+- [x] Create products table/schema draft.
+- [x] Create inventory/stock fields.
+- [x] Include available quantity and reserved quantity.
+- [x] Build basic Inventory List page.
+- [x] Include fields for product name, SKU, price, and description.
 
 ### Jonah / Marketing — Removed from Group
 
-- [ ] Originally responsible for campaign table/schema draft.
-- [ ] Originally responsible for basic Campaigns List page.
+- [x] Originally responsible for campaign table/schema draft.
+- [x] Originally responsible for basic Campaigns List page.
 - [ ] **Note:** Jonah was removed from the group. These tasks must be reassigned or discussed with the instructor.
 
 ### FP4 Deliverables
@@ -461,9 +461,9 @@ Build the first create/edit/read flows for each module.
 ### All Active Members
 
 - [x] Apply shared navbar/sidebar layout across module pages.
-- [] Apply Bootstrap styling consistently.
+- [x] Apply Bootstrap styling consistently.
 - [x] Add shared validation helper functions.
-- [] Add basic error/success message display.
+- [x] Add basic error/success message display.
 - [x] Make sure all pages connect to the shared database connection.
 
 ### Max — Customer Management
@@ -485,11 +485,11 @@ Build the first create/edit/read flows for each module.
 
 ### Casey — Inventory Management
 
-- [ ] Build product create/edit form.
-- [ ] Build stock update form.
-- [ ] Save products to MySQL.
-- [ ] Display product list from MySQL.
-- [ ] Track available and reserved quantities.
+- [x] Build product create/edit form.
+- [x] Build stock update form.
+- [x] Save products to MySQL.
+- [x] Display product list from MySQL.
+- [x] Track available and reserved quantities.
 
 ### Jonah / Marketing — Removed from Group
 
@@ -502,7 +502,7 @@ Build the first create/edit/read flows for each module.
 - [x] Create/edit forms for each active module
 - [x] Basic validation
 - [x] Database insert/update/read working
-- [] Shared Bootstrap layout applied
+- [x] Shared Bootstrap layout applied
 
 ---
 
@@ -514,10 +514,10 @@ Move beyond simple CRUD and build the actual business workflows inside each modu
 
 ### All Active Members
 
-- [ ] Add role-based access checks.
-- [ ] Add shared error handling.
-- [ ] Check that each module follows the shared layout and file structure.
-- [ ] Confirm each module can show useful business data, not just raw tables.
+- [x] Add role-based access checks.
+- [x] Add shared error handling.
+- [x] Check that each module follows the shared layout and file structure.
+- [x] Confirm each module can show useful business data, not just raw tables.
 
 ### Max — Customer Management
 
@@ -526,7 +526,7 @@ Move beyond simple CRUD and build the actual business workflows inside each modu
 - [X] Allow calls, emails, notes, and meetings to be logged.
 - [X] Show interactions under the correct account/contact.
 - [X] Add customer search by name, email, and tags.
-- [ ] implement role checks 
+- [x] implement role checks 
 
 
 ### Trevor — RFQ / Pipeline Management
@@ -540,17 +540,17 @@ Move beyond simple CRUD and build the actual business workflows inside each modu
 
 ### Casey — Inventory Management
 
-- [ ] Build inventory reservation view.
-- [ ] Add low-stock indicators.
-- [ ] Allow reserved quantity to be tracked separately from available quantity.
-- [ ] Prepare reservation logic for RFQ integration.
-- [ ] implement role checks 
+- [x] Build inventory reservation view.
+- [x] Add low-stock indicators.
+- [x] Allow reserved quantity to be tracked separately from available quantity.
+- [x] Prepare reservation logic for RFQ integration.
+- [x] implement role checks 
 
 ### Jonah / Marketing — Removed from Group
 
 - [x] Originally responsible for campaign audience selection.
 - [x] Originally responsible for using tags/segments/customer filters.
-- [ ] implement role checks 
+- [x] implement role checks 
 
 - [ ] **Note:** Jonah was removed from the group. These tasks must be reassigned or discussed with the instructor.
 
@@ -559,9 +559,9 @@ Move beyond simple CRUD and build the actual business workflows inside each modu
 - [x] Customer interaction history
 - [x] RFQ stage-change workflow
 - [x] Quote workflow
-- [ ] Inventory reservation/stock workflow
-- [ ] Role checks
-- [ ] Shared error handling
+- [x] Inventory reservation/stock workflow
+- [x] Role checks
+- [x] Shared error handling
 
 ---
 

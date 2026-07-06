@@ -74,6 +74,20 @@ class InventoryController
                 : '/modules/inventory/products.php?page=detail';
             header('Location: ' . $back);
             exit;
+        } catch (\PDOException $e) {
+            // Safety net: InventoryService::createProduct()/updateProduct() already
+            // check for a duplicate SKU up front, but if a unique-constraint violation
+            // (SQLSTATE 23000) reaches the database anyway — e.g. two submits at once —
+            // show the same friendly, dismissible error instead of a raw 500.
+            $message = $e->getCode() === '23000'
+                ? 'That SKU is already in use by another product.'
+                : 'Something went wrong while saving this product.';
+            $_SESSION['flash'] = ['type' => 'error', 'message' => $message];
+            $back = $id !== null
+                ? '/modules/inventory/products.php?page=detail&id=' . $id
+                : '/modules/inventory/products.php?page=detail';
+            header('Location: ' . $back);
+            exit;
         }
     }
 

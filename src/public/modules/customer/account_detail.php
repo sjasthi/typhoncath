@@ -321,6 +321,7 @@ include __DIR__ . '/../../../app/Shared/sidebar.php';
 
 <?php
 function field($label,$name,$value,$editMode){
+    $value = (string)($value ?? '');
     echo "<tr><th>$label</th><td>";
 
     if ($editMode) {

@@ -3,6 +3,9 @@ namespace App\Modules\Inventory;
 
 use App\Core\Database;
 
+// Data access layer for products, their stock levels, and RFQ reservations.
+// All SQL for the Inventory module lives here — InventoryService owns the
+// business rules and calls into these methods.
 class InventoryRepository
 {
     /**
@@ -52,6 +55,19 @@ class InventoryRepository
              WHERE p.id = ?"
         );
         $stmt->execute([$id]);
+        $result = $stmt->fetch();
+        return $result ?: null;
+    }
+
+    /**
+     * Find a product by exact SKU match, or null if no product uses it.
+     * Used to block duplicate SKUs when creating/editing products.
+     */
+    public function findBySku(string $sku): ?array
+    {
+        $db = Database::connection();
+        $stmt = $db->prepare("SELECT id, product_name, sku FROM products WHERE sku = ? LIMIT 1");
+        $stmt->execute([$sku]);
         $result = $stmt->fetch();
         return $result ?: null;
     }
@@ -108,17 +124,21 @@ class InventoryRepository
     }
 
     /**
-     * Get all reservations, joined with product and RFQ info.
+     * Get all reservations, joined with product/RFQ info and the product's
+     * current available quantity (so the reservations page can show how much
+     * stock is left alongside what's already reserved).
      */
     public function allReservations(): array
     {
         $db = Database::connection();
         $stmt = $db->prepare(
             "SELECT r.id, r.rfq_id, r.product_id, r.quantity_reserved, r.reservation_status,
-                    r.created_at, p.product_name, p.sku, rfq.title AS rfq_title
+                    r.created_at, p.product_name, p.sku, rfq.title AS rfq_title,
+                    i.available_quantity
              FROM rfq_inventory_reservations r
              JOIN products p ON p.id = r.product_id
              JOIN rfqs rfq ON rfq.id = r.rfq_id
+             LEFT JOIN inventory i ON i.product_id = r.product_id
              ORDER BY r.created_at DESC"
         );
         $stmt->execute();

@@ -1,6 +1,8 @@
 <?php
 namespace App\Modules\Inventory;
 
+// Business rules for the Inventory module: product validation, stock
+// adjustments, and reservation lifecycle (reserve / release / convert).
 class InventoryService
 {
     private InventoryRepository $repo;
@@ -55,6 +57,9 @@ class InventoryService
         if ($startingQuantity < 0) {
             throw new \InvalidArgumentException('Starting quantity cannot be negative.');
         }
+        if ($this->repo->findBySku($sku) !== null) {
+            throw new \InvalidArgumentException("SKU \"{$sku}\" is already in use by another product.");
+        }
 
         return $this->repo->create($productName, $sku, $price, $description, $startingQuantity);
     }
@@ -72,6 +77,10 @@ class InventoryService
         }
         if ($price < 0) {
             throw new \InvalidArgumentException('Price cannot be negative.');
+        }
+        $existing = $this->repo->findBySku($sku);
+        if ($existing !== null && (int) $existing['id'] !== $id) {
+            throw new \InvalidArgumentException("SKU \"{$sku}\" is already in use by another product.");
         }
 
         return $this->repo->updateProduct($id, $productName, $sku, $price, $description);
@@ -123,6 +132,10 @@ class InventoryService
      * - Cannot reserve more than what's currently available.
      * - On success, moves quantity from available -> reserved on the product,
      *   and creates a reservation record linked to the RFQ.
+     *
+     * TODO: once a backorder feature exists, this is the place to allow a
+     * reservation to exceed available_quantity and flag the excess instead
+     * of rejecting it outright.
      */
     public function reserveForRfq(int $rfqId, int $productId, int $quantity): int
     {

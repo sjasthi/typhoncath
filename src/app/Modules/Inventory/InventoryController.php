@@ -1,6 +1,8 @@
 <?php
 namespace App\Modules\Inventory;
 
+// HTTP-facing entry points for the Inventory module (product CRUD, stock
+// updates, and reservation actions). Routed from public/modules/inventory/products.php.
 class InventoryController
 {
     private InventoryService $service;

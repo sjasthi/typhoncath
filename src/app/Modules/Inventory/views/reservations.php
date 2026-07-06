@@ -1,4 +1,5 @@
 <?php
+// Badge color per reservation status, matching the RFQ module's badge styling.
 $statusBadge = [
     'Reserved'  => 'rfq-badge-warning',
     'Released'  => 'rfq-badge-neutral',
@@ -20,6 +21,7 @@ $statusBadge = [
                 <th>Product</th>
                 <th>SKU</th>
                 <th>Qty Reserved</th>
+                <th>Available</th>
                 <th>Status</th>
                 <th>Created</th>
                 <th>Actions</th>
@@ -28,7 +30,7 @@ $statusBadge = [
         <tbody>
             <?php if (empty($reservations)): ?>
                 <tr>
-                    <td colspan="8" class="rfq-list-empty text-muted">No reservations found.</td>
+                    <td colspan="9" class="rfq-list-empty text-muted">No reservations found.</td>
                 </tr>
             <?php else: ?>
                 <?php foreach ($reservations as $r):
@@ -45,6 +47,7 @@ $statusBadge = [
                     <td><?= htmlspecialchars($r['product_name']) ?></td>
                     <td class="rfq-list-id"><?= htmlspecialchars($r['sku']) ?></td>
                     <td><?= (int)$r['quantity_reserved'] ?></td>
+                    <td><?= (int)($r['available_quantity'] ?? 0) ?></td>
                     <td><span class="rfq-badge <?= $badge ?>"><?= htmlspecialchars($r['reservation_status']) ?></span></td>
                     <td class="rfq-list-date"><?= date('M j, Y', strtotime($r['created_at'])) ?></td>
                     <td style="white-space:nowrap;">

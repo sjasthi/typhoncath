@@ -41,16 +41,15 @@
                     <span class="text-muted" style="font-size:0.82rem;">Units currently available for sale or reservation</span>
                 </div>
                 <div class="rfq-form-group">
-                    <label class="rfq-form-label">Reserved Quantity <span class="rfq-form-required">*</span></label>
+                    <label class="rfq-form-label">Reserved Quantity</label>
                     <input
                         type="number"
-                        min="0"
-                        name="reserved_quantity"
                         class="form-control"
                         value="<?= (int)$product['reserved_quantity'] ?>"
-                        required
+                        disabled
+                        readonly
                     >
-                    <span class="text-muted" style="font-size:0.82rem;">Units held for active RFQ reservations</span>
+                    <span class="text-muted" style="font-size:0.82rem;">Read-only — driven automatically by RFQ reservations. Reserve stock from an RFQ, not here.</span>
                 </div>
             </div>
 

@@ -98,10 +98,9 @@ class InventoryController
     {
         $productId = (int) ($_POST['product_id'] ?? 0);
         $availableQuantity = (int) ($_POST['available_quantity'] ?? 0);
-        $reservedQuantity = (int) ($_POST['reserved_quantity'] ?? 0);
 
         try {
-            $this->service->updateStock($productId, $availableQuantity, $reservedQuantity);
+            $this->service->updateStock($productId, $availableQuantity);
             $_SESSION['flash'] = ['type' => 'success', 'message' => 'Stock levels updated successfully.'];
             header('Location: /modules/inventory/products.php?page=detail&id=' . $productId);
             exit;

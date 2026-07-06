@@ -127,12 +127,36 @@ class RFQService
 
     /**
      * Change only the stage of an RFQ.
-     * This is the single place to add stage-transition side-effects in future
+     * This is the single place to add stage-transition side-effects
      * (e.g. release inventory on Lost, convert reservations on Won).
+     *
+     * On a "Won" transition, every still-Reserved reservation linked to the
+     * RFQ is converted to "sold": each is moved to the terminal `Converted`
+     * status, which decrements the product's reserved_quantity (the stock is
+     * consumed/shipped and is not returned to available).
      */
     public function changeStage(int $rfqId, string $stage): void
     {
         $this->repo->updateStage($rfqId, $stage);
+
+        if (strcasecmp($stage, 'Won') === 0) {
+            $this->convertReservationsToSold($rfqId);
+        }
+    }
+
+    /**
+     * Convert all of an RFQ's active (Reserved) reservations to sold.
+     * Each transition is applied via the repository, which decrements the
+     * product's reserved_quantity transactionally and skips any reservation
+     * that is no longer Reserved.
+     */
+    private function convertReservationsToSold(int $rfqId): void
+    {
+        foreach ($this->repo->getReservationsByRfqId($rfqId) as $res) {
+            if (($res['reservation_status'] ?? '') === 'Reserved') {
+                $this->repo->updateReservationStatus((int)$res['id'], 'Converted');
+            }
+        }
     }
 
     /**

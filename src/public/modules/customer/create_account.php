@@ -47,6 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'source'       => $input['source'],
                 'tags'         => $input['tags'],
             ]);
+            $_SESSION['flash'] = ['type' => 'success', 'message' => "Account \"{$input['account_name']}\" created."];
             header('Location: accounts.php');
             exit;
         }
@@ -73,6 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'phone'      => $input['phone'],
                 'title'      => $input['title'],
             ]);
+            $_SESSION['flash'] = ['type' => 'success', 'message' => "Contact \"{$input['first_name']} {$input['last_name']}\" added."];
             header('Location: account_detail.php?id=' . (int)$input['account_id']);
             exit;
         }

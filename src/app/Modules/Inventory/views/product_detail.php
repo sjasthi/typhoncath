@@ -10,20 +10,6 @@ $pageTitle = $isEdit ? 'Edit Product' : 'Add Product';
         <a href="/modules/inventory/products.php" class="btn rfq-list-clear-btn">&#8592; Back to Inventory</a>
     </div>
 
-    <!-- Flash-style inline alerts -->
-    <?php if (!empty($_GET['saved'])): ?>
-        <div class="alert alert-success">Product saved successfully.</div>
-    <?php endif; ?>
-    <?php if (!empty($errors ?? [])): ?>
-        <div class="rfq-form-errors">
-            <?php foreach ($errors as $e): ?>
-                <p><?= htmlspecialchars($e) ?></p>
-            <?php endforeach; ?>
-        </div>
-    <?php elseif (!empty($error)): ?>
-        <div class="rfq-form-errors"><p><?= htmlspecialchars($error) ?></p></div>
-    <?php endif; ?>
-
     <form method="POST" action="/modules/inventory/products.php?page=detail" class="rfq-form">
         <?php if ($isEdit): ?>
             <input type="hidden" name="id" value="<?= (int)$product['id'] ?>">
@@ -117,6 +103,7 @@ $pageTitle = $isEdit ? 'Edit Product' : 'Add Product';
                 <p class="rfq-detail-meta"><?= date('M j, Y', strtotime($product['updated_at'] ?? 'now')) ?></p>
             </div>
         </div>
+        <?php // TODO(Trevor): Add an inventory movement history/timeline here — show every stock event for this SKU (reserved, released, sold/converted, manual adjustment) with when/why/who. Requires an append-only inventory_movements ledger table. ?>
         <div style="margin-top:1rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
             <a href="/modules/inventory/products.php?page=stock&id=<?= (int)$product['id'] ?>" class="btn btn-primary" style="font-size:0.9rem;">Update Stock Levels</a>
             <a href="/modules/inventory/products.php?page=reservations" class="btn rfq-list-clear-btn" style="font-size:0.9rem;">View Reservations</a>

@@ -8,10 +8,6 @@
         <div class="alert alert-danger">Product not found.</div>
     <?php else: ?>
 
-        <?php if (!empty($error)): ?>
-            <div class="rfq-form-errors"><p><?= htmlspecialchars($error) ?></p></div>
-        <?php endif; ?>
-
         <!-- Product summary -->
         <div class="rfq-detail-grid" style="margin-bottom:1.5rem; grid-template-columns: repeat(auto-fit, minmax(140px,1fr));">
             <div class="rfq-detail-section">

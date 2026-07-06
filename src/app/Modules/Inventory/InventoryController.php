@@ -56,17 +56,22 @@ class InventoryController
         try {
             if ($id === null) {
                 $newId = $this->service->createProduct($productName, $sku, $price, $description, $startingQuantity);
-                header('Location: /modules/inventory/products.php?page=detail&id=' . $newId . '&saved=1');
+                $_SESSION['flash'] = ['type' => 'success', 'message' => "\"{$productName}\" was created successfully."];
+                header('Location: /modules/inventory/products.php?page=detail&id=' . $newId);
                 exit;
             }
 
             $this->service->updateProduct($id, $productName, $sku, $price, $description);
-            header('Location: /modules/inventory/products.php?page=detail&id=' . $id . '&saved=1');
+            $_SESSION['flash'] = ['type' => 'success', 'message' => "\"{$productName}\" was saved successfully."];
+            header('Location: /modules/inventory/products.php?page=detail&id=' . $id);
             exit;
         } catch (\InvalidArgumentException $e) {
-            $product = $id !== null ? $this->service->getProductDetail($id) : null;
-            $error = $e->getMessage();
-            include __DIR__ . '/views/product_detail.php';
+            $_SESSION['flash'] = ['type' => 'error', 'message' => $e->getMessage()];
+            $back = $id !== null
+                ? '/modules/inventory/products.php?page=detail&id=' . $id
+                : '/modules/inventory/products.php?page=detail';
+            header('Location: ' . $back);
+            exit;
         }
     }
 
@@ -95,12 +100,13 @@ class InventoryController
 
         try {
             $this->service->updateStock($productId, $availableQuantity, $reservedQuantity);
-            header('Location: /modules/inventory/products.php?page=detail&id=' . $productId . '&saved=1');
+            $_SESSION['flash'] = ['type' => 'success', 'message' => 'Stock levels updated successfully.'];
+            header('Location: /modules/inventory/products.php?page=detail&id=' . $productId);
             exit;
         } catch (\InvalidArgumentException $e) {
-            $product = $this->service->getProductDetail($productId);
-            $error = $e->getMessage();
-            include __DIR__ . '/views/stock_update.php';
+            $_SESSION['flash'] = ['type' => 'error', 'message' => $e->getMessage()];
+            header('Location: /modules/inventory/products.php?page=stock&id=' . $productId);
+            exit;
         }
     }
 
@@ -156,7 +162,6 @@ class InventoryController
     public function reservations(): void
     {
         $reservations = $this->service->getReservations();
-        $error = $_GET['error'] ?? null;
 
         include __DIR__ . '/views/reservations.php';
     }
@@ -173,15 +178,18 @@ class InventoryController
         try {
             if ($action === 'release') {
                 $this->service->releaseReservation($id);
+                $_SESSION['flash'] = ['type' => 'success', 'message' => 'Reservation released.'];
             } elseif ($action === 'convert') {
                 $this->service->convertReservation($id);
+                $_SESSION['flash'] = ['type' => 'success', 'message' => 'Reservation converted.'];
             } else {
                 throw new \InvalidArgumentException('Unknown action.');
             }
             header('Location: /modules/inventory/products.php?page=reservations');
             exit;
         } catch (\Exception $e) {
-            header('Location: /modules/inventory/products.php?page=reservations&error=' . urlencode($e->getMessage()));
+            $_SESSION['flash'] = ['type' => 'error', 'message' => $e->getMessage()];
+            header('Location: /modules/inventory/products.php?page=reservations');
             exit;
         }
     }

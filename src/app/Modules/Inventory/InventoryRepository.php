@@ -95,6 +95,9 @@ class InventoryRepository
 
     /**
      * Update available/reserved stock quantities for a product.
+     * Reserved is driven only by the RFQ reservation flow, so this low-level
+     * setter is intended for reservation sync (reserve/release/convert), not
+     * for manual edits. Manual stock edits should use updateAvailableQuantity().
      */
     public function updateStock(int $productId, int $availableQuantity, int $reservedQuantity): bool
     {
@@ -105,6 +108,20 @@ class InventoryRepository
              WHERE product_id = ?"
         );
         return $stmt->execute([$availableQuantity, $reservedQuantity, $productId]);
+    }
+
+    /**
+     * Update only the available quantity for a product, leaving reserved_quantity
+     * untouched. Reserved is owned by the RFQ reservation flow and must never be
+     * set by hand from the stock form.
+     */
+    public function updateAvailableQuantity(int $productId, int $availableQuantity): bool
+    {
+        $db = Database::connection();
+        $stmt = $db->prepare(
+            "UPDATE inventory SET available_quantity = ? WHERE product_id = ?"
+        );
+        return $stmt->execute([$availableQuantity, $productId]);
     }
 
     /**

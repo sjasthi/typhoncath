@@ -78,17 +78,19 @@ class InventoryService
     }
 
     /**
-     * Business rule: stock can never go negative, and reserved quantity
-     * can never exceed available + reserved combined (i.e. you can't
-     * reserve stock that doesn't exist).
+     * Business rule: manual stock edits set only the available quantity and can
+     * never go negative. Reserved quantity is NOT editable here — it is owned and
+     * kept in sync exclusively by the RFQ reservation flow (reserve/release/
+     * convert), so a product's reserved count always traces back to real
+     * reservation rows.
      */
-    public function updateStock(int $productId, int $availableQuantity, int $reservedQuantity): bool
+    public function updateStock(int $productId, int $availableQuantity): bool
     {
-        if ($availableQuantity < 0 || $reservedQuantity < 0) {
-            throw new \InvalidArgumentException('Stock quantities cannot be negative.');
+        if ($availableQuantity < 0) {
+            throw new \InvalidArgumentException('Available quantity cannot be negative.');
         }
 
-        return $this->repo->updateStock($productId, $availableQuantity, $reservedQuantity);
+        return $this->repo->updateAvailableQuantity($productId, $availableQuantity);
     }
 
     /**

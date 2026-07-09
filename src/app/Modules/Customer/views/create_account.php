@@ -29,6 +29,7 @@
     <?php endif; ?>
 
     <form method="POST" action="" class="form" id="create-entity-form">
+        <?= App\Core\Csrf::field() ?>
 
         <!-- Type selector -->
         <div class="form-group">

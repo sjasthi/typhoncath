@@ -8,6 +8,7 @@
         <?php endif; ?>
 
         <form method="POST" action="/login">
+            <?= App\Core\Csrf::field() ?>
             <label>Email</label>
             <input class="form-control" type="email" name="email" required
                    value="<?= htmlspecialchars($_POST['email'] ?? '') ?>">

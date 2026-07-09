@@ -25,6 +25,7 @@
         </div>
 
         <form method="POST" action="/modules/inventory/products.php?page=stock" class="rfq-form">
+            <?= App\Core\Csrf::field() ?>
             <input type="hidden" name="product_id" value="<?= (int)$product['id'] ?>">
 
             <div class="rfq-form-row">

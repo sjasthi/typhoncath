@@ -7,6 +7,9 @@ use App\Modules\Inventory\InventoryController;
 
 Auth::requireLogin();
 
+// Reject state-changing (POST) requests without a valid CSRF token.
+require_once __DIR__ . '/../../../app/Middleware/csrf.php';
+
 // Shows the shared styled 403 page (same one the RFQ module uses) and halts
 // the request when the current user lacks the given permission.
 function denyUnlessAllowed(string $permission): void

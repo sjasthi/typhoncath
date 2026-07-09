@@ -23,6 +23,7 @@ $allStages = ['New', 'In Review', 'Quoted', 'Negotiation', 'Won', 'Lost'];
 
             <!-- Quick stage changer -->
             <form method="POST" action="/modules/rfq/detail.php?id=<?= (int)$rfq['id'] ?>" class="rfq-stage-form">
+                <?= App\Core\Csrf::field() ?>
                 <input type="hidden" name="_action" value="stage">
                 <select
                     name="stage"
@@ -40,6 +41,7 @@ $allStages = ['New', 'In Review', 'Quoted', 'Negotiation', 'Won', 'Lost'];
             <a href="/modules/rfq/edit.php?id=<?= (int)$rfq['id'] ?>" class="btn btn-primary" style="font-size:0.85rem;padding:6px 14px;">Edit</a>
             <form method="POST" action="/modules/rfq/detail.php?id=<?= (int)$rfq['id'] ?>" style="margin:0;"
                   onsubmit="return confirm('Delete this RFQ and all its quotes and reservations? This cannot be undone.');">
+                <?= App\Core\Csrf::field() ?>
                 <input type="hidden" name="_action" value="delete">
                 <button type="submit" class="btn btn-danger" style="font-size:0.85rem;padding:6px 14px;">Delete</button>
             </form>
@@ -187,6 +189,7 @@ $allStages = ['New', 'In Review', 'Quoted', 'Negotiation', 'Won', 'Lost'];
                        class="btn btn-secondary" style="font-size:0.78rem;padding:3px 8px;">Edit</a>
                     <form method="POST" action="/modules/rfq/detail.php?id=<?= (int)$rfq['id'] ?>" style="display:inline;"
                           onsubmit="return confirm('Delete this quote?');">
+                        <?= App\Core\Csrf::field() ?>
                         <input type="hidden" name="_action"  value="delete_quote">
                         <input type="hidden" name="quote_id" value="<?= (int)$q['id'] ?>">
                         <input type="hidden" name="rfq_id"   value="<?= (int)$rfq['id'] ?>">
@@ -250,6 +253,7 @@ $allStages = ['New', 'In Review', 'Quoted', 'Negotiation', 'Won', 'Lost'];
                 <td>
                     <?php if ($res['reservation_status'] === 'Reserved'): ?>
                     <form method="POST" action="/modules/rfq/detail.php?id=<?= (int)$rfq['id'] ?>" style="margin:0;">
+                        <?= App\Core\Csrf::field() ?>
                         <input type="hidden" name="_action"        value="update_reservation_status">
                         <input type="hidden" name="reservation_id" value="<?= (int)$res['id'] ?>">
                         <input type="hidden" name="rfq_id"         value="<?= (int)$rfq['id'] ?>">
@@ -272,6 +276,7 @@ $allStages = ['New', 'In Review', 'Quoted', 'Negotiation', 'Won', 'Lost'];
                     <?php endif; ?>
                     <form method="POST" action="/modules/rfq/detail.php?id=<?= (int)$rfq['id'] ?>" style="display:inline;"
                           onsubmit="return confirm('Remove this reservation?<?= $res['reservation_status'] === 'Reserved' ? ' Stock will be returned to inventory.' : '' ?>');">
+                        <?= App\Core\Csrf::field() ?>
                         <input type="hidden" name="_action"        value="delete_reservation">
                         <input type="hidden" name="reservation_id" value="<?= (int)$res['id'] ?>">
                         <input type="hidden" name="rfq_id"         value="<?= (int)$rfq['id'] ?>">

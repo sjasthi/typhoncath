@@ -6,6 +6,9 @@ use App\Modules\RFQ\RFQController;
 
 Auth::requireLogin();
 
+// Reject state-changing (POST) requests without a valid CSRF token.
+require_once __DIR__ . '/../../../app/Middleware/csrf.php';
+
 $rfqId = (int)($_GET['rfq_id'] ?? $_POST['rfq_id'] ?? 0);
 
 if ($rfqId === 0) {

@@ -573,44 +573,44 @@ Connect modules together so the CRM behaves like one system instead of separate 
 
 ### All Active Members
 
-- [ ] Build shared service/helper functions.
-- [ ] Add internal module communication patterns.
-- [ ] Confirm shared database relationships work across modules.
-- [ ] Test cross-module links manually.
+- [x] Build shared service/helper functions.
+- [x] Add internal module communication patterns.
+- [x] Confirm shared database relationships work across modules.
+- [x] Test cross-module links manually.
 
 ### Max — Customer Management
 
-- [ ] Expose customer lookup for RFQ creation.
-- [ ] Expose customer tags/segments for campaign audience selection if the campaign module remains in scope.
-- [ ] Make account/contact data usable by other modules.
+- [x] Expose customer lookup for RFQ creation.
+- [x] Expose customer tags/segments for campaign audience selection if the campaign module remains in scope.
+- [x] Make account/contact data usable by other modules.
 
 ### Trevor — RFQ / Pipeline Management
 
-- [ ] Link RFQs to customers.
-- [ ] Connect RFQ creation to customer lookup.
-- [ ] Add inventory reservation request/attachment from RFQ detail.
-- [ ] Ensure RFQ won/lost status can affect reporting.
+- [x] Link RFQs to customers.
+- [x] Connect RFQ creation to customer lookup.
+- [x] Add inventory reservation request/attachment from RFQ detail.
+- [x] Ensure RFQ won/lost status can affect reporting.
 
 ### Casey — Inventory Management
 
-- [ ] Integrate inventory reservations with RFQs.
-- [ ] Show RFQ-linked reservations.
-- [ ] Update reserved quantity when inventory is attached to an RFQ.
-- [ ] Prepare release/convert behavior depending on RFQ outcome.
+- [x] Integrate inventory reservations with RFQs.
+- [x] Show RFQ-linked reservations.
+- [x] Update reserved quantity when inventory is attached to an RFQ.
+- [x] Prepare release/convert behavior depending on RFQ outcome.
 
 ### Jonah / Marketing — Removed from Group
 
-- [ ] Originally responsible for integrating campaigns with customer data.
-- [ ] Originally responsible for campaign audience selection using customer segments/tags.
+- [x] Originally responsible for integrating campaigns with customer data.
+- [x] Originally responsible for campaign audience selection using customer segments/tags.
 - [ ] **Note:** Jonah was removed from the group. These tasks must be reassigned or discussed with the instructor.
 
 ### FP7 Deliverables
 
-- [ ] RFQs linked to customers
-- [ ] RFQs linked to inventory reservations
-- [ ] Customer lookup available to other modules
-- [ ] Shared service/helper functions
-- [ ] Internal module communication working
+- [x] RFQs linked to customers
+- [x] RFQs linked to inventory reservations
+- [x] Customer lookup available to other modules
+- [x] Shared service/helper functions
+- [x] Internal module communication working
 
 ---
 
@@ -622,45 +622,45 @@ Build a unified dashboard and reports page that summarize the CRM.
 
 ### All Active Members
 
-- [ ] Build unified dashboard page.
+- [x] Build unified dashboard page.
 - [ ] Build reports page.
-- [ ] Add dashboard cards for each module.
-- [ ] Make sure dashboard data comes from MySQL, not hardcoded values.
-- [ ] Include customer count, active RFQs, campaign performance if still in scope, inventory status, low-stock products, and reserved inventory.
+- [x] Add dashboard cards for each module.
+- [x] Make sure dashboard data comes from MySQL, not hardcoded values.
+- [x] Include customer count, active RFQs, campaign performance if still in scope, inventory status, low-stock products, and reserved inventory.
 
 ### Max — Customer Management
 
-- [ ] Add customer count dashboard card.
-- [ ] Add recent interactions card/table.
+- [x] Add customer count dashboard card.
+- [x] Add recent interactions card/table.
 - [ ] Add customer summary data for reports.
 
 ### Trevor — RFQ / Pipeline Management
 
-- [ ] Add RFQ stage/pipeline dashboard cards.
-- [ ] Add active RFQs count.
-- [ ] Add open/won/lost summary.
+- [x] Add RFQ stage/pipeline dashboard cards.
+- [x] Add active RFQs count.
+- [x] Add open/won/lost summary.
 - [ ] Add quote/deal tracking summary if available.
 
 ### Casey — Inventory Management
 
-- [ ] Add inventory status dashboard cards.
-- [ ] Add low-stock products card/table.
-- [ ] Add reserved inventory summary.
+- [x] Add inventory status dashboard cards.
+- [x] Add low-stock products card/table.
+- [x] Add reserved inventory summary.
 
 ### Jonah / Marketing — Removed from Group
 
-- [ ] Originally responsible for campaign metrics dashboard cards.
-- [ ] Originally responsible for sent count, open rate, and click rate metrics.
+- [x] Originally responsible for campaign metrics dashboard cards.
+- [x] Originally responsible for sent count, open rate, and click rate metrics.
 - [ ] **Note:** Jonah was removed from the group. These tasks must be reassigned or discussed with the instructor.
 
 ### FP8 Deliverables
 
-- [ ] Unified dashboard
+- [x] Unified dashboard
 - [ ] Reports page
-- [ ] Customer metrics
-- [ ] RFQ metrics
-- [ ] Inventory metrics
-- [ ] Campaign metrics if reassigned / still in scope
+- [x] Customer metrics
+- [x] RFQ metrics
+- [x] Inventory metrics
+- [x] Campaign metrics if reassigned / still in scope
 
 ---
 
@@ -673,15 +673,15 @@ Test the full application, clean up UI issues, add seed data, and update documen
 ### All Active Members
 
 - [ ] Perform full integration testing.
-- [ ] Add seed data.
+- [x] Add seed data.
 - [ ] Test role permissions.
 - [ ] Test navigation across all pages.
 - [ ] Clean up UI inconsistencies.
 - [ ] Update README and docs.
 - [ ] Add known issues / limitations section.
-- [ ] Verify database indexes where needed.
-- [ ] Confirm passwords use bcrypt if authentication is implemented.
-- [ ] Confirm session management and role-based access control are documented.
+- [x] Verify database indexes where needed.
+- [x] Confirm passwords use bcrypt if authentication is implemented.
+- [x] Confirm session management and role-based access control are documented.
 
 ### Max — Customer Management
 
@@ -721,9 +721,9 @@ Test the full application, clean up UI issues, add seed data, and update documen
 - [ ] Full CRUD testing
 - [ ] Role testing
 - [ ] Integration testing
-- [ ] Seed data
+- [x] Seed data
 - [ ] UI cleanup
-- [ ] Error handling
+- [x] Error handling
 - [ ] Documentation updates
 
 ---

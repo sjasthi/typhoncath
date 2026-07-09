@@ -58,6 +58,7 @@ $roleBadgeMap = [
                     <?php if (!$isSelf): ?>
                     <form method="POST" action="/admin/users.php" style="display:inline;"
                           onsubmit="return confirm('Delete <?= htmlspecialchars(addslashes($u['name'])) ?>? This cannot be undone.');">
+                        <?= App\Core\Csrf::field() ?>
                         <input type="hidden" name="_action" value="delete">
                         <input type="hidden" name="user_id" value="<?= (int)$u['id'] ?>">
                         <button type="submit" class="btn btn-danger btn-sm">&times;</button>

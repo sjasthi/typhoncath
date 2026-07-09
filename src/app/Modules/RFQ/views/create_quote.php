@@ -19,6 +19,7 @@
     <?php endif; ?>
 
     <form method="POST" action="" class="module-form">
+        <?= App\Core\Csrf::field() ?>
         <input type="hidden" name="rfq_id" value="<?= (int)$rfq['id'] ?>">
 
         <!-- Amount & Discount -->

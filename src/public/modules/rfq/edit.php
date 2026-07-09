@@ -6,6 +6,9 @@ use App\Core\Permissions;
 use App\Modules\RFQ\RFQController;
 
 Auth::requireLogin();
+
+// Reject state-changing (POST) requests without a valid CSRF token.
+require_once __DIR__ . '/../../../app/Middleware/csrf.php';
 if (!Permissions::can('rfqs.edit')) {
     http_response_code(403);
     include __DIR__ . '/../../../app/Shared/header.php';

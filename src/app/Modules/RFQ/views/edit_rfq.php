@@ -57,6 +57,7 @@
     <?php endif; ?>
 
     <form method="POST" action="" class="module-form" id="rfq-edit-form">
+        <?= App\Core\Csrf::field() ?>
 
         <!-- Title -->
         <div class="form-group">
@@ -201,6 +202,7 @@
                     <?php endif; ?>
                     <form method="POST" action="/modules/rfq/edit.php?id=<?= (int)$rfq['id'] ?>" style="display:inline;"
                           onsubmit="return confirm('Remove this reservation?<?= $res['reservation_status'] === 'Reserved' ? ' Stock will be returned to inventory.' : '' ?>');">
+                        <?= App\Core\Csrf::field() ?>
                         <input type="hidden" name="_action"        value="delete_reservation">
                         <input type="hidden" name="reservation_id" value="<?= (int)$res['id'] ?>">
                         <input type="hidden" name="rfq_id"         value="<?= (int)$rfq['id'] ?>">

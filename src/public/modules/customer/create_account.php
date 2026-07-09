@@ -6,6 +6,9 @@ use App\Modules\Customer\CustomerRepository;
 
 Auth::requireLogin();
 
+// Reject state-changing (POST) requests without a valid CSRF token.
+require_once __DIR__ . '/../../../app/Middleware/csrf.php';
+
 $repo     = new CustomerRepository();
 $accounts = $repo->all();   // for the contact → account picker
 $errors   = [];

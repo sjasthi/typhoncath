@@ -41,6 +41,7 @@ $moduleColors = [
     </p>
 
     <form method="POST" action="" id="perm-matrix-form">
+        <?= App\Core\Csrf::field() ?>
 
         <div class="perm-matrix-scroll">
             <table class="table perm-matrix-table">

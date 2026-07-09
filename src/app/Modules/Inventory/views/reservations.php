@@ -53,11 +53,13 @@ $statusBadge = [
                     <td style="white-space:nowrap;">
                         <?php if ($r['reservation_status'] === 'Reserved'): ?>
                             <form method="POST" action="/modules/inventory/products.php?page=reservations" style="display:inline;">
+                                <?= App\Core\Csrf::field() ?>
                                 <input type="hidden" name="reservation_id" value="<?= (int)$r['id'] ?>">
                                 <input type="hidden" name="action" value="convert">
                                 <button type="submit" class="btn rfq-badge rfq-badge-success" style="border:none; cursor:pointer; font-size:0.8rem; padding:0.2rem 0.6rem;">Convert</button>
                             </form>
                             <form method="POST" action="/modules/inventory/products.php?page=reservations" style="display:inline; margin-left:4px;">
+                                <?= App\Core\Csrf::field() ?>
                                 <input type="hidden" name="reservation_id" value="<?= (int)$r['id'] ?>">
                                 <input type="hidden" name="action" value="release">
                                 <button type="submit" class="btn rfq-badge rfq-badge-danger" style="border:none; cursor:pointer; font-size:0.8rem; padding:0.2rem 0.6rem;">Release</button>

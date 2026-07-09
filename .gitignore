@@ -1,2 +1,7 @@
 src/config/database.php
 secret/
+
+# Python venv + generated commit-activity report (from test.py)
+.venv/
+commit_activity.html
+__pycache__/

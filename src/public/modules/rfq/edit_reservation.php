@@ -6,6 +6,9 @@ use App\Modules\RFQ\RFQController;
 
 Auth::requireLogin();
 
+// Reject state-changing (POST) requests without a valid CSRF token.
+require_once __DIR__ . '/../../../app/Middleware/csrf.php';
+
 $reservationId = (int)($_GET['id'] ?? 0);
 if ($reservationId === 0) {
     header('Location: /modules/rfq/pipeline.php');

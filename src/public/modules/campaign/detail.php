@@ -6,6 +6,9 @@ use App\Modules\Campaign\CampaignController;
 
 Auth::requireLogin();
 
+// Reject state-changing (POST) requests without a valid CSRF token.
+require_once __DIR__ . '/../../../app/Middleware/csrf.php';
+
 $id = (int)($_GET['id'] ?? 0);
 if ($id === 0) {
     header('Location: /modules/campaign/campaigns.php');

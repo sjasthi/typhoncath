@@ -57,6 +57,7 @@
     <?php endif; ?>
 
     <form method="POST" action="" class="module-form" id="rfq-create-form">
+        <?= App\Core\Csrf::field() ?>
 
         <!-- Title -->
         <div class="form-group">

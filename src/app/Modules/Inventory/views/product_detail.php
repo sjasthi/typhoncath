@@ -11,6 +11,7 @@ $pageTitle = $isEdit ? 'Edit Product' : 'Add Product';
     </div>
 
     <form method="POST" action="/modules/inventory/products.php?page=detail" class="rfq-form">
+        <?= App\Core\Csrf::field() ?>
         <?php if ($isEdit): ?>
             <input type="hidden" name="id" value="<?= (int)$product['id'] ?>">
         <?php endif; ?>

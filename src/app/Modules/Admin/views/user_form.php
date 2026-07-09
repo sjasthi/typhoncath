@@ -28,6 +28,7 @@ $hasCustom   = $isEdit && !empty($user['owner_user_id']);
     <?php endif; ?>
 
     <form method="POST" action="<?= htmlspecialchars($postUrl) ?>">
+        <?= App\Core\Csrf::field() ?>
         <input type="hidden" name="_action" value="<?= $action ?>">
         <?php if ($isEdit): ?>
         <input type="hidden" name="user_id" value="<?= (int)$user['id'] ?>">
@@ -98,6 +99,7 @@ $hasCustom   = $isEdit && !empty($user['owner_user_id']);
     </p>
     <form method="POST" action="/admin/users.php"
           onsubmit="return confirm('Remove custom role and revert to a standard role?');">
+        <?= App\Core\Csrf::field() ?>
         <input type="hidden" name="_action"  value="remove_custom_role">
         <input type="hidden" name="user_id"  value="<?= (int)$user['id'] ?>">
         <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
@@ -121,6 +123,7 @@ $hasCustom   = $isEdit && !empty($user['owner_user_id']);
     </p>
     <form method="POST" action="/admin/users.php"
           onsubmit="return confirm('Create a custom role for <?= htmlspecialchars(addslashes($user['name'])) ?>?');">
+        <?= App\Core\Csrf::field() ?>
         <input type="hidden" name="_action" value="create_custom_role">
         <input type="hidden" name="user_id" value="<?= (int)$user['id'] ?>">
         <button type="submit" class="btn btn-secondary">+ Create Custom Role</button>

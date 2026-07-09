@@ -1,6 +1,9 @@
 <?php
 require_once __DIR__ . '/../app/Core/bootstrap.php';
 
+// Reject state-changing (POST) requests without a valid CSRF token.
+require_once __DIR__ . '/../app/Middleware/csrf.php';
+
 use App\Core\Auth;
 
 $error = null;
@@ -30,6 +33,7 @@ include __DIR__ . '/../app/Shared/header.php';
         <?php endif; ?>
 
         <form method="POST">
+            <?= App\Core\Csrf::field() ?>
             <label>Email</label>
             <input class="form-control" type="email" name="email" required>
 

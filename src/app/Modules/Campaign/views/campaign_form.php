@@ -29,6 +29,7 @@ $backUrl  = $isEdit
     <?php endif; ?>
 
     <form method="POST" action="" class="module-form">
+        <?= App\Core\Csrf::field() ?>
 
         <!-- Campaign Name -->
         <div class="form-group">

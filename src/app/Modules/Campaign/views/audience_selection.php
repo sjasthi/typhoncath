@@ -171,6 +171,7 @@ foreach ($currentAudience as $row) {
     <?php endif; ?>
 
     <form id="audience-form" method="POST" action="" class="module-form">
+        <?= App\Core\Csrf::field() ?>
         <input type="hidden" name="campaign_id" value="<?= $campaignId ?>">
         <?php if ($isEditing): ?>
         <input type="hidden" name="_edit_segment" value="<?= htmlspecialchars($editSegmentName) ?>">
@@ -334,6 +335,7 @@ foreach ($currentAudience as $row) {
         <div id="save-preset-panel" style="display:none;margin-top:1rem;padding:1rem;background:var(--bg-subtle,#f6f7f9);border-radius:6px;border:1px solid var(--border,#e2e4e9);">
             <p class="form-label" style="margin-bottom:0.4rem;">Save current segment as a reusable preset</p>
             <form method="POST" action="" style="display:flex;gap:0.6rem;align-items:flex-end;flex-wrap:wrap;">
+                <?= App\Core\Csrf::field() ?>
                 <input type="hidden" name="_action"      value="save_preset">
                 <input type="hidden" name="campaign_id"  value="<?= $campaignId ?>">
                 <input type="hidden" name="segment_name" id="preset-segment-name-mirror">
@@ -389,7 +391,7 @@ foreach ($currentAudience as $row) {
 
         deltaEl.textContent = '…';
 
-        fetch('/modules/campaign/preview_audience.php', { method: 'POST', body })
+        fetch('/modules/campaign/preview_audience.php', { method: 'POST', body, headers: { 'X-CSRF-Token': '<?= App\Core\Csrf::token() ?>' } })
             .then(r => r.json())
             .then(data => {
                 const total = (data.accounts || 0) + (data.contacts || 0);
@@ -628,6 +630,7 @@ foreach ($currentAudience as $row) {
     <div id="import-preset-panel" style="display:none;margin-bottom:1rem;padding:1rem;background:var(--bg-subtle,#f6f7f9);border-radius:6px;border:1px solid var(--border,#e2e4e9);">
         <p class="form-label" style="margin-bottom:0.4rem;">Load a saved preset into this campaign's audience</p>
         <form method="POST" action="" style="display:flex;gap:0.6rem;align-items:flex-end;flex-wrap:wrap;">
+            <?= App\Core\Csrf::field() ?>
             <input type="hidden" name="_action"     value="apply_preset">
             <input type="hidden" name="campaign_id" value="<?= $campaignId ?>">
             <div style="flex:1;min-width:200px;">
@@ -671,6 +674,7 @@ foreach ($currentAudience as $row) {
                        class="btn btn-secondary"
                        style="font-size:0.78rem;padding:3px 10px;">Edit</a>
                     <form method="POST" action="" style="display:inline;">
+                        <?= App\Core\Csrf::field() ?>
                         <input type="hidden" name="_action"      value="remove_segment">
                         <input type="hidden" name="segment_name" value="<?= htmlspecialchars($seg['segment_name']) ?>">
                         <input type="hidden" name="campaign_id"  value="<?= $campaignId ?>">

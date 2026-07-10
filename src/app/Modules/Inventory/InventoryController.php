@@ -20,11 +20,13 @@ class InventoryController
     {
         $search = trim($_GET['search'] ?? '');
         $lowStockOnly = isset($_GET['low_stock']);
+        $searchArg = $search !== '' ? $search : null;
 
-        $products = $this->service->getProductList(
-            $search !== '' ? $search : null,
-            $lowStockOnly
-        );
+        // Shared pagination. NOTE: this module already uses ?page= for routing
+        // (detail/stock/delete), so the pagination page number rides on ?p= instead.
+        $total    = $this->service->getProductCount($searchArg, $lowStockOnly);
+        $pager    = new \App\Core\Paginator($total, $_GET['per_page'] ?? 25, $_GET['p'] ?? 1);
+        $products = $this->service->getProductList($searchArg, $lowStockOnly, $pager->limit(), $pager->offset());
 
         include __DIR__ . '/views/products_list.php';
     }

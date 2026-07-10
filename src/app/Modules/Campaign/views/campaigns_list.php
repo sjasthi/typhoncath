@@ -39,6 +39,10 @@ $typeBadge = [
             </label>
             <?php endforeach; ?>
         </div>
+        <?php
+            $perPageClass = 'form-control rfq-list-perpage-select';
+            include __DIR__ . '/../../../Shared/per_page_select.php';
+        ?>
         <button type="submit" class="btn btn-primary">Filter</button>
         <?php if ($listSearch !== '' || !empty($listStatuses)): ?>
             <a href="/modules/campaign/campaigns.php" class="btn btn-secondary">Clear</a>
@@ -94,24 +98,22 @@ $typeBadge = [
     <?php endif; ?>
 
     <?php
-    $totalPages = ($perPage > 0 && $totalCount > 0) ? (int)ceil($totalCount / $perPage) : 1;
-    if ($totalPages > 1):
+        // Windowed pager + footer via the shared components (App\Core\Paginator
+        // + Shared/pagination.php). Reuses the rfq-* pager styles.
+        $paginationClasses = [
+            'container' => 'rfq-pagination',
+            'item'      => 'rfq-page-btn',
+            'nav'       => 'rfq-pagination-nav',
+            'disabled'  => 'rfq-page-disabled',
+            'active'    => 'rfq-page-active',
+            'ellipsis'  => 'rfq-page-ellipsis',
+        ];
+        include __DIR__ . '/../../../Shared/pagination.php';
     ?>
-    <div class="rfq-pagination">
-        <?php if ($page > 1): ?>
-            <a href="?<?= htmlspecialchars(http_build_query(array_merge($_GET, ['page' => $page - 1]))) ?>"
-               class="btn btn-secondary btn-sm">&#8249; Prev</a>
-        <?php endif; ?>
-        <span class="rfq-pagination-info">
-            Page <?= $page ?> of <?= $totalPages ?>
-            &mdash; <?= number_format($totalCount) ?> campaign<?= $totalCount !== 1 ? 's' : '' ?>
-        </span>
-        <?php if ($page < $totalPages): ?>
-            <a href="?<?= htmlspecialchars(http_build_query(array_merge($_GET, ['page' => $page + 1]))) ?>"
-               class="btn btn-secondary btn-sm">Next &#8250;</a>
-        <?php endif; ?>
+    <div class="rfq-list-footer">
+        Showing <?= $pager->from() ?>–<?= $pager->to() ?> of <?= number_format($totalCount) ?> campaign<?= $totalCount !== 1 ? 's' : '' ?>
+        <?= $listSearch !== '' ? ' matching "' . htmlspecialchars($listSearch) . '"' : '' ?>
     </div>
-    <?php endif; ?>
 
 </section>
 

@@ -3,6 +3,7 @@ namespace App\Modules\Campaign;
 
 use App\Core\Auth;
 use App\Core\Permissions;
+use App\Core\Paginator;
 class CampaignController
 {
     private CampaignRepository $repo;
@@ -24,7 +25,7 @@ class CampaignController
 
     public function index(): void
     {
-        [$campaigns, $listSearch, $listStatuses, $totalCount, $page, $perPage] = $this->fetchList();
+        [$campaigns, $listSearch, $listStatuses, $totalCount, $pager] = $this->fetchList();
         $stats         = $this->repo->dashboardStats();
         $upcoming      = $this->repo->upcomingScheduledSends();
         $topPerformers = $this->repo->topPerformers();
@@ -278,14 +279,14 @@ class CampaignController
         $statuses = (array)($_GET['status'] ?? []);
         $sortCol  = $_GET['sort']  ?? 'created_at';
         $sortDir  = $_GET['dir']   ?? 'DESC';
-        $page     = max(1, (int)($_GET['page'] ?? 1));
-        $perPage  = 25;
-        $offset   = ($page - 1) * $perPage;
 
+        // Pagination delegated to the shared Paginator (whitelists per_page incl.
+        // "all", clamps the page, yields limit()/offset()).
         $totalCount = $this->repo->searchCount($q, $statuses);
-        $campaigns  = $this->repo->search($q, $sortCol, $sortDir, $perPage, $offset, $statuses);
+        $pager      = new Paginator($totalCount, $_GET['per_page'] ?? 25, $_GET['page'] ?? 1);
+        $campaigns  = $this->repo->search($q, $sortCol, $sortDir, $pager->limit(), $pager->offset(), $statuses);
 
-        return [$campaigns, $q, $statuses, $totalCount, $page, $perPage];
+        return [$campaigns, $q, $statuses, $totalCount, $pager];
     }
 
     // Extracts and sanitises campaign name, type, status, and optional scheduled date from POST.

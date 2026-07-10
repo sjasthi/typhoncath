@@ -8,6 +8,9 @@ class RFQRepository
 {
     public static array $stages = ['New', 'In Review', 'Quoted', 'Negotiation', 'Won', 'Lost'];
 
+    /** How long (seconds) cached analytics results stay fresh. */
+    private const ANALYTICS_TTL = 300;
+
     private PDO $db;
 
     public function __construct()
@@ -17,12 +20,17 @@ class RFQRepository
 
     // ── Board ─────────────────────────────────────────────────────────────────
 
-    public function allForBoard(): array
+    // NOTE: the pipeline view no longer renders a grouped board, so this is not
+    // currently called. Kept as a *bounded* helper so any future board reuse
+    // cannot silently load the entire table — callers pass an explicit cap.
+    public function allForBoard(int $limit = 200): array
     {
-        $stmt = $this->db->prepare("
+        $limit = max(1, $limit); // guard the interpolated LIMIT
+        $stmt  = $this->db->prepare("
             SELECT id, title, stage, created_at
             FROM rfqs
             ORDER BY created_at DESC
+            LIMIT {$limit}
         ");
         $stmt->execute();
         return $stmt->fetchAll();
@@ -32,10 +40,10 @@ class RFQRepository
 
     public function searchCount(string $q = '', string $idSearch = '', array $stages = []): int
     {
-        [$where, $params] = $this->buildWhere($q, $idSearch, $stages);
-        $stmt = $this->db->prepare(
-            "SELECT COUNT(*) FROM rfqs r LEFT JOIN accounts a ON a.id = r.account_id" . $where
-        );
+        [$where, $params, $joinAccounts] = $this->buildWhere($q, $idSearch, $stages);
+        // Only join accounts when the WHERE actually references it (text search).
+        $join = $joinAccounts ? ' LEFT JOIN accounts a ON a.id = r.account_id' : '';
+        $stmt = $this->db->prepare("SELECT COUNT(*) FROM rfqs r{$join}{$where}");
         $stmt->execute($params);
         return (int)$stmt->fetchColumn();
     }
@@ -129,6 +137,88 @@ class RFQRepository
             ORDER BY p.product_name ASC
         ");
         $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    // ── Autocomplete (bounded search for form pickers) ────────────────────────
+    // These back the server-side autocomplete endpoints so the create/edit forms
+    // no longer embed the entire accounts/contacts/products tables in the page.
+    // Each accepts either a search term ($q) or a single id lookup (to resolve the
+    // label of an already-selected value), and always caps its result set.
+
+    public function searchAccounts(string $q = '', ?int $id = null, int $limit = 20): array
+    {
+        $limit = max(1, min($limit, 50)); // guard the interpolated LIMIT
+        if ($id !== null) {
+            $stmt = $this->db->prepare("SELECT id, account_name FROM accounts WHERE id = ?");
+            $stmt->execute([$id]);
+        } elseif ($q !== '') {
+            $stmt = $this->db->prepare(
+                "SELECT id, account_name FROM accounts WHERE account_name LIKE ? ORDER BY account_name ASC LIMIT {$limit}"
+            );
+            $stmt->execute(["%{$q}%"]);
+        } else {
+            $stmt = $this->db->prepare(
+                "SELECT id, account_name FROM accounts ORDER BY account_name ASC LIMIT {$limit}"
+            );
+            $stmt->execute();
+        }
+        return $stmt->fetchAll();
+    }
+
+    public function searchContacts(string $q = '', ?int $accountId = null, ?int $id = null, int $limit = 20): array
+    {
+        $limit  = max(1, min($limit, 50));
+        $where  = [];
+        $params = [];
+
+        if ($id !== null) {
+            $where[]  = 'id = ?';
+            $params[] = $id;
+        } else {
+            if ($accountId !== null) {
+                $where[]  = 'account_id = ?';
+                $params[] = $accountId;
+            }
+            if ($q !== '') {
+                $where[]  = '(first_name LIKE ? OR last_name LIKE ? OR CONCAT(first_name, " ", last_name) LIKE ?)';
+                $params[] = "%{$q}%";
+                $params[] = "%{$q}%";
+                $params[] = "%{$q}%";
+            }
+        }
+
+        $sql = "SELECT id, account_id, first_name, last_name, title FROM contacts";
+        if ($where) {
+            $sql .= ' WHERE ' . implode(' AND ', $where);
+        }
+        $sql .= " ORDER BY last_name ASC, first_name ASC LIMIT {$limit}";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
+    public function searchProducts(string $q = '', ?int $id = null, int $limit = 20): array
+    {
+        $limit = max(1, min($limit, 50));
+        $base  = "SELECT p.id, p.product_name, p.sku, p.price,
+                         COALESCE(i.available_quantity, 0) AS available_quantity
+                  FROM products p
+                  LEFT JOIN inventory i ON i.product_id = p.id";
+
+        if ($id !== null) {
+            $stmt = $this->db->prepare("{$base} WHERE p.id = ?");
+            $stmt->execute([$id]);
+        } elseif ($q !== '') {
+            $stmt = $this->db->prepare(
+                "{$base} WHERE p.product_name LIKE ? OR p.sku LIKE ? ORDER BY p.product_name ASC LIMIT {$limit}"
+            );
+            $stmt->execute(["%{$q}%", "%{$q}%"]);
+        } else {
+            $stmt = $this->db->prepare("{$base} ORDER BY p.product_name ASC LIMIT {$limit}");
+            $stmt->execute();
+        }
         return $stmt->fetchAll();
     }
 
@@ -238,6 +328,13 @@ class RFQRepository
 
         $this->db->beginTransaction();
         try {
+            // Lock this product's inventory row for the duration of the
+            // transaction so concurrent reservations serialize instead of racing
+            // on available_quantity / reserved_quantity.
+            $this->db->prepare(
+                "SELECT available_quantity FROM inventory WHERE product_id = ? FOR UPDATE"
+            )->execute([$productId]);
+
             $stmt = $this->db->prepare("
                 INSERT INTO rfq_inventory_reservations (rfq_id, product_id, quantity_reserved, reservation_status)
                 VALUES (?, ?, ?, 'Reserved')
@@ -313,7 +410,7 @@ class RFQRepository
         $this->db->beginTransaction();
         try {
             $stmt = $this->db->prepare(
-                "SELECT product_id, quantity_reserved, reservation_status FROM rfq_inventory_reservations WHERE id = ?"
+                "SELECT product_id, quantity_reserved, reservation_status FROM rfq_inventory_reservations WHERE id = ? FOR UPDATE"
             );
             $stmt->execute([$id]);
             $row = $stmt->fetch();
@@ -374,7 +471,7 @@ class RFQRepository
         $this->db->beginTransaction();
         try {
             $stmt = $this->db->prepare(
-                "SELECT product_id, quantity_reserved, reservation_status FROM rfq_inventory_reservations WHERE id = ?"
+                "SELECT product_id, quantity_reserved, reservation_status FROM rfq_inventory_reservations WHERE id = ? FOR UPDATE"
             );
             $stmt->execute([$id]);
             $res = $stmt->fetch();
@@ -402,7 +499,7 @@ class RFQRepository
         $this->db->beginTransaction();
         try {
             $stmt = $this->db->prepare(
-                "SELECT product_id, quantity_reserved, reservation_status FROM rfq_inventory_reservations WHERE id = ?"
+                "SELECT product_id, quantity_reserved, reservation_status FROM rfq_inventory_reservations WHERE id = ? FOR UPDATE"
             );
             $stmt->execute([$id]);
             $res = $stmt->fetch();
@@ -434,75 +531,133 @@ class RFQRepository
 
     public function winRateByAccount(): array
     {
-        $stmt = $this->db->prepare("
-            SELECT
-                a.account_name,
-                COUNT(r.id)                                          AS total_rfqs,
-                SUM(r.stage = 'Won')                                 AS won,
-                SUM(r.stage = 'Lost')                                AS lost,
-                ROUND(
-                    SUM(r.stage = 'Won')
-                    / NULLIF(SUM(r.stage IN ('Won','Lost')), 0) * 100
-                , 1)                                                 AS win_rate_pct
-            FROM rfqs r
-            JOIN accounts a ON a.id = r.account_id
-            GROUP BY a.id, a.account_name
-            ORDER BY win_rate_pct DESC, total_rfqs DESC
-        ");
-        $stmt->execute();
-        return $stmt->fetchAll();
+        return $this->cached('win_rate_by_account', function (): array {
+            $stmt = $this->db->prepare("
+                SELECT
+                    a.account_name,
+                    COUNT(r.id)                                          AS total_rfqs,
+                    SUM(r.stage = 'Won')                                 AS won,
+                    SUM(r.stage = 'Lost')                                AS lost,
+                    ROUND(
+                        SUM(r.stage = 'Won')
+                        / NULLIF(SUM(r.stage IN ('Won','Lost')), 0) * 100
+                    , 1)                                                 AS win_rate_pct
+                FROM rfqs r
+                JOIN accounts a ON a.id = r.account_id
+                GROUP BY a.id, a.account_name
+                ORDER BY win_rate_pct DESC, total_rfqs DESC
+            ");
+            $stmt->execute();
+            return $stmt->fetchAll();
+        });
     }
 
     public function totalValueByStage(): array
     {
-        $stmt = $this->db->prepare("
-            SELECT
-                r.stage,
-                COUNT(r.id)                        AS rfq_count,
-                COALESCE(SUM(q.quote_amount), 0)   AS total_value,
-                COALESCE(AVG(q.quote_amount), 0)   AS avg_value
-            FROM rfqs r
-            LEFT JOIN quotes q ON q.rfq_id = r.id
-            GROUP BY r.stage
-            ORDER BY FIELD(r.stage, 'New', 'In Review', 'Quoted', 'Negotiation', 'Won', 'Lost')
-        ");
-        $stmt->execute();
-        return $stmt->fetchAll();
+        return $this->cached('total_value_by_stage', function (): array {
+            $stmt = $this->db->prepare("
+                SELECT
+                    r.stage,
+                    COUNT(r.id)                        AS rfq_count,
+                    COALESCE(SUM(q.quote_amount), 0)   AS total_value,
+                    COALESCE(AVG(q.quote_amount), 0)   AS avg_value
+                FROM rfqs r
+                LEFT JOIN quotes q ON q.rfq_id = r.id
+                GROUP BY r.stage
+                ORDER BY FIELD(r.stage, 'New', 'In Review', 'Quoted', 'Negotiation', 'Won', 'Lost')
+            ");
+            $stmt->execute();
+            return $stmt->fetchAll();
+        });
     }
 
     public function quotesExpiringSoon(): array
     {
-        $stmt = $this->db->prepare("
-            SELECT
-                r.id, r.title, r.stage,
-                a.account_name,
-                q.quote_amount, q.validity_end_date,
-                DATEDIFF(q.validity_end_date, CURDATE()) AS days_remaining
-            FROM rfqs r
-            JOIN quotes   q ON q.rfq_id = r.id
-            JOIN accounts a ON a.id     = r.account_id
-            WHERE r.stage IN ('Quoted', 'Negotiation')
-            ORDER BY q.validity_end_date ASC
-        ");
-        $stmt->execute();
-        return $stmt->fetchAll();
+        return $this->cached('quotes_expiring_soon', function (): array {
+            // Bounded: this is an alerts widget, not a full report. Ordered so the
+            // most-overdue/soonest-expiring surface first; overdue rows are kept
+            // (the view renders them as "Nd overdue"), just no longer unbounded.
+            $stmt = $this->db->prepare("
+                SELECT
+                    r.id, r.title, r.stage,
+                    a.account_name,
+                    q.quote_amount, q.validity_end_date,
+                    DATEDIFF(q.validity_end_date, CURDATE()) AS days_remaining
+                FROM rfqs r
+                JOIN quotes   q ON q.rfq_id = r.id
+                JOIN accounts a ON a.id     = r.account_id
+                WHERE r.stage IN ('Quoted', 'Negotiation')
+                ORDER BY q.validity_end_date ASC
+                LIMIT 20
+            ");
+            $stmt->execute();
+            return $stmt->fetchAll();
+        });
     }
 
     // ── Private Helpers ───────────────────────────────────────────────────────
+
+    /**
+     * Return a cached result for $key, else run $producer, cache it, and return.
+     * Backed by a JSON file under storage/cache with a short TTL: analytics
+     * dashboards tolerate slightly stale numbers, and this spares the DB a set
+     * of full-table aggregates on every page load. Cache read/write failures
+     * fall back to a live query, so a missing/unwritable cache dir is harmless.
+     *
+     * @param callable():array $producer
+     */
+    private function cached(string $key, callable $producer): array
+    {
+        $dir  = __DIR__ . '/../../../storage/cache';
+        $file = $dir . '/rfq_' . preg_replace('/[^a-z0-9_]/i', '', $key) . '.json';
+
+        if (is_file($file) && (time() - (int) filemtime($file)) < self::ANALYTICS_TTL) {
+            $cached = json_decode((string) file_get_contents($file), true);
+            if (is_array($cached)) {
+                return $cached;
+            }
+        }
+
+        $data = $producer();
+
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0775, true);
+        }
+        @file_put_contents($file, json_encode($data), LOCK_EX);
+
+        return $data;
+    }
 
     private function buildWhere(string $q, string $idSearch, array $stages): array
     {
         $clauses = [];
         $params  = [];
 
+        $joinAccounts = false;
+
         if ($idSearch !== '') {
             $clauses[] = 'r.id = ?';
             $params[]  = (int)$idSearch;
         }
         if ($q !== '') {
-            $clauses[] = '(r.title LIKE ? OR a.account_name LIKE ?)';
-            $params[]  = "%{$q}%";
-            $params[]  = "%{$q}%";
+            // The text search reaches into accounts.account_name, so the caller
+            // must join accounts for this clause to resolve.
+            $joinAccounts = true;
+            $boolean = $this->toBooleanQuery($q);
+            if ($boolean !== '') {
+                // Fast path: FULLTEXT prefix match, backed by the ft_rfqs_title
+                // and ft_accounts_name indexes (see migration 013). No table scan.
+                $clauses[] = '(MATCH(r.title) AGAINST (? IN BOOLEAN MODE)'
+                           . ' OR MATCH(a.account_name) AGAINST (? IN BOOLEAN MODE))';
+                $params[]  = $boolean;
+                $params[]  = $boolean;
+            } else {
+                // Fallback for queries below the FULLTEXT minimum token size
+                // (e.g. 1–2 characters): a plain LIKE, run rarely.
+                $clauses[] = '(r.title LIKE ? OR a.account_name LIKE ?)';
+                $params[]  = "%{$q}%";
+                $params[]  = "%{$q}%";
+            }
         }
         $validStages = array_values(array_intersect($stages, self::$stages));
         if (!empty($validStages)) {
@@ -512,6 +667,28 @@ class RFQRepository
         }
 
         $sql = $clauses ? ' WHERE ' . implode(' AND ', $clauses) : '';
-        return [$sql, $params];
+        return [$sql, $params, $joinAccounts];
+    }
+
+    /**
+     * Turn a search-box string into a safe FULLTEXT BOOLEAN-mode query:
+     *   "acme widget"  ->  "+acme* +widget*"   (each word required, prefix match)
+     *
+     * BOOLEAN operators are stripped so user input can't cause a syntax error,
+     * and words shorter than the InnoDB minimum token size (3) are dropped. If
+     * nothing usable remains, returns '' and the caller falls back to LIKE.
+     */
+    private function toBooleanQuery(string $q): string
+    {
+        $clean = preg_replace('/[+\-><()~*"@]+/', ' ', $q);
+        $words = preg_split('/\s+/', trim((string)$clean), -1, PREG_SPLIT_NO_EMPTY);
+
+        $terms = [];
+        foreach ($words as $word) {
+            if (mb_strlen($word) >= 3) {
+                $terms[] = '+' . $word . '*';
+            }
+        }
+        return implode(' ', $terms);
     }
 }

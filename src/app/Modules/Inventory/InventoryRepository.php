@@ -12,20 +12,48 @@ class InventoryRepository
      * Get all products joined with their inventory counts.
      * Optionally filter by a search term (name or SKU) and/or low stock only.
      */
-    public function all(?string $search = null, bool $lowStockOnly = false): array
+    public function all(?string $search = null, bool $lowStockOnly = false, ?int $limit = null, int $offset = 0): array
     {
         $db = Database::connection();
 
-        $lowStockJoin = $lowStockOnly ? " AND i.available_quantity < 10" : "";
+        [$from, $params] = $this->buildProductFrom($search, $lowStockOnly);
 
         $sql = "SELECT p.id, p.product_name, p.sku, p.price, p.description,
                        i.available_quantity, i.reserved_quantity
-                FROM products p
+                {$from}
+                ORDER BY p.product_name ASC";
+
+        if ($limit !== null) {
+            $limit  = max(1, $limit);   // guard the interpolated LIMIT/OFFSET
+            $offset = max(0, $offset);
+            $sql   .= " LIMIT {$limit} OFFSET {$offset}";
+        }
+
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
+    // Total products matching the same filters (for pagination).
+    public function count(?string $search = null, bool $lowStockOnly = false): int
+    {
+        $db = Database::connection();
+        [$from, $params] = $this->buildProductFrom($search, $lowStockOnly);
+        $stmt = $db->prepare("SELECT COUNT(*) {$from}");
+        $stmt->execute($params);
+        return (int) $stmt->fetchColumn();
+    }
+
+    // Shared FROM/JOIN/WHERE for all() and count() so the list and its total agree.
+    private function buildProductFrom(?string $search, bool $lowStockOnly): array
+    {
+        $lowStockJoin = $lowStockOnly ? " AND i.available_quantity < 10" : "";
+
+        $sql = "FROM products p
                 LEFT JOIN inventory i ON i.product_id = p.id{$lowStockJoin}
                 WHERE 1=1";
 
         $params = [];
-
         if ($search !== null && $search !== '') {
             $sql .= " AND (p.product_name LIKE ? OR p.sku LIKE ?)";
             $like = '%' . $search . '%';
@@ -33,11 +61,7 @@ class InventoryRepository
             $params[] = $like;
         }
 
-        $sql .= " ORDER BY p.product_name ASC";
-
-        $stmt = $db->prepare($sql);
-        $stmt->execute($params);
-        return $stmt->fetchAll();
+        return [$sql, $params];
     }
 
     /**

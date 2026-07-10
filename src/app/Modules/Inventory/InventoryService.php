@@ -19,9 +19,9 @@ class InventoryService
      * Get the product list, optionally searched/filtered, with a
      * computed 'low_stock' flag added to each row for the view.
      */
-    public function getProductList(?string $search = null, bool $lowStockOnly = false): array
+    public function getProductList(?string $search = null, bool $lowStockOnly = false, ?int $limit = null, int $offset = 0): array
     {
-        $products = $this->repo->all($search, $lowStockOnly);
+        $products = $this->repo->all($search, $lowStockOnly, $limit, $offset);
 
         foreach ($products as &$product) {
             $available = (int) ($product['available_quantity'] ?? 0);
@@ -29,6 +29,12 @@ class InventoryService
         }
 
         return $products;
+    }
+
+    // Total products matching the same filters (for pagination).
+    public function getProductCount(?string $search = null, bool $lowStockOnly = false): int
+    {
+        return $this->repo->count($search, $lowStockOnly);
     }
 
     /**

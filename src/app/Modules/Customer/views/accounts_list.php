@@ -47,6 +47,11 @@
                 Clear
             </a>
 
+            <?php
+                $perPageClass = 'form-control rfq-list-perpage-select';
+                include __DIR__ . '/../../../Shared/per_page_select.php';
+            ?>
+
         </form>
 
     </div>
@@ -115,5 +120,20 @@
         </tbody>
 
     </table>
+
+    <?php
+        $paginationClasses = [
+            'container' => 'rfq-pagination',
+            'item'      => 'rfq-page-btn',
+            'nav'       => 'rfq-pagination-nav',
+            'disabled'  => 'rfq-page-disabled',
+            'active'    => 'rfq-page-active',
+            'ellipsis'  => 'rfq-page-ellipsis',
+        ];
+        include __DIR__ . '/../../../Shared/pagination.php';
+    ?>
+    <div class="rfq-list-footer">
+        Showing <?= $pager->from() ?>–<?= $pager->to() ?> of <?= number_format($total) ?> account<?= $total !== 1 ? 's' : '' ?>
+    </div>
 
 </section>

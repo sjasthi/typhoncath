@@ -36,6 +36,10 @@ $statusBadge = [
         <?php if (!empty($search) || !empty($lowStockOnly)): ?>
             <a href="/modules/inventory/products.php" class="btn rfq-list-clear-btn">Clear</a>
         <?php endif; ?>
+        <?php
+            $perPageClass = 'form-control rfq-list-perpage-select';
+            include __DIR__ . '/../../../Shared/per_page_select.php';
+        ?>
     </form>
 
     <!-- Product table -->
@@ -85,6 +89,22 @@ $statusBadge = [
             <?php endif; ?>
         </tbody>
     </table>
+
+    <?php
+        $pageParam = 'p'; // this module reserves ?page= for routing (detail/stock/delete)
+        $paginationClasses = [
+            'container' => 'rfq-pagination',
+            'item'      => 'rfq-page-btn',
+            'nav'       => 'rfq-pagination-nav',
+            'disabled'  => 'rfq-page-disabled',
+            'active'    => 'rfq-page-active',
+            'ellipsis'  => 'rfq-page-ellipsis',
+        ];
+        include __DIR__ . '/../../../Shared/pagination.php';
+    ?>
+    <div class="rfq-list-footer">
+        Showing <?= $pager->from() ?>–<?= $pager->to() ?> of <?= number_format($total) ?> product<?= $total !== 1 ? 's' : '' ?>
+    </div>
 
     <p class="rfq-list-footer"><?= count($products ?? []) ?> product(s)</p>
 </section>

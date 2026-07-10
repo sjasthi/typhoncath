@@ -2,6 +2,7 @@
 /vendor/
 /storage/logs/*.log
 /storage/backups/*.sql
+/storage/cache/*.json
 /public/uploads/*
 !/public/uploads/.gitkeep
 .DS_Store

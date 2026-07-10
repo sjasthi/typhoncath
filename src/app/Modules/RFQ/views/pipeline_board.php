@@ -42,13 +42,11 @@
                 <?php endforeach; ?>
             </div>
 
-            <select name="per_page" class="form-control rfq-list-perpage-select">
-                <?php foreach (['25' => '25 / page', '50' => '50 / page', '100' => '100 / page', 'all' => 'All'] as $val => $label): ?>
-                <option value="<?= $val ?>" <?= (string)$listPerPageVal === (string)$val ? 'selected' : '' ?>>
-                    <?= $label ?>
-                </option>
-                <?php endforeach; ?>
-            </select>
+            <?php
+                // Page-size chooser — options come from the Paginator (single source of truth).
+                $perPageClass = 'form-control rfq-list-perpage-select';
+                include __DIR__ . '/../../../Shared/per_page_select.php';
+            ?>
 
             <button type="submit" class="btn btn-primary">Filter</button>
             <?php if ($listSearch !== '' || $listIdSearch !== '' || !empty($listStages)): ?>
@@ -135,58 +133,23 @@
         </tbody>
     </table>
 
-    <?php if ($listPages > 1): ?>
     <?php
-        function rfqPageUrl(int $page, string $q, string $id, array $stages, string $sort, string $dir, string $perPage): string {
-            $params = array_filter(['q' => $q, 'id' => $id, 'sort' => $sort, 'dir' => $dir, 'page' => $page], fn($v) => $v !== '');
-            if (!empty($stages)) $params['stage'] = $stages;
-            if ($perPage !== '25') $params['per_page'] = $perPage;
-            return '?' . http_build_query($params);
-        }
-
-        function rfqPageNumbers(int $current, int $total): array {
-            if ($total <= 7) return range(1, $total);
-            $pages = [1];
-            $start = max(2, $current - 2);
-            $end   = min($total - 1, $current + 2);
-            if ($start > 2)       $pages[] = '…';
-            for ($i = $start; $i <= $end; $i++) $pages[] = $i;
-            if ($end < $total - 1) $pages[] = '…';
-            $pages[] = $total;
-            return $pages;
-        }
+        // Windowed pager rendered by the shared partial. The RFQ list keeps its
+        // existing look by passing its own CSS class names; the math + markup
+        // now live in App\Core\Paginator and Shared/pagination.php.
+        $paginationClasses = [
+            'container' => 'rfq-pagination',
+            'item'      => 'rfq-page-btn',
+            'nav'       => 'rfq-pagination-nav',
+            'disabled'  => 'rfq-page-disabled',
+            'active'    => 'rfq-page-active',
+            'ellipsis'  => 'rfq-page-ellipsis',
+        ];
+        include __DIR__ . '/../../../Shared/pagination.php';
     ?>
-    <div class="rfq-pagination">
-        <?php if ($listPage > 1): ?>
-            <a href="<?= rfqPageUrl($listPage - 1, $listSearch, $listIdSearch, $listStages, $listSort, $listDir, (string)$listPerPageVal) ?>" class="rfq-page-btn rfq-pagination-nav">&#8592; Prev</a>
-        <?php else: ?>
-            <span class="rfq-page-btn rfq-page-disabled">&#8592; Prev</span>
-        <?php endif; ?>
-
-        <?php foreach (rfqPageNumbers($listPage, $listPages) as $p): ?>
-            <?php if ($p === '…'): ?>
-                <span class="rfq-page-ellipsis">…</span>
-            <?php elseif ($p === $listPage): ?>
-                <span class="rfq-page-btn rfq-page-active"><?= $p ?></span>
-            <?php else: ?>
-                <a href="<?= rfqPageUrl((int)$p, $listSearch, $listIdSearch, $listStages, $listSort, $listDir, (string)$listPerPageVal) ?>" class="rfq-page-btn"><?= $p ?></a>
-            <?php endif; ?>
-        <?php endforeach; ?>
-
-        <?php if ($listPage < $listPages): ?>
-            <a href="<?= rfqPageUrl($listPage + 1, $listSearch, $listIdSearch, $listStages, $listSort, $listDir, (string)$listPerPageVal) ?>" class="rfq-page-btn rfq-pagination-nav">Next &#8594;</a>
-        <?php else: ?>
-            <span class="rfq-page-btn rfq-page-disabled">Next &#8594;</span>
-        <?php endif; ?>
-    </div>
-    <?php endif; ?>
 
     <div class="rfq-list-footer">
-        <?php
-            $from = $listTotal === 0 ? 0 : ($listPage - 1) * $listPerPage + 1;
-            $to   = min($listPage * $listPerPage, $listTotal);
-        ?>
-        Showing <?= $from ?>–<?= $to ?> of <?= $listTotal ?> RFQ<?= $listTotal !== 1 ? 's' : '' ?>
+        Showing <?= $pager->from() ?>–<?= $pager->to() ?> of <?= $listTotal ?> RFQ<?= $listTotal !== 1 ? 's' : '' ?>
         <?= $listSearch !== '' ? ' matching "' . htmlspecialchars($listSearch) . '"' : '' ?>
     </div>
 </section>

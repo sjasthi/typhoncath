@@ -1,6 +1,7 @@
 <?php
 namespace App\Modules\RFQ;
 use App\Core\Permissions;
+use App\Core\Paginator;
 
 class RFQController
 {
@@ -17,24 +18,13 @@ class RFQController
 
     public function index(): void
     {
-        $grouped = $this->buildBoardGroups();
         extract($this->fetchList());
         [$winRateData, $valueByStage, $expiringQuotes] = $this->fetchAnalytics();
 
         include __DIR__ . '/views/pipeline_board.php';
     }
 
-    // Groups all RFQs by stage to populate the kanban board columns.
-    private function buildBoardGroups(): array
-    {
-        $grouped = array_fill_keys(RFQRepository::$stages, []);
-        foreach ($this->repo->allForBoard() as $rfq) {
-            $grouped[$rfq['stage']][] = $rfq;
-        }
-        return $grouped;
-    }
-
-    // Fetches the three analytics datasets displayed below the kanban board.
+    // Fetches the three analytics datasets displayed below the RFQ list.
     private function fetchAnalytics(): array
     {
         return [
@@ -53,19 +43,22 @@ class RFQController
         $listStages     = is_array($rawStages) ? $rawStages : [$rawStages];
         $listSort       = $_GET['sort']          ?? 'created_at';
         $listDir        = $_GET['dir']           ?? 'DESC';
-        $rawPerPage     = $_GET['per_page']      ?? 25;
-        $listShowAll    = $rawPerPage === 'all';
-        $listPerPage    = $listShowAll ? PHP_INT_MAX : (in_array((int)$rawPerPage, [25, 50, 100]) ? (int)$rawPerPage : 25);
-        $listPerPageVal = $listShowAll ? 'all' : $listPerPage;
-        $listPage       = max(1, (int)($_GET['page'] ?? 1));
+
+        // Pagination math is delegated to the shared Paginator: it whitelists
+        // per_page (incl. "all"), clamps the page, and yields limit()/offset().
         $listTotal      = $this->repo->searchCount($listSearch, $listIdSearch, $listStages);
-        $listPages      = $listShowAll ? 1 : (int)ceil($listTotal / $listPerPage);
-        $listPage       = min($listPage, max(1, $listPages));
-        $listRfqs       = $this->repo->search($listSearch, $listSort, $listDir, $listPerPage, ($listPage - 1) * $listPerPage, $listIdSearch, $listStages);
+        $pager          = new Paginator($listTotal, $_GET['per_page'] ?? 25, $_GET['page'] ?? 1);
+        $listPerPageVal = $pager->perPageValue; // for the per-page <select> + links
+
+        $listRfqs       = $this->repo->search(
+            $listSearch, $listSort, $listDir,
+            $pager->limit(), $pager->offset(),
+            $listIdSearch, $listStages
+        );
 
         return compact(
             'listSearch', 'listIdSearch', 'listStages', 'listSort', 'listDir',
-            'listPerPage', 'listPerPageVal', 'listPage', 'listPages', 'listTotal', 'listRfqs'
+            'listPerPageVal', 'listTotal', 'listRfqs', 'pager'
         );
     }
 
@@ -155,8 +148,9 @@ class RFQController
 
     public function create(): void
     {
-        $accounts            = $this->repo->allAccounts();
-        $contacts            = $this->repo->allContacts();
+        // Account/contact pickers now fetch from the autocomplete endpoints, so
+        // we no longer load those whole tables here. Products are still embedded
+        // for the inline reservation rows.
         $products            = $this->repo->allProducts();
         $stages              = RFQRepository::$stages;
         $quoteRequiredStages = RFQService::QUOTE_REQUIRED_STAGES;
@@ -219,8 +213,7 @@ class RFQController
             ];
         }
 
-        $accounts     = $this->repo->allAccounts();
-        $contacts     = $this->repo->allContacts();
+        // Account/contact pickers fetch from the autocomplete endpoints now.
         $stages       = RFQRepository::$stages;
         $errors       = $this->editErrors;
         $input        = $this->editInput;

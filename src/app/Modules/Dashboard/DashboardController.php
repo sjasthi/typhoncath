@@ -38,8 +38,12 @@ class DashboardController
             new Cards\UpcomingCampaignSendsCard($this->service),
             // Other modules (owned elsewhere)
             new Cards\TotalAccountsCard($this->service),
+            // Inventory
             new Cards\ReservedInventoryCard($this->service),
             new Cards\LowStockCard($this->service),
+            new Cards\TopReservedProductsCard($this->service),
+            new Cards\PendingReservationsCard($this->service),
+            new Cards\HeavilyReservedCard($this->service),
             new Cards\RecentInteractionsCard($this->service),
         ];
     }

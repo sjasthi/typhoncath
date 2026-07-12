@@ -4,21 +4,9 @@ namespace App\Modules\Dashboard\Cards;
 use App\Modules\Dashboard\DashboardCard;
 
 /**
- * OWNER: Casey (Inventory) — DROP-IN SLOT
- *
- * Preview card — the products lowest on available stock.
- *
- * TODO (Casey): replace the stub rows below with a real query. Add a method to
- * DashboardRepository like:
- *
- *   public function lowStock(int $limit = 5): array {
- *       // SELECT p.product_name, p.sku, i.available_quantity
- *       // FROM inventory i JOIN products p ON p.id = i.product_id
- *       // ORDER BY i.available_quantity ASC LIMIT ?
- *   }
- *
- * then map each row to:
- *   ['label' => product_name, 'badge' => available_quantity . ' left', 'meta' => sku]
+ * Preview card — products that have dropped to or below the low-stock threshold
+ * (DashboardService::LOW_STOCK_THRESHOLD), lowest available first. These are the
+ * SKUs due for reorder.
  */
 class LowStockCard extends DashboardCard
 {
@@ -28,11 +16,16 @@ class LowStockCard extends DashboardCard
 
     public function body(): string
     {
-        // STUB
-        $rows = [
-            ['label' => 'Sample Product', 'badge' => '2 left', 'badge_class' => 'rfq-badge-danger', 'meta' => 'SKU-000'],
-        ];
+        $rows = array_map(function (array $p): array {
+            $available = (int) $p['available_quantity'];
+            return [
+                'label'       => $p['product_name'],
+                'meta'        => $p['sku'],
+                'badge'       => $available . ' left',
+                'badge_class' => $available === 0 ? 'rfq-badge-danger' : 'rfq-badge-warning',
+            ];
+        }, $this->service->lowStockProducts());
 
-        return $this->preview($rows, '/modules/inventory/products.php', 'View inventory');
+        return $this->preview($rows, '/modules/inventory/products.php?low_stock=1', 'View inventory');
     }
 }

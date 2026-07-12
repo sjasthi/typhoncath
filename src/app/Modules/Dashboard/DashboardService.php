@@ -24,16 +24,31 @@ class DashboardService
      */
     public const ACTIVE_RFQ_STAGES = ['Quoted', 'Negotiation'];
 
+    /**
+     * Units at/below which a product counts as "low stock" on the dashboard.
+     * A flat threshold (the Inventory module has no per-product reorder column) —
+     * mirrors InventoryService::LOW_STOCK_THRESHOLD so both views agree.
+     */
+    public const LOW_STOCK_THRESHOLD = 10;
+
+    /** Reservation share above which a product is "heavily reserved" (0.70 = 70%). */
+    public const HEAVILY_RESERVED_RATIO = 0.70;
+
     private RFQRepository $rfq;
     private CampaignRepository $campaign;
+    private DashboardRepository $dashboard;
 
     /** Memoised single read of campaign summary stats (shared by two cards). */
     private ?array $campaignStats = null;
 
-    public function __construct(?RFQRepository $rfq = null, ?CampaignRepository $campaign = null)
-    {
-        $this->rfq      = $rfq      ?? new RFQRepository();
-        $this->campaign = $campaign ?? new CampaignRepository();
+    public function __construct(
+        ?RFQRepository $rfq = null,
+        ?CampaignRepository $campaign = null,
+        ?DashboardRepository $dashboard = null
+    ) {
+        $this->rfq       = $rfq       ?? new RFQRepository();
+        $this->campaign  = $campaign  ?? new CampaignRepository();
+        $this->dashboard = $dashboard ?? new DashboardRepository();
     }
 
     // ── RFQ ───────────────────────────────────────────────────────────────────
@@ -102,6 +117,38 @@ class DashboardService
     public function upcomingCampaignSends(int $limit = 5): array
     {
         return $this->campaign->upcomingScheduledSends($limit);
+    }
+
+    // ── Inventory ─────────────────────────────────────────────────────────────
+
+    /** Products at or below the low-stock threshold (Low Stock card). */
+    public function lowStockProducts(int $limit = 5): array
+    {
+        return $this->dashboard->lowStock(self::LOW_STOCK_THRESHOLD, $limit);
+    }
+
+    /** Products with the most units reserved across active RFQs (Top Reserved card). */
+    public function topReservedProducts(int $limit = 5): array
+    {
+        return $this->dashboard->topReserved($limit);
+    }
+
+    /** Count of reservations still held (not released/converted) (Pending Reservations card). */
+    public function pendingReservationCount(): int
+    {
+        return $this->dashboard->pendingReservationCount();
+    }
+
+    /** Total units held across active reservations (Reserved Inventory card). */
+    public function reservedUnits(): int
+    {
+        return $this->dashboard->reservedUnits();
+    }
+
+    /** Products whose reserved share exceeds the heavily-reserved ratio (Heavily Reserved card). */
+    public function heavilyReservedProducts(int $limit = 10): array
+    {
+        return $this->dashboard->heavilyReserved(self::HEAVILY_RESERVED_RATIO, $limit);
     }
 
     // ── Private ───────────────────────────────────────────────────────────────

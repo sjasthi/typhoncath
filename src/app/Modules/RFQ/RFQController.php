@@ -19,19 +19,19 @@ class RFQController
     public function index(): void
     {
         extract($this->fetchList());
-        [$winRateData, $valueByStage, $expiringQuotes] = $this->fetchAnalytics();
 
         include __DIR__ . '/views/pipeline_board.php';
     }
 
-    // Fetches the three analytics datasets displayed below the RFQ list.
-    private function fetchAnalytics(): array
+    // Renders the paginated win-rate-by-account drill-down (the dashboard's
+    // "Win Rate by Account" card links here for the full, paged breakdown).
+    public function winRate(): void
     {
-        return [
-            $this->repo->winRateByAccount(),
-            $this->repo->totalValueByStage(),
-            $this->repo->quotesExpiringSoon(),
-        ];
+        $total = $this->repo->winRateByAccountCount();
+        $pager = new Paginator($total, $_GET['per_page'] ?? 25, $_GET['page'] ?? 1);
+        $rows  = $this->repo->winRateByAccount($pager->limit(), $pager->offset());
+
+        include __DIR__ . '/views/win_rate.php';
     }
 
     // Parses and validates GET parameters, then runs the paginated RFQ list query.

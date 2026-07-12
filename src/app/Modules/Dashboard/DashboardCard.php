@@ -18,7 +18,7 @@ use App\Core\Permissions;
  */
 abstract class DashboardCard
 {
-    public function __construct(protected DashboardRepository $repo) {}
+    public function __construct(protected DashboardService $service) {}
 
     /** Heading shown at the top of the card. */
     abstract public function title(): string;
@@ -76,8 +76,10 @@ abstract class DashboardCard
      * @param array $rows Each row: [
      *     'label'       => string,          // primary text (required)
      *     'meta'        => string,          // muted secondary text (optional)
+     *     'date'        => string,          // muted date line (optional)
      *     'badge'       => string,          // badge text (optional)
      *     'badge_class' => string,          // rfq-badge-* class (optional)
+     *     'href'        => string,          // makes the label a deep link (optional)
      * ]
      */
     protected function preview(array $rows, string $link = '', string $linkLabel = 'View all'): string
@@ -94,7 +96,12 @@ abstract class DashboardCard
                 $html .= '<div class="dash-list-content">';
 
                 $html .= '<div class="dash-list-label">';
-                $html .= htmlspecialchars($row['label'] ?? '');
+                if (!empty($row['href'])) {
+                    $html .= '<a class="dash-list-link" href="' . htmlspecialchars($row['href']) . '">'
+                           . htmlspecialchars($row['label'] ?? '') . '</a>';
+                } else {
+                    $html .= htmlspecialchars($row['label'] ?? '');
+                }
                 $html .= '</div>';
 
                 if (!empty($row['meta'])) {
@@ -137,5 +144,24 @@ abstract class DashboardCard
     {
         return '<a class="dash-card-link" href="' . htmlspecialchars($href) . '">'
              . htmlspecialchars($label) . ' &rarr;</a>';
+    }
+
+    /** Maps an RFQ pipeline stage to its rfq-badge-* CSS class (shared by RFQ cards). */
+    protected function stageBadgeClass(string $stage): string
+    {
+        return [
+            'New'         => 'rfq-badge-neutral',
+            'In Review'   => 'rfq-badge-info',
+            'Quoted'      => 'rfq-badge-quoted',
+            'Negotiation' => 'rfq-badge-warning',
+            'Won'         => 'rfq-badge-success',
+            'Lost'        => 'rfq-badge-danger',
+        ][$stage] ?? 'rfq-badge-neutral';
+    }
+
+    /** Compact money formatting for stat/preview values: 1234.5 → "$1,235". */
+    protected function money(float|int|string $amount): string
+    {
+        return '$' . number_format((float)$amount);
     }
 }

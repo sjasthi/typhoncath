@@ -307,7 +307,13 @@ include __DIR__ . '/../../../app/Shared/sidebar.php';
 <div class="page-header">
     <h1><?= htmlspecialchars($account['account_name']) ?></h1>
     <div class="header-actions">
-        <a href="accounts.php" class="button btn-ghost">&#8592; Back</a>
+        <a href="accounts.php" class="button btn-ghost">
+            &#8592; Back
+        </a>
+        <a href="account_pdf.php?id=<?= $accountId ?>"
+        class="button button-primary">
+        Download PDF
+        </a>
         <?php if (!$editMode): ?>
         <a class="button button-primary" href="?id=<?= $accountId ?>&edit=1">Edit Account</a>
         <form method="POST" style="display:inline;margin:0;"

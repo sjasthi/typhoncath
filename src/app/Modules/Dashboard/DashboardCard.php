@@ -86,23 +86,50 @@ abstract class DashboardCard
             $html = '<p class="dash-empty text-muted">Nothing to show.</p>';
         } else {
             $html = '<ul class="dash-list">';
+
             foreach ($rows as $row) {
                 $html .= '<li class="dash-list-row">';
-                $html .= '<span class="dash-list-label">' . htmlspecialchars($row['label'] ?? '') . '</span>';
+
+                // Left side: interaction details
+                $html .= '<div class="dash-list-content">';
+
+                $html .= '<div class="dash-list-label">';
+                $html .= htmlspecialchars($row['label'] ?? '');
+                $html .= '</div>';
+
+                if (!empty($row['meta'])) {
+                    $html .= '<div class="dash-list-meta text-muted">';
+                    $html .= htmlspecialchars($row['meta']);
+                    $html .= '</div>';
+                }
+
+                if (!empty($row['date'])) {
+                    $html .= '<div class="dash-list-date text-muted">';
+                    $html .= htmlspecialchars($row['date']);
+                    $html .= '</div>';
+                }
+
+                $html .= '</div>';
+
+                // Right side: badge
                 if (!empty($row['badge'])) {
                     $cls = htmlspecialchars($row['badge_class'] ?? 'rfq-badge-neutral');
-                    $html .= '<span class="rfq-badge ' . $cls . '">' . htmlspecialchars($row['badge']) . '</span>';
+
+                    $html .= '<span class="rfq-badge ' . $cls . '">';
+                    $html .= htmlspecialchars($row['badge']);
+                    $html .= '</span>';
                 }
-                if (!empty($row['meta'])) {
-                    $html .= '<span class="dash-list-meta text-muted">' . htmlspecialchars($row['meta']) . '</span>';
-                }
+
                 $html .= '</li>';
             }
+
             $html .= '</ul>';
         }
+
         if ($link !== '') {
             $html .= $this->deepLink($link, $linkLabel);
         }
+
         return $html;
     }
 

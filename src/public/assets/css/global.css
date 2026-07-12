@@ -427,9 +427,10 @@ label { display: block; font-weight: 600; margin-bottom: 0.25rem; }
 .dash-list { list-style: none; margin: 0; padding: 0; }
 
 .dash-list-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
   align-items: center;
-  gap: 0.5rem;
   padding: 0.4rem 0;
   border-bottom: 1px solid #f3f4f6;
   font-size: 0.88rem;
@@ -437,9 +438,35 @@ label { display: block; font-weight: 600; margin-bottom: 0.25rem; }
 
 .dash-list-row:last-child { border-bottom: none; }
 
-.dash-list-label { font-weight: 500; color: #374151; }
+.dash-list-label {
+  min-width: 0;
+  font-weight: 500;
+  color: #374151;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
-.dash-list-meta { margin-left: auto; font-size: 0.8rem; white-space: nowrap; }
+.dash-list-meta {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dash-list-date {
+  display: block;
+  font-size: 0.75rem;
+  color: #888;
+  margin-top: 2px;
+}
+
+.dash-list-date {
+  display: block;
+  font-size: 0.75rem;
+  color: #888;
+  margin-top: 2px;
+}
 
 .dash-empty { font-size: 0.88rem; margin: 0.25rem 0; }
 

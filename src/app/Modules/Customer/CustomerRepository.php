@@ -144,4 +144,29 @@ class CustomerRepository
 
         $stmt->execute($data);
     }
+
+    public function recentInteractions(int $limit = 5): array
+    {
+        $db = Database::connection();
+
+        $sql = "
+            SELECT
+                i.interaction_type,
+                i.interaction_subject,
+                a.account_name,
+                i.interaction_date
+            FROM interactions i
+            JOIN accounts a
+                ON a.id = i.account_id
+            ORDER BY i.interaction_date DESC
+            LIMIT ?
+        ";
+
+        $stmt = $db->prepare($sql);
+        $stmt->bindValue(1, $limit, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
 }

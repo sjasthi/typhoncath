@@ -529,27 +529,119 @@ class RFQRepository
 
     // ── Analytics ─────────────────────────────────────────────────────────────
 
-    public function winRateByAccount(): array
+    /**
+     * Win/loss performance per account, most successful first.
+     *
+     * Bounded for dashboard + drill-down use: pass $limit (and $offset for
+     * pagination) so the caller never loads one row per account. "closed" counts
+     * terminal RFQs (Won + Lost); the win rate is the documented business rule
+     *
+     *     won / (won + lost) * 100
+     *
+     * so still-open RFQs never dilute the denominator. Accounts with no closed
+     * RFQs yet report a NULL win_rate_pct (MySQL sorts these last under DESC,
+     * and the view renders them as "—").
+     *
+     * Grouping/aggregation happen in the database; only the requested page of
+     * rows crosses into PHP.
+     */
+    public function winRateByAccount(int $limit = 5, int $offset = 0): array
     {
-        return $this->cached('win_rate_by_account', function (): array {
-            $stmt = $this->db->prepare("
-                SELECT
-                    a.account_name,
-                    COUNT(r.id)                                          AS total_rfqs,
-                    SUM(r.stage = 'Won')                                 AS won,
-                    SUM(r.stage = 'Lost')                                AS lost,
-                    ROUND(
-                        SUM(r.stage = 'Won')
-                        / NULLIF(SUM(r.stage IN ('Won','Lost')), 0) * 100
-                    , 1)                                                 AS win_rate_pct
-                FROM rfqs r
-                JOIN accounts a ON a.id = r.account_id
-                GROUP BY a.id, a.account_name
-                ORDER BY win_rate_pct DESC, total_rfqs DESC
-            ");
-            $stmt->execute();
-            return $stmt->fetchAll();
-        });
+        $limit  = max(1, $limit);   // guard the interpolated LIMIT/OFFSET
+        $offset = max(0, $offset);
+        $stmt = $this->db->prepare("
+            SELECT
+                a.account_name,
+                COUNT(r.id)                              AS total_rfqs,
+                SUM(r.stage = 'Won')                     AS won,
+                SUM(r.stage = 'Lost')                    AS lost,
+                SUM(r.stage IN ('Won','Lost'))           AS closed,
+                ROUND(
+                    SUM(r.stage = 'Won')
+                    / NULLIF(SUM(r.stage IN ('Won','Lost')), 0) * 100
+                , 1)                                     AS win_rate_pct
+            FROM rfqs r
+            JOIN accounts a ON a.id = r.account_id
+            GROUP BY a.id, a.account_name
+            ORDER BY win_rate_pct DESC, total_rfqs DESC
+            LIMIT {$limit} OFFSET {$offset}
+        ");
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    /** How many accounts have at least one RFQ — the population winRateByAccount() pages over. */
+    public function winRateByAccountCount(): int
+    {
+        $stmt = $this->db->prepare(
+            "SELECT COUNT(DISTINCT r.account_id) FROM rfqs r WHERE r.account_id IS NOT NULL"
+        );
+        $stmt->execute();
+        return (int)$stmt->fetchColumn();
+    }
+
+    /**
+     * Aggregate count + total quoted value for RFQs in the given stages, computed
+     * entirely in SQL. Backs the "Active RFQs" dashboard card (Quoted +
+     * Negotiation) so it shows totals without ever loading individual RFQs.
+     * Value follows the same convention as totalValueByStage(): the sum of every
+     * attached quote's amount.
+     *
+     * @param string[] $stages
+     * @return array{count:int,total_value:float}
+     */
+    public function stageSummary(array $stages): array
+    {
+        $stages = array_values(array_intersect($stages, self::$stages));
+        if (empty($stages)) {
+            return ['count' => 0, 'total_value' => 0.0];
+        }
+        $ph   = implode(',', array_fill(0, count($stages), '?'));
+        $stmt = $this->db->prepare("
+            SELECT
+                COUNT(DISTINCT r.id)             AS cnt,
+                COALESCE(SUM(q.quote_amount), 0) AS total_value
+            FROM rfqs r
+            LEFT JOIN quotes q ON q.rfq_id = r.id
+            WHERE r.stage IN ({$ph})
+        ");
+        $stmt->execute($stages);
+        $row = $stmt->fetch() ?: [];
+        return [
+            'count'       => (int)($row['cnt'] ?? 0),
+            'total_value' => (float)($row['total_value'] ?? 0),
+        ];
+    }
+
+    /**
+     * The most recently updated RFQs (capped at $limit), each with its account,
+     * stage, and total quoted value — for the "Recent RFQs" dashboard card.
+     *
+     * A derived table selects the top-$limit RFQs by updated_at first (using
+     * idx_rfqs_updated_at), so the quote aggregation only runs over those few
+     * rows rather than the whole table.
+     */
+    public function recentRfqs(int $limit = 5): array
+    {
+        $limit = max(1, min($limit, 50)); // guard the interpolated LIMIT
+        $stmt  = $this->db->prepare("
+            SELECT
+                r.id, r.title, r.stage, r.created_at, r.updated_at,
+                a.account_name,
+                COALESCE(SUM(q.quote_amount), 0) AS total_value
+            FROM (
+                SELECT id, title, stage, created_at, updated_at, account_id
+                FROM rfqs
+                ORDER BY updated_at DESC
+                LIMIT {$limit}
+            ) r
+            LEFT JOIN accounts a ON a.id = r.account_id
+            LEFT JOIN quotes   q ON q.rfq_id = r.id
+            GROUP BY r.id, r.title, r.stage, r.created_at, r.updated_at, a.account_name
+            ORDER BY r.updated_at DESC
+        ");
+        $stmt->execute();
+        return $stmt->fetchAll();
     }
 
     public function totalValueByStage(): array
@@ -558,7 +650,7 @@ class RFQRepository
             $stmt = $this->db->prepare("
                 SELECT
                     r.stage,
-                    COUNT(r.id)                        AS rfq_count,
+                    COUNT(DISTINCT r.id)               AS rfq_count,
                     COALESCE(SUM(q.quote_amount), 0)   AS total_value,
                     COALESCE(AVG(q.quote_amount), 0)   AS avg_value
                 FROM rfqs r
@@ -571,9 +663,10 @@ class RFQRepository
         });
     }
 
-    public function quotesExpiringSoon(): array
+    public function quotesExpiringSoon(int $limit = 5): array
     {
-        return $this->cached('quotes_expiring_soon', function (): array {
+        $limit = max(1, min($limit, 50)); // guard the interpolated LIMIT
+        return $this->cached("quotes_expiring_soon_{$limit}", function () use ($limit): array {
             // Bounded: this is an alerts widget, not a full report. Ordered so the
             // most-overdue/soonest-expiring surface first; overdue rows are kept
             // (the view renders them as "Nd overdue"), just no longer unbounded.
@@ -588,7 +681,7 @@ class RFQRepository
                 JOIN accounts a ON a.id     = r.account_id
                 WHERE r.stage IN ('Quoted', 'Negotiation')
                 ORDER BY q.validity_end_date ASC
-                LIMIT 20
+                LIMIT {$limit}
             ");
             $stmt->execute();
             return $stmt->fetchAll();

@@ -483,13 +483,16 @@ public function campaignMomentum(
         return $stmt->fetchAll();
     }
 
-    // Summary stats for the dashboard stat cards.
+    // Summary stats for the dashboard stat cards. Computed in a single pass over
+    // campaigns (idx_campaigns_status). "active" = Scheduled or Sent — campaigns
+    // that are queued to go out or in-flight, excluding Drafts and Completed.
     public function dashboardStats(): array
     {
         $stmt = $this->db->prepare("
             SELECT
                 COUNT(*) AS total,
                 SUM(status = 'Scheduled') AS scheduled,
+                SUM(status IN ('Scheduled','Sent')) AS active,
                 SUM(status IN ('Sent','Completed')) AS sent_completed,
                 ROUND(AVG(CASE WHEN status IN ('Sent','Completed') AND open_rate  IS NOT NULL THEN open_rate  END), 1) AS avg_open_rate,
                 ROUND(AVG(CASE WHEN status IN ('Sent','Completed') AND click_rate IS NOT NULL THEN click_rate END), 1) AS avg_click_rate

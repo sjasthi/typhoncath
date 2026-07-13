@@ -10,18 +10,20 @@ class InventoryRepository
 {
     /**
      * Get all products joined with their inventory counts.
-     * Optionally filter by a search term (name or SKU). Low-stock filtering
-     * happens in InventoryService, since the threshold isn't a DB column.
+     * Optionally filter by a search term (name or SKU) and/or low stock only
+     * (available_quantity below that row's own low_stock_threshold).
      */
-    public function all(?string $search = null): array
+    public function all(?string $search = null, bool $lowStockOnly = false): array
     {
         $db = Database::connection();
 
+        $lowStockFilter = $lowStockOnly ? " AND i.available_quantity < i.low_stock_threshold" : "";
+
         $sql = "SELECT p.id, p.product_name, p.sku, p.price, p.description,
-                       i.available_quantity, i.reserved_quantity
+                       i.available_quantity, i.reserved_quantity, i.low_stock_threshold
                 FROM products p
                 LEFT JOIN inventory i ON i.product_id = p.id
-                WHERE 1=1";
+                WHERE 1=1{$lowStockFilter}";
 
         $params = [];
 
@@ -48,7 +50,7 @@ class InventoryRepository
         $stmt = $db->prepare(
             "SELECT p.id, p.product_name, p.sku, p.price, p.description,
                     p.created_at, p.updated_at,
-                    i.id AS inventory_id, i.available_quantity, i.reserved_quantity
+                    i.id AS inventory_id, i.available_quantity, i.reserved_quantity, i.low_stock_threshold
              FROM products p
              LEFT JOIN inventory i ON i.product_id = p.id
              WHERE p.id = ?"
@@ -74,7 +76,7 @@ class InventoryRepository
     /**
      * Insert a new product and its starting inventory row.
      */
-    public function create(string $productName, string $sku, float $price, ?string $description, int $availableQuantity): int
+    public function create(string $productName, string $sku, float $price, ?string $description, int $availableQuantity, int $lowStockThreshold): int
     {
         $db = Database::connection();
 
@@ -86,10 +88,10 @@ class InventoryRepository
         $productId = (int) $db->lastInsertId();
 
         $stmt = $db->prepare(
-            "INSERT INTO inventory (product_id, available_quantity, reserved_quantity)
-             VALUES (?, ?, 0)"
+            "INSERT INTO inventory (product_id, available_quantity, reserved_quantity, low_stock_threshold)
+             VALUES (?, ?, 0, ?)"
         );
-        $stmt->execute([$productId, $availableQuantity]);
+        $stmt->execute([$productId, $availableQuantity, $lowStockThreshold]);
 
         return $productId;
     }
@@ -106,6 +108,18 @@ class InventoryRepository
              WHERE id = ?"
         );
         return $stmt->execute([$productName, $sku, $price, $description, $id]);
+    }
+
+    /**
+     * Update just the low-stock threshold for a product's inventory row.
+     */
+    public function updateLowStockThreshold(int $productId, int $lowStockThreshold): bool
+    {
+        $db = Database::connection();
+        $stmt = $db->prepare(
+            "UPDATE inventory SET low_stock_threshold = ? WHERE product_id = ?"
+        );
+        return $stmt->execute([$lowStockThreshold, $productId]);
     }
 
     /**

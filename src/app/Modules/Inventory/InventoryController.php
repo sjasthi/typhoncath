@@ -54,7 +54,7 @@ class InventoryController
         $price = (float) ($_POST['price'] ?? 0);
         $description = trim($_POST['description'] ?? '') ?: null;
         $startingQuantity = (int) ($_POST['available_quantity'] ?? 0);
-        $lowStockThreshold = (int) ($_POST['low_stock_threshold'] ?? LowStockThresholdStore::DEFAULT_THRESHOLD);
+        $lowStockThreshold = (int) ($_POST['low_stock_threshold'] ?? InventoryService::DEFAULT_LOW_STOCK_THRESHOLD);
 
         try {
             if ($id === null) {

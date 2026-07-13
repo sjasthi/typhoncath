@@ -6,60 +6,46 @@ namespace App\Modules\Inventory;
 class InventoryService
 {
     private InventoryRepository $repo;
-    private LowStockThresholdStore $thresholds;
+
+    /** Default low-stock threshold applied when a caller doesn't specify one. */
+    public const DEFAULT_LOW_STOCK_THRESHOLD = 10;
 
     public function __construct()
     {
         $this->repo = new InventoryRepository();
-        $this->thresholds = new LowStockThresholdStore();
     }
 
     /**
-     * Get the product list, optionally searched/filtered, with each row's
-     * per-product low_stock_threshold and a computed 'low_stock' flag added
-     * for the view.
+     * Get the product list, optionally searched/filtered, with a computed
+     * 'low_stock' flag (available_quantity below that product's own
+     * low_stock_threshold) added to each row for the view.
      */
     public function getProductList(?string $search = null, bool $lowStockOnly = false): array
     {
-        $products = $this->repo->all($search);
-        $productIds = array_map(fn($p) => (int) $p['id'], $products);
-        $thresholds = $this->thresholds->getMany($productIds);
+        $products = $this->repo->all($search, $lowStockOnly);
 
         foreach ($products as &$product) {
-            $threshold = $thresholds[(int) $product['id']];
             $available = (int) ($product['available_quantity'] ?? 0);
-            $product['low_stock_threshold'] = $threshold;
+            $threshold = (int) ($product['low_stock_threshold'] ?? self::DEFAULT_LOW_STOCK_THRESHOLD);
             $product['low_stock'] = $available < $threshold;
-        }
-        unset($product);
-
-        if ($lowStockOnly) {
-            $products = array_values(array_filter($products, fn($p) => $p['low_stock']));
         }
 
         return $products;
     }
 
     /**
-     * Get a single product's detail (with its low-stock threshold), or null
-     * if it doesn't exist.
+     * Get a single product's detail, or null if it doesn't exist.
      */
     public function getProductDetail(int $id): ?array
     {
-        $product = $this->repo->findById($id);
-        if ($product === null) {
-            return null;
-        }
-
-        $product['low_stock_threshold'] = $this->thresholds->get($id);
-        return $product;
+        return $this->repo->findById($id);
     }
 
     /**
      * Business rule: validate and create a new product + starting stock.
      * Returns the new product id, or throws on invalid input.
      */
-    public function createProduct(string $productName, string $sku, float $price, ?string $description, int $startingQuantity, int $lowStockThreshold = LowStockThresholdStore::DEFAULT_THRESHOLD): int
+    public function createProduct(string $productName, string $sku, float $price, ?string $description, int $startingQuantity, int $lowStockThreshold = self::DEFAULT_LOW_STOCK_THRESHOLD): int
     {
         if (trim($productName) === '') {
             throw new \InvalidArgumentException('Product name is required.');
@@ -80,10 +66,7 @@ class InventoryService
             throw new \InvalidArgumentException("SKU \"{$sku}\" is already in use by another product.");
         }
 
-        $productId = $this->repo->create($productName, $sku, $price, $description, $startingQuantity);
-        $this->thresholds->set($productId, $lowStockThreshold);
-
-        return $productId;
+        return $this->repo->create($productName, $sku, $price, $description, $startingQuantity, $lowStockThreshold);
     }
 
     /**
@@ -109,7 +92,7 @@ class InventoryService
         }
 
         $result = $this->repo->updateProduct($id, $productName, $sku, $price, $description);
-        $this->thresholds->set($id, $lowStockThreshold);
+        $this->repo->updateLowStockThreshold($id, $lowStockThreshold);
 
         return $result;
     }
@@ -142,10 +125,7 @@ class InventoryService
                 "Release or convert them first."
             );
         }
-        $result = $this->repo->delete($id);
-        $this->thresholds->forget($id);
-
-        return $result;
+        return $this->repo->delete($id);
     }
 
     /**

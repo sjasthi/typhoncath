@@ -78,7 +78,7 @@ $pageTitle = $isEdit ? 'Edit Product' : 'Add Product';
                     min="0"
                     name="low_stock_threshold"
                     class="form-control"
-                    value="<?= htmlspecialchars((string)($product['low_stock_threshold'] ?? \App\Modules\Inventory\LowStockThresholdStore::DEFAULT_THRESHOLD)) ?>"
+                    value="<?= htmlspecialchars((string)($product['low_stock_threshold'] ?? \App\Modules\Inventory\InventoryService::DEFAULT_LOW_STOCK_THRESHOLD)) ?>"
                     required
                 >
                 <span class="text-muted" style="font-size:0.82rem;">Show a low stock warning once available quantity drops below this number</span>

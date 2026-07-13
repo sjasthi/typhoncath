@@ -1,5 +1,4 @@
 .env
-/vendor/
 /storage/logs/*.log
 /storage/backups/*.sql
 /storage/cache/*.json

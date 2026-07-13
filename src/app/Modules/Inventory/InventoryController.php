@@ -54,16 +54,17 @@ class InventoryController
         $price = (float) ($_POST['price'] ?? 0);
         $description = trim($_POST['description'] ?? '') ?: null;
         $startingQuantity = (int) ($_POST['available_quantity'] ?? 0);
+        $lowStockThreshold = (int) ($_POST['low_stock_threshold'] ?? LowStockThresholdStore::DEFAULT_THRESHOLD);
 
         try {
             if ($id === null) {
-                $newId = $this->service->createProduct($productName, $sku, $price, $description, $startingQuantity);
+                $newId = $this->service->createProduct($productName, $sku, $price, $description, $startingQuantity, $lowStockThreshold);
                 $_SESSION['flash'] = ['type' => 'success', 'message' => "\"{$productName}\" was created successfully."];
                 header('Location: /modules/inventory/products.php?page=detail&id=' . $newId);
                 exit;
             }
 
-            $this->service->updateProduct($id, $productName, $sku, $price, $description);
+            $this->service->updateProduct($id, $productName, $sku, $price, $description, $lowStockThreshold);
             $_SESSION['flash'] = ['type' => 'success', 'message' => "\"{$productName}\" was saved successfully."];
             header('Location: /modules/inventory/products.php?page=detail&id=' . $id);
             exit;

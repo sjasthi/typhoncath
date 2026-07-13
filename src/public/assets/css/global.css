@@ -669,6 +669,11 @@ label { display: block; font-weight: 600; margin-bottom: 0.25rem; }
 .rfq-badge-info,    .badge-info    { background: #eff6ff; color: #1e40af; }
 .rfq-badge-quoted,  .badge-quoted  { background: #f5f3ff; color: #6d28d9; }
 
+/* Inventory stock-status badges — distinct yellow/red so low vs. out of
+   stock reads at a glance in the products table. */
+.rfq-badge-low-stock    { background: #fde047; color: #713f12; }
+.rfq-badge-out-of-stock { background: #fecaca; color: #7f1d1d; }
+
 /* ── RFQ Reservation row elements ────────────────────── */
 .res-desc { font-size: 0.78rem; display: block; margin-top: 3px; }
 .res-avail-hint { display: none; margin-top: 2px; }

@@ -10,18 +10,17 @@ class InventoryRepository
 {
     /**
      * Get all products joined with their inventory counts.
-     * Optionally filter by a search term (name or SKU) and/or low stock only.
+     * Optionally filter by a search term (name or SKU). Low-stock filtering
+     * happens in InventoryService, since the threshold isn't a DB column.
      */
-    public function all(?string $search = null, bool $lowStockOnly = false): array
+    public function all(?string $search = null): array
     {
         $db = Database::connection();
-
-        $lowStockJoin = $lowStockOnly ? " AND i.available_quantity < 10" : "";
 
         $sql = "SELECT p.id, p.product_name, p.sku, p.price, p.description,
                        i.available_quantity, i.reserved_quantity
                 FROM products p
-                LEFT JOIN inventory i ON i.product_id = p.id{$lowStockJoin}
+                LEFT JOIN inventory i ON i.product_id = p.id
                 WHERE 1=1";
 
         $params = [];

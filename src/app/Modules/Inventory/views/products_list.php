@@ -1,8 +1,8 @@
 <?php
 $statusBadge = [
     'In Stock'  => 'rfq-badge-success',
-    'Low Stock' => 'rfq-badge-warning',
-    'No Stock'  => 'rfq-badge-danger',
+    'Low Stock' => 'rfq-badge-low-stock',
+    'No Stock'  => 'rfq-badge-out-of-stock',
 ];
 ?>
 

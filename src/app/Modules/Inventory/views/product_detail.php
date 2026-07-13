@@ -70,6 +70,22 @@ $pageTitle = $isEdit ? 'Edit Product' : 'Add Product';
             <?php endif; ?>
         </div>
 
+        <!-- Row 3: Low Stock Threshold -->
+        <div class="rfq-form-row">
+            <div class="rfq-form-group">
+                <label class="rfq-form-label">Low Stock Threshold <span class="rfq-form-required">*</span></label>
+                <input
+                    type="number"
+                    min="0"
+                    name="low_stock_threshold"
+                    class="form-control"
+                    value="<?= htmlspecialchars((string)($product['low_stock_threshold'] ?? \App\Modules\Inventory\InventoryService::DEFAULT_LOW_STOCK_THRESHOLD)) ?>"
+                    required
+                >
+                <span class="text-muted" style="font-size:0.82rem;">Show a low stock warning once available quantity drops below this number</span>
+            </div>
+        </div>
+
         <!-- Description -->
         <div class="rfq-form-group">
             <label class="rfq-form-label">Description</label>

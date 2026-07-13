@@ -7,8 +7,8 @@ class InventoryService
 {
     private InventoryRepository $repo;
 
-    /** Quantity threshold under which a product is considered low stock. */
-    private const LOW_STOCK_THRESHOLD = 10;
+    /** Default low-stock threshold applied when a caller doesn't specify one. */
+    public const DEFAULT_LOW_STOCK_THRESHOLD = 10;
 
     public function __construct()
     {
@@ -16,8 +16,9 @@ class InventoryService
     }
 
     /**
-     * Get the product list, optionally searched/filtered, with a
-     * computed 'low_stock' flag added to each row for the view.
+     * Get the product list, optionally searched/filtered, with a computed
+     * 'low_stock' flag (available_quantity below that product's own
+     * low_stock_threshold) added to each row for the view.
      */
     public function getProductList(?string $search = null, bool $lowStockOnly = false, ?int $limit = null, int $offset = 0): array
     {
@@ -25,7 +26,8 @@ class InventoryService
 
         foreach ($products as &$product) {
             $available = (int) ($product['available_quantity'] ?? 0);
-            $product['low_stock'] = $available < self::LOW_STOCK_THRESHOLD;
+            $threshold = (int) ($product['low_stock_threshold'] ?? self::DEFAULT_LOW_STOCK_THRESHOLD);
+            $product['low_stock'] = $available < $threshold;
         }
 
         return $products;
@@ -49,7 +51,7 @@ class InventoryService
      * Business rule: validate and create a new product + starting stock.
      * Returns the new product id, or throws on invalid input.
      */
-    public function createProduct(string $productName, string $sku, float $price, ?string $description, int $startingQuantity): int
+    public function createProduct(string $productName, string $sku, float $price, ?string $description, int $startingQuantity, int $lowStockThreshold = self::DEFAULT_LOW_STOCK_THRESHOLD): int
     {
         if (trim($productName) === '') {
             throw new \InvalidArgumentException('Product name is required.');
@@ -63,17 +65,20 @@ class InventoryService
         if ($startingQuantity < 0) {
             throw new \InvalidArgumentException('Starting quantity cannot be negative.');
         }
+        if ($lowStockThreshold < 0) {
+            throw new \InvalidArgumentException('Low stock threshold cannot be negative.');
+        }
         if ($this->repo->findBySku($sku) !== null) {
             throw new \InvalidArgumentException("SKU \"{$sku}\" is already in use by another product.");
         }
 
-        return $this->repo->create($productName, $sku, $price, $description, $startingQuantity);
+        return $this->repo->create($productName, $sku, $price, $description, $startingQuantity, $lowStockThreshold);
     }
 
     /**
      * Business rule: validate and apply product detail edits.
      */
-    public function updateProduct(int $id, string $productName, string $sku, float $price, ?string $description): bool
+    public function updateProduct(int $id, string $productName, string $sku, float $price, ?string $description, int $lowStockThreshold): bool
     {
         if (trim($productName) === '') {
             throw new \InvalidArgumentException('Product name is required.');
@@ -84,12 +89,18 @@ class InventoryService
         if ($price < 0) {
             throw new \InvalidArgumentException('Price cannot be negative.');
         }
+        if ($lowStockThreshold < 0) {
+            throw new \InvalidArgumentException('Low stock threshold cannot be negative.');
+        }
         $existing = $this->repo->findBySku($sku);
         if ($existing !== null && (int) $existing['id'] !== $id) {
             throw new \InvalidArgumentException("SKU \"{$sku}\" is already in use by another product.");
         }
 
-        return $this->repo->updateProduct($id, $productName, $sku, $price, $description);
+        $result = $this->repo->updateProduct($id, $productName, $sku, $price, $description);
+        $this->repo->updateLowStockThreshold($id, $lowStockThreshold);
+
+        return $result;
     }
 
     /**

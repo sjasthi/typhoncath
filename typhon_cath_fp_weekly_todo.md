@@ -801,7 +801,42 @@ Because Jonah was removed from the group, his X entries are marked as historical
 
 ---
 
-# 9. Final Submission Checklist
+# 9. Cross-Module Feature Additions (Integration Layer)
+
+These are cross-cutting features built by the active members as shared
+infrastructure. They are not owned by a single module — every active module
+consumes them — so they are tracked here rather than under one person's weekly
+list.
+
+## Pagination (All Active Members)
+
+- [x] Build framework-agnostic `Paginator` core class (`app/Core/Paginator.php`).
+- [x] Whitelist selectable page sizes (25 / 50 / 100) with a configurable default.
+- [x] Support a "show all" option to render every row on one page.
+- [x] Clamp out-of-range page requests (e.g. `?page=9999` lands on the last page).
+- [x] Expose `from()` / `to()` row indices and windowed page numbers with `…` gap markers.
+- [x] Build shared pagination nav partial (`app/Shared/pagination.php`) — «Prev · 1 … 4 5 6 … 12 · Next».
+- [x] Preserve current query string (search, filters, sort, per_page) across page clicks.
+- [x] Build shared per-page `<select>` partial (`app/Shared/per_page_select.php`).
+- [x] Wire pagination into Customer (Accounts List).
+- [x] Wire pagination into RFQ (Pipeline Board, Win Rate).
+- [x] Wire pagination into Inventory (Products List).
+- [x] Wire pagination into Campaign (Campaigns List).
+- [x] Wire pagination into Admin (Users).
+
+## CSRF Protection (All Active Members)
+
+- [x] Build `Csrf` core class (`app/Core/Csrf.php`) with per-session token generation.
+- [x] Provide `Csrf::field()` hidden-input helper and `Csrf::metaTag()` for AJAX.
+- [x] Validate submitted tokens in constant time via `hash_equals` (POST body + `X-CSRF-Token` header).
+- [x] Build enforcement middleware (`app/Middleware/csrf.php`) — safe methods pass, invalid/missing token returns 403.
+- [x] Embed `Csrf::field()` in all POST forms across Customer, RFQ, Inventory, Campaign, and Admin.
+- [x] Include the CSRF middleware in all POST handlers app-wide (login, admin users/permissions, and every module).
+- [x] Add CSRF coverage test harness (`tests/csrf_coverage.php`) to verify token generation and form submission.
+
+---
+
+# 10. Final Submission Checklist
 
 Use this checklist before uploading or submitting each FP package.
 
@@ -818,7 +853,7 @@ Use this checklist before uploading or submitting each FP package.
 
 ---
 
-# 10. Notes for Instructor / Reviewer
+# 11. Notes for Instructor / Reviewer
 
 This weekly plan is based on the original four-student project structure. Jonah was originally responsible for Digital Campaign Management, but he has been removed from the group. His section remains visible so the removed work does not disappear from the planning record.
 

@@ -64,6 +64,37 @@ ON DUPLICATE KEY UPDATE
     phone = VALUES(phone),
     title = VALUES(title);
 
+-- ── Interactions ─────────────────────────────────────────────────────────────
+-- Logged customer touchpoints (calls/emails/notes/meetings) across accounts and
+-- their contacts. Dates are RELATIVE to NOW() so the "Recent Interactions"
+-- dashboard card always shows fresh, correctly-ordered activity no matter when
+-- the seed is run. Types are mixed so the card renders all four badge colours.
+INSERT INTO interactions (id, account_id, contact_id, user_id, interaction_type, interaction_date, interaction_subject, notes) VALUES
+(1,  2,  2,    (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 'call',    NOW() - INTERVAL 3 HOUR, 'Follow-up on ICU bulk order',        'Called James to confirm the delivery window for the ICU expansion order. Wants the shipment split across two weeks.'),
+(2,  5,  5,    (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 'email',   NOW() - INTERVAL 8 HOUR, 'Sent coronary bundle quote',         'Emailed Rachel the revised coronary catheter bundle quote with the 5% volume discount applied.'),
+(3,  10, 10,   (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 'meeting', NOW() - INTERVAL 1 DAY,  'Multi-year urinary catheter review', 'On-site meeting with Tom to walk through the three-year framework terms. Legal is reviewing the pricing schedule.'),
+(4,  3,  3,    (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 'note',    NOW() - INTERVAL 2 DAY,  'Hybrid OR kit specs confirmed',      'Maria confirmed the specialty kit configuration. Awaiting internal budget sign-off before we quote.'),
+(5,  8,  8,    (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 'call',    NOW() - INTERVAL 3 DAY,  'PICC + midline bundle negotiation',  'Carlos is pushing for better 12-month pricing. Offered to hold the current rate if they commit by month end.'),
+(6,  1,  1,    (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 'email',   NOW() - INTERVAL 5 DAY,  'Q3 reorder confirmation',            'Sent Sandra the Q3 catheter reorder summary for the ICU ward. Confirmed standard quarterly volumes.'),
+(7,  12, 12,   (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 'meeting', NOW() - INTERVAL 6 DAY,  'Distributor partnership kickoff',    'Kickoff with Bryan on the three-state distribution agreement. Aligned on catalogue and onboarding timeline.'),
+(8,  6,  6,    (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 'note',    NOW() - INTERVAL 9 DAY,  'Emergency restock logged',           'Logged an urgent restock request from Kevin after an inventory shortage. Flagged for expedited fulfilment.'),
+(9,  9,  9,    (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 'call',    NOW() - INTERVAL 12 DAY, 'Dialysis catheter trial check-in',   'Aisha reports positive early results in the hemodialysis access study. Will share interim data next month.'),
+(10, 4,  4,    (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 'email',   NOW() - INTERVAL 15 DAY, 'Annual contract renewal terms',      'Sent David the 2026 renewal terms. He requested a call to discuss the price-escalation clause.'),
+(11, 7,  7,    (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 'meeting', NOW() - INTERVAL 18 DAY, 'ASC vascular sheath walkthrough',    'Product walkthrough with Priya for the OR suite sheath package. Positive feedback on the introducer kit.'),
+(12, 11, 11,   (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 'call',    NOW() - INTERVAL 22 DAY, 'Home care programme logistics',      'Linda outlined monthly delivery needs for 60 discharged patients. Discussed a recurring order setup.'),
+(13, 2,  NULL, (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 'note',    NOW() - INTERVAL 27 DAY, 'Account-wide procurement note',      'Noted that City Medical is consolidating procurement across all three sites — expect larger volumes.'),
+(14, 5,  5,    (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 'email',   NOW() - INTERVAL 33 DAY, 'Coronary intervention pact intro',   'Introduced the preferred-vendor agreement for coronary guide catheters. Rachel is forwarding it to committee.'),
+(15, 3,  3,    (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 'meeting', NOW() - INTERVAL 39 DAY, 'Volume deal negotiation session',    'Full-year volume pricing negotiation with Maria. Narrowed to two tiers; awaiting a final commitment.'),
+(16, 6,  NULL, (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 'note',    NOW() - INTERVAL 45 DAY, 'Pilot pause recorded',               'Recorded that Valley General paused the pilot program pending its budget cycle. Follow up in Q4.')
+ON DUPLICATE KEY UPDATE
+    account_id = VALUES(account_id),
+    contact_id = VALUES(contact_id),
+    user_id = VALUES(user_id),
+    interaction_type = VALUES(interaction_type),
+    interaction_date = VALUES(interaction_date),
+    interaction_subject = VALUES(interaction_subject),
+    notes = VALUES(notes);
+
 INSERT INTO products (id, product_name, sku, price, description) VALUES
 (1, 'Typhon Catheter Demo Product', 'TYPHON-DEMO-001', '499.00', 'Demo product for CRM inventory.'),
 (2, 'Triple-Lumen Central Venous Catheter Kit', 'CVC-3L-001', '285.00', 'Triple-lumen CVC kit for central venous access; 7 Fr, 20 cm.'),
@@ -171,22 +202,26 @@ ON DUPLICATE KEY UPDATE
     created_at = VALUES(created_at);
 
 INSERT INTO quotes (id, rfq_id, quote_amount, discount, validity_start_date, validity_end_date) VALUES
-(1, 7, '45000.00', '5.00', '2026-06-01', '2026-06-22'),
-(2, 8, '12500.00', '0.00', '2026-06-05', '2026-06-21'),
-(3, 9, '78000.00', '8.00', '2026-05-15', '2026-06-14'),
-(4, 10, '220000.00', '10.00', '2026-06-10', '2026-07-10'),
-(5, 11, '95000.00', '7.00', '2026-06-01', '2026-06-24'),
+-- Active-pipeline quotes (RFQs in Quoted/Negotiation) use validity_end_date
+-- RELATIVE to CURDATE() so the "Expiring Quotes" card always shows a realistic
+-- mix of soon-to-expire and a couple of overdue quotes. Won/Lost quotes below
+-- keep fixed historical dates (they never appear in the expiring-soon widget).
+(1, 7, '45000.00', '5.00', CURDATE() - INTERVAL 21 DAY, CURDATE() + INTERVAL 2 DAY),
+(2, 8, '12500.00', '0.00', CURDATE() - INTERVAL 21 DAY, CURDATE() - INTERVAL 1 DAY),
+(3, 9, '78000.00', '8.00', CURDATE() - INTERVAL 30 DAY, CURDATE() - INTERVAL 5 DAY),
+(4, 10, '220000.00', '10.00', CURDATE() - INTERVAL 21 DAY, CURDATE() + INTERVAL 25 DAY),
+(5, 11, '95000.00', '7.00', CURDATE() - INTERVAL 21 DAY, CURDATE() + INTERVAL 6 DAY),
 (6, 12, '135000.00', '5.00', '2026-04-01', '2026-05-01'),
 (7, 13, '67500.00', '3.00', '2026-03-15', '2026-04-15'),
 (8, 14, '28000.00', '2.00', '2026-02-01', '2026-03-01'),
 (9, 15, '15000.00', '0.00', '2026-01-15', '2026-02-15'),
-(10, 24, '38500.00', '4.00', '2026-06-05', '2026-07-05'),
-(11, 25, '182000.00', '6.00', '2026-05-29', '2026-06-29'),
-(12, 26, '54000.00', '3.00', '2026-05-25', '2026-07-11'),
-(13, 27, '97500.00', '5.00', '2026-05-20', '2026-06-23'),
-(14, 28, '310000.00', '12.00', '2026-06-01', '2026-07-18'),
-(15, 29, '124000.00', '8.00', '2026-05-15', '2026-07-03'),
-(16, 30, '21600.00', '0.00', '2026-06-01', '2026-06-26'),
+(10, 24, '38500.00', '4.00', CURDATE() - INTERVAL 21 DAY, CURDATE() + INTERVAL 20 DAY),
+(11, 25, '182000.00', '6.00', CURDATE() - INTERVAL 21 DAY, CURDATE() + INTERVAL 9 DAY),
+(12, 26, '54000.00', '3.00', CURDATE() - INTERVAL 21 DAY, CURDATE() + INTERVAL 30 DAY),
+(13, 27, '97500.00', '5.00', CURDATE() - INTERVAL 21 DAY, CURDATE() + INTERVAL 4 DAY),
+(14, 28, '310000.00', '12.00', CURDATE() - INTERVAL 21 DAY, CURDATE() + INTERVAL 38 DAY),
+(15, 29, '124000.00', '8.00', CURDATE() - INTERVAL 21 DAY, CURDATE() + INTERVAL 16 DAY),
+(16, 30, '21600.00', '0.00', CURDATE() - INTERVAL 21 DAY, CURDATE() + INTERVAL 12 DAY),
 (17, 31, '44000.00', '3.00', '2026-01-15', '2026-02-15'),
 (18, 32, '168000.00', '7.00', '2026-02-01', '2026-03-01'),
 (19, 33, '89000.00', '5.00', '2026-02-20', '2026-03-20'),
@@ -278,9 +313,11 @@ INSERT INTO campaigns (id, campaign_name, campaign_type, status, created_by_user
 (25, 'Mid-Year Loyalty Reward Email',   'Email',          'Sent',      (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 7,  '71.4', '28.6', NULL,                  '2026-06-17 09:00:00', '2026-06-17 13:00:00'),
 (26, 'Catheter Safety Bulletin',        'Email',          'Sent',      (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 6,  '83.3', '16.7', NULL,                  '2026-06-18 10:00:00', '2026-06-18 12:00:00'),
 -- Week 12 (Jun 23) — upcoming scheduled sends ─────────────────────────────────
-(27, 'Q3 Prospect Welcome Series',      'Email',          'Scheduled', (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 0,  NULL,   NULL,   '2026-07-07 09:00:00', '2026-06-24 10:00:00', '2026-06-24 10:00:00'),
-(28, 'SMS: Summer Product Preview',     'SMS Simulation', 'Scheduled', (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 0,  NULL,   NULL,   '2026-07-01 10:00:00', '2026-06-25 09:00:00', '2026-06-25 09:00:00'),
-(29, 'Cardiology Q3 Annual Review',     'Email',          'Scheduled', (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 0,  NULL,   NULL,   '2026-07-14 09:00:00', '2026-06-26 08:00:00', '2026-06-26 08:00:00'),
+-- scheduled_at is RELATIVE to NOW() so these always stay in the future and keep
+-- the "Upcoming Campaign Sends" card populated regardless of when the seed runs.
+(27, 'Q3 Prospect Welcome Series',      'Email',          'Scheduled', (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 0,  NULL,   NULL,   NOW() + INTERVAL 7 DAY,  '2026-06-24 10:00:00', '2026-06-24 10:00:00'),
+(28, 'SMS: Summer Product Preview',     'SMS Simulation', 'Scheduled', (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 0,  NULL,   NULL,   NOW() + INTERVAL 3 DAY,  '2026-06-25 09:00:00', '2026-06-25 09:00:00'),
+(29, 'Cardiology Q3 Annual Review',     'Email',          'Scheduled', (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 0,  NULL,   NULL,   NOW() + INTERVAL 14 DAY, '2026-06-26 08:00:00', '2026-06-26 08:00:00'),
 (30, 'Q3 Full Territory Campaign',      'Email',          'Draft',     (SELECT id FROM users WHERE email='admin@typhoncath.test' LIMIT 1), 0,  NULL,   NULL,   NULL,                  '2026-06-26 14:00:00', '2026-06-26 14:00:00')
 ON DUPLICATE KEY UPDATE
     campaign_name  = VALUES(campaign_name),

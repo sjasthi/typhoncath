@@ -1,15 +1,160 @@
 <?php
 namespace App\Modules\Dashboard;
 
+use App\Modules\RFQ\RFQRepository;
+use App\Modules\Campaign\CampaignRepository;
+
+/**
+ * DashboardService — the single place the dashboard reaches module data.
+ *
+ * Request flow:  Dashboard View → DashboardController → DashboardService →
+ *                RFQ/Campaign repositories → Database
+ *
+ * The service only *coordinates*: every aggregate is computed in SQL by a
+ * narrowly-scoped repository method, and the service reshapes/labels the result
+ * for the cards. It never writes SQL itself and never duplicates RFQ or Campaign
+ * business logic — it composes the two module repositories and shares one
+ * campaign-stats read across the two campaign cards.
+ */
 class DashboardService
 {
-    public function metrics(): array
+    /**
+     * Which RFQ stages count as "active" for the Active RFQs card.
+     * Quoted + Negotiation: late-pipeline RFQs that have real money in play.
+     */
+    public const ACTIVE_RFQ_STAGES = ['Quoted', 'Negotiation'];
+
+    /**
+     * Units at/below which a product counts as "low stock" on the dashboard.
+     * A flat threshold (the Inventory module has no per-product reorder column) —
+     * mirrors InventoryService::LOW_STOCK_THRESHOLD so both views agree.
+     */
+    public const LOW_STOCK_THRESHOLD = 10;
+
+    /** Reservation share above which a product is "heavily reserved" (0.70 = 70%). */
+    public const HEAVILY_RESERVED_RATIO = 0.70;
+
+    private RFQRepository $rfq;
+    private CampaignRepository $campaign;
+    private DashboardRepository $dashboard;
+
+    /** Memoised single read of campaign summary stats (shared by two cards). */
+    private ?array $campaignStats = null;
+
+    public function __construct(
+        ?RFQRepository $rfq = null,
+        ?CampaignRepository $campaign = null,
+        ?DashboardRepository $dashboard = null
+    ) {
+        $this->rfq       = $rfq       ?? new RFQRepository();
+        $this->campaign  = $campaign  ?? new CampaignRepository();
+        $this->dashboard = $dashboard ?? new DashboardRepository();
+    }
+
+    // ── RFQ ───────────────────────────────────────────────────────────────────
+
+    /** @return array{count:int,total_value:float} Active RFQ count + total quoted value. */
+    public function activeRfqSummary(): array
     {
+        return $this->rfq->stageSummary(self::ACTIVE_RFQ_STAGES);
+    }
+
+    /** Per-stage count + total/avg quoted value (RFQ Value by Stage card). */
+    public function rfqValueByStage(): array
+    {
+        return $this->rfq->totalValueByStage();
+    }
+
+    /** The $limit most recently updated RFQs (Recent RFQs card). */
+    public function recentRfqs(int $limit = 5): array
+    {
+        return $this->rfq->recentRfqs($limit);
+    }
+
+    /** Top accounts by win rate (Win Rate by Account card / drill-down page). */
+    public function winRateByAccount(int $limit = 5, int $offset = 0): array
+    {
+        return $this->rfq->winRateByAccount($limit, $offset);
+    }
+
+    /** Population size for the win-rate drill-down pager. */
+    public function winRateAccountCount(): int
+    {
+        return $this->rfq->winRateByAccountCount();
+    }
+
+    /** Soonest-expiring / overdue quotes on active RFQs (Expiring Quotes card). */
+    public function expiringQuotes(int $limit = 5): array
+    {
+        return $this->rfq->quotesExpiringSoon($limit);
+    }
+
+    // ── Campaign ──────────────────────────────────────────────────────────────
+
+    /** Campaigns that are Scheduled or Sent (Active Campaigns card). */
+    public function activeCampaignCount(): int
+    {
+        return (int)($this->campaignStats()['active'] ?? 0);
+    }
+
+    /**
+     * Average open/click rates across delivered campaigns (Campaign Performance
+     * card). Rates are NULL until at least one campaign has been sent.
+     *
+     * @return array{avg_open:?float,avg_click:?float,sent_completed:int}
+     */
+    public function campaignPerformance(): array
+    {
+        $s = $this->campaignStats();
         return [
-            'customers' => 0,
-            'active_rfqs' => 0,
-            'campaigns' => 0,
-            'low_stock' => 0,
+            'avg_open'       => isset($s['avg_open_rate'])  && $s['avg_open_rate']  !== null ? (float)$s['avg_open_rate']  : null,
+            'avg_click'      => isset($s['avg_click_rate']) && $s['avg_click_rate'] !== null ? (float)$s['avg_click_rate'] : null,
+            'sent_completed' => (int)($s['sent_completed'] ?? 0),
         ];
+    }
+
+    /** Campaigns scheduled to go out soonest (Upcoming Sends card). */
+    public function upcomingCampaignSends(int $limit = 5): array
+    {
+        return $this->campaign->upcomingScheduledSends($limit);
+    }
+
+    // ── Inventory ─────────────────────────────────────────────────────────────
+
+    /** Products at or below the low-stock threshold (Low Stock card). */
+    public function lowStockProducts(int $limit = 5): array
+    {
+        return $this->dashboard->lowStock(self::LOW_STOCK_THRESHOLD, $limit);
+    }
+
+    /** Products with the most units reserved across active RFQs (Top Reserved card). */
+    public function topReservedProducts(int $limit = 5): array
+    {
+        return $this->dashboard->topReserved($limit);
+    }
+
+    /** Count of reservations still held (not released/converted) (Pending Reservations card). */
+    public function pendingReservationCount(): int
+    {
+        return $this->dashboard->pendingReservationCount();
+    }
+
+    /** Total units held across active reservations (Reserved Inventory card). */
+    public function reservedUnits(): int
+    {
+        return $this->dashboard->reservedUnits();
+    }
+
+    /** Products whose reserved share exceeds the heavily-reserved ratio (Heavily Reserved card). */
+    public function heavilyReservedProducts(int $limit = 10): array
+    {
+        return $this->dashboard->heavilyReserved(self::HEAVILY_RESERVED_RATIO, $limit);
+    }
+
+    // ── Private ───────────────────────────────────────────────────────────────
+
+    private function campaignStats(): array
+    {
+        return $this->campaignStats ??= $this->campaign->dashboardStats();
     }
 }

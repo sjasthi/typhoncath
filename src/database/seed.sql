@@ -69,19 +69,55 @@ INSERT INTO products (id, product_name, sku, price, description) VALUES
 (2, 'Triple-Lumen Central Venous Catheter Kit', 'CVC-3L-001', '285.00', 'Triple-lumen CVC kit for central venous access; 7 Fr, 20 cm.'),
 (3, 'PICC Line Kit — Power Injectable', 'PICC-PWR-002', '198.00', 'Power-injectable PICC kit with introducer needle and guidewire.'),
 (4, 'Foley Catheter 16 Fr Silicone', 'FOLEY-16-003', '42.50', 'All-silicone indwelling Foley catheter, 16 Fr, 10 mL balloon.'),
-(5, 'Arterial Line Catheter 20 Ga', 'ART-LINE-004', '87.00', 'Radial arterial line catheter, 20 Ga, with pressure transducer tubing.')
+(5, 'Arterial Line Catheter 20 Ga', 'ART-LINE-004', '87.00', 'Radial arterial line catheter, 20 Ga, with pressure transducer tubing.'),
+(6, 'Midline Catheter Kit 4 Fr', 'MIDLINE-4F-005', '76.00', 'Single-lumen midline catheter kit for extended peripheral access.'),
+(7, 'Hemodialysis Catheter Dual-Lumen', 'HD-DL-006', '320.00', 'Dual-lumen tunnelled hemodialysis catheter, 14.5 Fr.'),
+(8, 'Nasogastric Feeding Tube 12 Fr', 'NG-12-007', '18.75', 'Radiopaque PVC nasogastric feeding tube, 12 Fr, 120 cm.'),
+(9, 'Peritoneal Dialysis Catheter', 'PD-CATH-008', '410.00', 'Coiled-tip peritoneal dialysis catheter with dual polyester cuffs.'),
+(10, 'Suprapubic Catheter 14 Fr', 'SUPRA-14-009', '58.00', 'All-silicone suprapubic drainage catheter, 14 Fr, 10 mL balloon.'),
+(11, 'Pigtail Drainage Catheter 8 Fr', 'PIGTAIL-8-010', '64.50', 'Locking pigtail drainage catheter, 8 Fr, for percutaneous drainage.'),
+(12, 'Introducer Sheath 6 Fr', 'SHEATH-6F-011', '92.00', 'Radial/femoral introducer sheath, 6 Fr, with hemostasis valve.'),
+(13, 'Guide Catheter JL4 6 Fr', 'GUIDE-JL4-012', '145.00', 'Judkins Left 4.0 coronary guide catheter, 6 Fr.'),
+(14, 'Balloon Dilatation Catheter', 'BALLOON-013', '268.00', 'Semi-compliant PTCA balloon dilatation catheter, rapid-exchange.'),
+(15, 'Thermodilution Swan-Ganz Catheter', 'SWAN-GANZ-014', '540.00', '7.5 Fr thermodilution pulmonary artery (Swan-Ganz) catheter.'),
+(16, 'Umbilical Vessel Catheter 3.5 Fr', 'UVC-35-015', '39.00', 'Neonatal umbilical vessel catheter, 3.5 Fr, single lumen.'),
+(17, 'Epidural Catheter Kit 18 Ga', 'EPI-18-016', '71.00', 'Closed-tip epidural catheter kit with Tuohy needle, 18 Ga.'),
+(18, 'Chest Drainage Catheter 28 Fr', 'CHEST-28-017', '84.00', 'Straight chest drainage (thoracostomy) catheter, 28 Fr.'),
+(19, 'Tunneled CVC 9 Fr', 'TUN-CVC-9-018', '375.00', 'Dual-lumen tunnelled central venous catheter, 9 Fr, with cuff.'),
+(20, 'Yankauer Suction Catheter', 'YANK-019', '6.25', 'Rigid Yankauer oral suction catheter, sterile, single-use.')
 ON DUPLICATE KEY UPDATE
     product_name = VALUES(product_name),
     sku = VALUES(sku),
     price = VALUES(price),
     description = VALUES(description);
 
+-- available_quantity / reserved_quantity are tuned to exercise the dashboard cards:
+--   Low Stock  (available <= 10):        7, 8, 10, 11, 14, 16, 19, 20
+--   Heavily Reserved (>70% reserved):    7 (92%), 9 (75%), 12 (75%), 14 (77%), 19 (83%)
+--   Top Reserved (most units reserved):  9, 7, 12, 19, 14
+-- reserved_quantity for each product equals the sum of its 'Reserved' rows in
+-- rfq_inventory_reservations below, matching how the reserve flow keeps them in sync.
 INSERT INTO inventory (id, product_id, available_quantity, reserved_quantity) VALUES
 (1, 1, 100, 0),
 (2, 2, 250, 12),
 (3, 3, 480, 0),
 (4, 4, 900, 20),
-(5, 5, 160, 5)
+(5, 5, 160, 5),
+(6, 6, 220, 8),
+(7, 7, 4, 46),
+(8, 8, 4, 0),
+(9, 9, 20, 60),
+(10, 10, 9, 2),
+(11, 11, 6, 0),
+(12, 12, 15, 45),
+(13, 13, 140, 15),
+(14, 14, 10, 34),
+(15, 15, 60, 6),
+(16, 16, 0, 0),
+(17, 17, 300, 10),
+(18, 18, 95, 4),
+(19, 19, 8, 40),
+(20, 20, 7, 0)
 ON DUPLICATE KEY UPDATE
     product_id = VALUES(product_id),
     available_quantity = VALUES(available_quantity),
@@ -484,3 +520,34 @@ JOIN (
         UNION ALL SELECT 'references.view' AS permission
 ) p
 WHERE r.role_name = 'Inventory Manager';
+
+-- RFQ inventory reservations. The 'Reserved' rows back each product's
+-- reserved_quantity above (their quantities sum to it) and feed the Pending
+-- Reservations / Top Reserved cards. A few Released/Converted rows add realistic
+-- history (a Lost RFQ released its hold, Won RFQs converted theirs) and are
+-- excluded from the "pending" count on purpose.
+INSERT INTO rfq_inventory_reservations (id, rfq_id, product_id, quantity_reserved, reservation_status) VALUES
+(1,  2,  7,  46, 'Reserved'),
+(2,  3,  9,  40, 'Reserved'),
+(3,  16, 9,  20, 'Reserved'),
+(4,  10, 12, 25, 'Reserved'),
+(5,  20, 12, 20, 'Reserved'),
+(6,  4,  19, 40, 'Reserved'),
+(7,  5,  14, 34, 'Reserved'),
+(8,  1,  4,  20, 'Reserved'),
+(9,  7,  13, 15, 'Reserved'),
+(10, 8,  2,  12, 'Reserved'),
+(11, 11, 17, 10, 'Reserved'),
+(12, 6,  6,  8,  'Reserved'),
+(13, 9,  15, 6,  'Reserved'),
+(14, 5,  5,  5,  'Reserved'),
+(15, 6,  18, 4,  'Reserved'),
+(16, 3,  10, 2,  'Reserved'),
+(17, 12, 2,  5,  'Converted'),
+(18, 14, 4,  10, 'Released'),
+(19, 13, 5,  8,  'Converted')
+ON DUPLICATE KEY UPDATE
+    rfq_id = VALUES(rfq_id),
+    product_id = VALUES(product_id),
+    quantity_reserved = VALUES(quantity_reserved),
+    reservation_status = VALUES(reservation_status);

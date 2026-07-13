@@ -13,16 +13,30 @@ class UserRepository
         $this->db = Database::connection();
     }
 
-    public function allUsers(): array
+    public function allUsers(?int $limit = null, int $offset = 0): array
     {
-        $stmt = $this->db->prepare("
-            SELECT u.id, u.name, u.email, u.role_id, r.role_name, r.owner_user_id, u.created_at
-            FROM users u
-            JOIN roles r ON r.id = u.role_id
-            ORDER BY u.name ASC
-        ");
+        $sql = "SELECT u.id, u.name, u.email, u.role_id, r.role_name, r.owner_user_id, u.created_at
+                FROM users u
+                JOIN roles r ON r.id = u.role_id
+                ORDER BY u.name ASC";
+
+        if ($limit !== null) {
+            $limit  = max(1, $limit);   // guard the interpolated LIMIT/OFFSET
+            $offset = max(0, $offset);
+            $sql   .= " LIMIT {$limit} OFFSET {$offset}";
+        }
+
+        $stmt = $this->db->prepare($sql);
         $stmt->execute();
         return $stmt->fetchAll();
+    }
+
+    // Total user count (for pagination).
+    public function countUsers(): int
+    {
+        $stmt = $this->db->prepare("SELECT COUNT(*) FROM users");
+        $stmt->execute();
+        return (int) $stmt->fetchColumn();
     }
 
     public function findById(int $id): ?array

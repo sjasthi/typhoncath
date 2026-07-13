@@ -40,6 +40,7 @@
     <?php endif; ?>
 
     <form method="POST" action="/modules/inventory/products.php?page=delete" class="rfq-form-actions" style="margin-top:1rem;">
+        <?= App\Core\Csrf::field() ?>
         <input type="hidden" name="id" value="<?= (int)$product['id'] ?>">
         <button type="submit" class="btn" style="background:#b91c1c; color:#fff; border-color:#b91c1c;">
             Yes, Delete This Product

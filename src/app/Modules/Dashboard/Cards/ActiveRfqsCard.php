@@ -5,7 +5,9 @@ use App\Modules\Dashboard\DashboardCard;
 
 /**
  * OWNER: Trevor (RFQ)
- * Stat card — count of RFQs not in a terminal stage.
+ * Stat card — count + total quoted value of active RFQs (Quoted + Negotiation).
+ * Totals are aggregated in SQL (DashboardService::activeRfqSummary); the card
+ * never loads individual RFQ rows.
  */
 class ActiveRfqsCard extends DashboardCard
 {
@@ -15,17 +17,12 @@ class ActiveRfqsCard extends DashboardCard
 
     public function body(): string
     {
-        // STUB: placeholder data. Replace with a real query, e.g.
-        //   $counts = $this->repo->rfqStageCounts();
-        //   $active = array of stages minus Won/Lost
-        $active = 0;
-        $won    = 0;
-        $lost   = 0;
+        $summary = $this->service->activeRfqSummary();
 
         return $this->stat(
-            $active,
-            "Open · {$won} won · {$lost} lost",
-            '/modules/rfq/pipeline.php',
+            $summary['count'],
+            $this->money($summary['total_value']) . ' in Quoted / Negotiation',
+            '/modules/rfq/pipeline.php?stage%5B%5D=Quoted&stage%5B%5D=Negotiation',
             'View pipeline'
         );
     }

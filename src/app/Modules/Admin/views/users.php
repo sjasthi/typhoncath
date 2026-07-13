@@ -18,6 +18,14 @@ $roleBadgeMap = [
         </div>
     </div>
 
+    <form method="GET" action="/admin/users.php" class="rfq-list-toolbar" style="margin-bottom:1rem; display:flex; justify-content:flex-end;">
+        <?php
+            $perPageClass      = 'form-control rfq-list-perpage-select';
+            $perPageAutoSubmit = true; // no filter button on this toolbar
+            include __DIR__ . '/../../../Shared/per_page_select.php';
+        ?>
+    </form>
+
     <?php if (empty($users)): ?>
     <p class="text-muted">No users found.</p>
     <?php else: ?>
@@ -58,6 +66,7 @@ $roleBadgeMap = [
                     <?php if (!$isSelf): ?>
                     <form method="POST" action="/admin/users.php" style="display:inline;"
                           onsubmit="return confirm('Delete <?= htmlspecialchars(addslashes($u['name'])) ?>? This cannot be undone.');">
+                        <?= App\Core\Csrf::field() ?>
                         <input type="hidden" name="_action" value="delete">
                         <input type="hidden" name="user_id" value="<?= (int)$u['id'] ?>">
                         <button type="submit" class="btn btn-danger btn-sm">&times;</button>
@@ -68,6 +77,21 @@ $roleBadgeMap = [
             <?php endforeach; ?>
         </tbody>
     </table>
+
+    <?php
+        $paginationClasses = [
+            'container' => 'rfq-pagination',
+            'item'      => 'rfq-page-btn',
+            'nav'       => 'rfq-pagination-nav',
+            'disabled'  => 'rfq-page-disabled',
+            'active'    => 'rfq-page-active',
+            'ellipsis'  => 'rfq-page-ellipsis',
+        ];
+        include __DIR__ . '/../../../Shared/pagination.php';
+    ?>
+    <div class="rfq-list-footer">
+        Showing <?= $pager->from() ?>–<?= $pager->to() ?> of <?= number_format($total) ?> user<?= $total !== 1 ? 's' : '' ?>
+    </div>
 
     <?php endif; ?>
 

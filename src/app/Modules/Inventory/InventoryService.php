@@ -20,9 +20,9 @@ class InventoryService
      * 'low_stock' flag (available_quantity below that product's own
      * low_stock_threshold) added to each row for the view.
      */
-    public function getProductList(?string $search = null, bool $lowStockOnly = false): array
+    public function getProductList(?string $search = null, bool $lowStockOnly = false, ?int $limit = null, int $offset = 0): array
     {
-        $products = $this->repo->all($search, $lowStockOnly);
+        $products = $this->repo->all($search, $lowStockOnly, $limit, $offset);
 
         foreach ($products as &$product) {
             $available = (int) ($product['available_quantity'] ?? 0);
@@ -31,6 +31,12 @@ class InventoryService
         }
 
         return $products;
+    }
+
+    // Total products matching the same filters (for pagination).
+    public function getProductCount(?string $search = null, bool $lowStockOnly = false): int
+    {
+        return $this->repo->count($search, $lowStockOnly);
     }
 
     /**
@@ -98,17 +104,19 @@ class InventoryService
     }
 
     /**
-     * Business rule: stock can never go negative, and reserved quantity
-     * can never exceed available + reserved combined (i.e. you can't
-     * reserve stock that doesn't exist).
+     * Business rule: manual stock edits set only the available quantity and can
+     * never go negative. Reserved quantity is NOT editable here — it is owned and
+     * kept in sync exclusively by the RFQ reservation flow (reserve/release/
+     * convert), so a product's reserved count always traces back to real
+     * reservation rows.
      */
-    public function updateStock(int $productId, int $availableQuantity, int $reservedQuantity): bool
+    public function updateStock(int $productId, int $availableQuantity): bool
     {
-        if ($availableQuantity < 0 || $reservedQuantity < 0) {
-            throw new \InvalidArgumentException('Stock quantities cannot be negative.');
+        if ($availableQuantity < 0) {
+            throw new \InvalidArgumentException('Available quantity cannot be negative.');
         }
 
-        return $this->repo->updateStock($productId, $availableQuantity, $reservedQuantity);
+        return $this->repo->updateAvailableQuantity($productId, $availableQuantity);
     }
 
     /**

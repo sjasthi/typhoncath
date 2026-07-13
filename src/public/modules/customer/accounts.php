@@ -12,11 +12,14 @@ $repo = new CustomerRepository();
 // Create moved to create_account.php; delete moved to account_detail.php.
 // This page is now list + search only.
 
-$accounts = $repo->search(
-    $_GET['search'] ?? '',
-    $_GET['industry'] ?? '',
-    $_GET['source'] ?? ''
-);
+$searchQ  = $_GET['search']   ?? '';
+$industry = $_GET['industry'] ?? '';
+$source   = $_GET['source']   ?? '';
+
+// Shared pagination: whitelists per_page, clamps the page, yields limit()/offset().
+$total    = $repo->searchCount($searchQ, $industry, $source);
+$pager    = new \App\Core\Paginator($total, $_GET['per_page'] ?? 25, $_GET['page'] ?? 1);
+$accounts = $repo->search($searchQ, $industry, $source, $pager->limit(), $pager->offset());
 
 include __DIR__ . '/../../../app/Shared/header.php';
 include __DIR__ . '/../../../app/Shared/sidebar.php';

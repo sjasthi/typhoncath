@@ -7,6 +7,9 @@ use App\Core\Database;
 
 Auth::requireLogin();
 
+// Reject state-changing (POST) requests without a valid CSRF token.
+require_once __DIR__ . '/../../../app/Middleware/csrf.php';
+
 $accountId = (int)($_GET['id'] ?? 0);
 $editMode  = isset($_GET['edit']);
 
@@ -304,11 +307,18 @@ include __DIR__ . '/../../../app/Shared/sidebar.php';
 <div class="page-header">
     <h1><?= htmlspecialchars($account['account_name']) ?></h1>
     <div class="header-actions">
-        <a href="accounts.php" class="button btn-ghost">&#8592; Back</a>
+        <a href="accounts.php" class="button btn-ghost">
+            &#8592; Back
+        </a>
+        <a href="account_pdf.php?id=<?= $accountId ?>"
+        class="button button-primary">
+        Download PDF
+        </a>
         <?php if (!$editMode): ?>
         <a class="button button-primary" href="?id=<?= $accountId ?>&edit=1">Edit Account</a>
         <form method="POST" style="display:inline;margin:0;"
               onsubmit="return confirm('Delete this customer and all its contacts and interactions? This cannot be undone.');">
+            <?= App\Core\Csrf::field() ?>
             <button type="submit" name="delete_account" class="button button-danger">Delete</button>
         </form>
         <?php endif; ?>
@@ -316,6 +326,7 @@ include __DIR__ . '/../../../app/Shared/sidebar.php';
 </div>
 
 <form method="POST">
+<?= App\Core\Csrf::field() ?>
 
 <table class="data-table">
 
@@ -362,6 +373,7 @@ field("Tags","tags",$account['tags'],$editMode);
 
 <!-- ADD CONTACT -->
 <form method="POST" class="form">
+    <?= App\Core\Csrf::field() ?>
     <div class="form-row">
         <div class="form-group">
             <label for="c-first" class="form-label">First Name <span class="form-required">*</span></label>
@@ -396,6 +408,7 @@ field("Tags","tags",$account['tags'],$editMode);
 <?php if (isset($_GET['edit_contact']) && $_GET['edit_contact'] == $c['id']): ?>
 
 <form method="POST" class="form">
+    <?= App\Core\Csrf::field() ?>
     <input type="hidden" name="contact_id" value="<?= $c['id'] ?>">
 
     <div class="form-row">
@@ -437,6 +450,7 @@ field("Tags","tags",$account['tags'],$editMode);
        class="button btn-ghost" style="font-size:0.78rem;padding:3px 10px;">Edit</a>
 
     <form method="POST" style="display:inline;">
+        <?= App\Core\Csrf::field() ?>
         <input type="hidden" name="contact_id" value="<?= $c['id'] ?>">
         <button name="delete_contact" class="button button-danger" style="font-size:0.78rem;padding:3px 10px;"
                 onclick="return confirm('Delete contact?')">Delete</button>
@@ -458,6 +472,7 @@ field("Tags","tags",$account['tags'],$editMode);
 <h2>Log Interaction</h2>
 
 <form method="POST" class="form">
+    <?= App\Core\Csrf::field() ?>
 
     <div class="form-group">
         <label for="i-subject" class="form-label">Subject</label>
@@ -496,6 +511,7 @@ field("Tags","tags",$account['tags'],$editMode);
 <?php if (isset($_GET['edit_interaction']) && $_GET['edit_interaction'] == $i['id']): ?>
 
 <form method="POST" class="form">
+    <?= App\Core\Csrf::field() ?>
     <input type="hidden" name="interaction_id" value="<?= $i['id'] ?>">
 
     <div class="form-group">
@@ -536,6 +552,7 @@ field("Tags","tags",$account['tags'],$editMode);
        class="button btn-ghost" style="font-size:0.78rem;padding:3px 10px;">Edit</a>
 
     <form method="POST" style="display:inline;">
+        <?= App\Core\Csrf::field() ?>
         <input type="hidden" name="interaction_id" value="<?= $i['id'] ?>">
         <button name="delete_interaction" class="button button-danger" style="font-size:0.78rem;padding:3px 10px;"
                 onclick="return confirm('Delete interaction?')">Delete</button>

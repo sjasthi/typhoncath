@@ -36,6 +36,7 @@ $typeBadge = [
             <a href="/modules/campaign/audience.php?campaign_id=<?= (int)$campaign['id'] ?>" class="btn btn-secondary" style="font-size:0.85rem;padding:6px 14px;">Audience</a>
             <form method="POST" action="/modules/campaign/detail.php?id=<?= (int)$campaign['id'] ?>" style="margin:0;"
                   onsubmit="return confirm('Delete this campaign? This cannot be undone.');">
+                <?= App\Core\Csrf::field() ?>
                 <input type="hidden" name="_action" value="delete">
                 <button type="submit" class="btn btn-danger" style="font-size:0.85rem;padding:6px 14px;">Delete</button>
             </form>
@@ -80,6 +81,7 @@ $typeBadge = [
         <h2 class="detail-card-title">Performance Metrics</h2>
         <?php if ($campaign['status'] !== 'Sent' && $campaign['status'] !== 'Completed'): ?>
         <form method="POST" action="/modules/campaign/detail.php?id=<?= (int)$campaign['id'] ?>" style="margin:0;">
+            <?= App\Core\Csrf::field() ?>
             <input type="hidden" name="_action" value="simulate">
             <button type="submit" class="btn btn-primary" style="font-size:0.85rem;padding:6px 14px;">
                 Simulate Send

@@ -22,40 +22,54 @@ class CustomerRepository
     public function search(
         string $search = '',
         string $industry = '',
-        string $source = ''
+        string $source = '',
+        int $limit = 25,
+        int $offset = 0
     ): array {
-
         $db = Database::connection();
 
-        $sql = "
-            SELECT *
-            FROM accounts
-            WHERE 1=1
-        ";
+        [$where, $params] = $this->buildAccountWhere($search, $industry, $source);
+        $limit  = max(1, $limit);   // guard the interpolated LIMIT/OFFSET
+        $offset = max(0, $offset);
 
-        $params = [];
-
-        if ($search !== '') {
-            $sql .= " AND account_name LIKE :search";
-            $params['search'] = "%{$search}%";
-        }
-
-        if ($industry !== '') {
-            $sql .= " AND industry LIKE :industry";
-            $params['industry'] = "%{$industry}%";
-        }
-
-        if ($source !== '') {
-            $sql .= " AND source LIKE :source";
-            $params['source'] = "%{$source}%";
-        }
-
-        $sql .= " ORDER BY account_name";
-
+        $sql  = "SELECT * FROM accounts{$where} ORDER BY account_name LIMIT {$limit} OFFSET {$offset}";
         $stmt = $db->prepare($sql);
         $stmt->execute($params);
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // Total accounts matching the same filters (for pagination).
+    public function searchCount(string $search = '', string $industry = '', string $source = ''): int
+    {
+        $db = Database::connection();
+        [$where, $params] = $this->buildAccountWhere($search, $industry, $source);
+        $stmt = $db->prepare("SELECT COUNT(*) FROM accounts{$where}");
+        $stmt->execute($params);
+        return (int) $stmt->fetchColumn();
+    }
+
+    // Shared WHERE builder so search() and searchCount() always agree.
+    private function buildAccountWhere(string $search, string $industry, string $source): array
+    {
+        $clauses = [];
+        $params  = [];
+
+        if ($search !== '') {
+            $clauses[] = "account_name LIKE :search";
+            $params['search'] = "%{$search}%";
+        }
+        if ($industry !== '') {
+            $clauses[] = "industry LIKE :industry";
+            $params['industry'] = "%{$industry}%";
+        }
+        if ($source !== '') {
+            $clauses[] = "source LIKE :source";
+            $params['source'] = "%{$source}%";
+        }
+
+        $where = $clauses ? ' WHERE ' . implode(' AND ', $clauses) : '';
+        return [$where, $params];
     }
 
     public function create(array $data): void
@@ -130,4 +144,29 @@ class CustomerRepository
 
         $stmt->execute($data);
     }
+
+    public function recentInteractions(int $limit = 5): array
+    {
+        $db = Database::connection();
+
+        $sql = "
+            SELECT
+                i.interaction_type,
+                i.interaction_subject,
+                a.account_name,
+                i.interaction_date
+            FROM interactions i
+            JOIN accounts a
+                ON a.id = i.account_id
+            ORDER BY i.interaction_date DESC
+            LIMIT ?
+        ";
+
+        $stmt = $db->prepare($sql);
+        $stmt->bindValue(1, $limit, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
 }

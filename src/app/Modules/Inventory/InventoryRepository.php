@@ -13,7 +13,7 @@ class InventoryRepository
      * Optionally filter by a search term (name or SKU) and/or low stock only
      * (available_quantity below that row's own low_stock_threshold).
      */
-    public function all(?string $search = null, bool $lowStockOnly = false): array
+    public function all(?string $search = null, bool $lowStockOnly = false, ?int $limit = null, int $offset = 0): array
     {
         $db = Database::connection();
 
@@ -24,9 +24,44 @@ class InventoryRepository
                 FROM products p
                 LEFT JOIN inventory i ON i.product_id = p.id
                 WHERE 1=1{$lowStockFilter}";
+        [$from, $params] = $this->buildProductFrom($search, $lowStockOnly);
+
+        $sql = "SELECT p.id, p.product_name, p.sku, p.price, p.description,
+                       i.available_quantity, i.reserved_quantity
+                {$from}
+                ORDER BY p.product_name ASC";
+
+        if ($limit !== null) {
+            $limit  = max(1, $limit);   // guard the interpolated LIMIT/OFFSET
+            $offset = max(0, $offset);
+            $sql   .= " LIMIT {$limit} OFFSET {$offset}";
+        }
+
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
+    // Total products matching the same filters (for pagination).
+    public function count(?string $search = null, bool $lowStockOnly = false): int
+    {
+        $db = Database::connection();
+        [$from, $params] = $this->buildProductFrom($search, $lowStockOnly);
+        $stmt = $db->prepare("SELECT COUNT(*) {$from}");
+        $stmt->execute($params);
+        return (int) $stmt->fetchColumn();
+    }
+
+    // Shared FROM/JOIN/WHERE for all() and count() so the list and its total agree.
+    private function buildProductFrom(?string $search, bool $lowStockOnly): array
+    {
+        $lowStockJoin = $lowStockOnly ? " AND i.available_quantity < 10" : "";
+
+        $sql = "FROM products p
+                LEFT JOIN inventory i ON i.product_id = p.id{$lowStockJoin}
+                WHERE 1=1";
 
         $params = [];
-
         if ($search !== null && $search !== '') {
             $sql .= " AND (p.product_name LIKE ? OR p.sku LIKE ?)";
             $like = '%' . $search . '%';
@@ -34,11 +69,7 @@ class InventoryRepository
             $params[] = $like;
         }
 
-        $sql .= " ORDER BY p.product_name ASC";
-
-        $stmt = $db->prepare($sql);
-        $stmt->execute($params);
-        return $stmt->fetchAll();
+        return [$sql, $params];
     }
 
     /**
@@ -124,6 +155,9 @@ class InventoryRepository
 
     /**
      * Update available/reserved stock quantities for a product.
+     * Reserved is driven only by the RFQ reservation flow, so this low-level
+     * setter is intended for reservation sync (reserve/release/convert), not
+     * for manual edits. Manual stock edits should use updateAvailableQuantity().
      */
     public function updateStock(int $productId, int $availableQuantity, int $reservedQuantity): bool
     {
@@ -137,9 +171,21 @@ class InventoryRepository
     }
 
     /**
-     * Get all reservations, joined with product/RFQ info and the product's
-     * current available quantity (so the reservations page can show how much
-     * stock is left alongside what's already reserved).
+     * Update only the available quantity for a product, leaving reserved_quantity
+     * untouched. Reserved is owned by the RFQ reservation flow and must never be
+     * set by hand from the stock form.
+     */
+    public function updateAvailableQuantity(int $productId, int $availableQuantity): bool
+    {
+        $db = Database::connection();
+        $stmt = $db->prepare(
+            "UPDATE inventory SET available_quantity = ? WHERE product_id = ?"
+        );
+        return $stmt->execute([$availableQuantity, $productId]);
+    }
+
+    /**
+     * Get all reservations, joined with product and RFQ info.
      */
     public function allReservations(): array
     {

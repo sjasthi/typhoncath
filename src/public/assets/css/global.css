@@ -389,70 +389,98 @@ label { display: block; font-weight: 600; margin-bottom: 0.25rem; }
 }
 
 /* ── Dashboard cards ──────────────────────────────────── */
+/* Cards scaled ~1.01× (25% then a further 10% down from the earlier 1.5×). The
+   grid caps at 5 columns: each column is at least 1/5 of the row width (minus the
+   4 gaps), so a 6th column can never fit; the 243px floor lets it wrap down to
+   fewer, larger columns on narrower screens for visibility. */
 .dash-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 1rem;
-  margin-top: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(max(243px, calc((100% - 4.05rem) / 5)), 1fr));
+  gap: 1.01rem;
+  margin-top: 1.01rem;
 }
 
 .dash-card {
   background: #fff;
   border: 1px solid #e0e0e0;
-  border-radius: 6px;
-  padding: 1.1rem 1.25rem;
+  border-radius: 8px;
+  padding: 1.12rem 1.29rem;
   display: flex;
   flex-direction: column;
 }
 
 .dash-card-title {
-  font-size: 0.75rem;
+  font-size: 0.76rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: #888;
-  margin: 0 0 0.6rem;
+  margin: 0 0 0.61rem;
 }
 
 .dash-stat {
-  font-size: 2.25rem;
+  font-size: 2.28rem;
   font-weight: 700;
   color: #111;
   line-height: 1;
   margin: 0;
 }
 
-.dash-stat-sub { font-size: 0.8rem; margin: 0.4rem 0 0; }
+.dash-stat-sub { font-size: 0.81rem; margin: 0.41rem 0 0; }
 
 .dash-list { list-style: none; margin: 0; padding: 0; }
 
 .dash-list-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.76rem;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.4rem 0;
+  padding: 0.41rem 0;
   border-bottom: 1px solid #f3f4f6;
   font-size: 0.88rem;
 }
 
 .dash-list-row:last-child { border-bottom: none; }
 
-.dash-list-label { font-weight: 500; color: #374151; }
+.dash-list-label {
+  min-width: 0;
+  font-weight: 500;
+  color: #374151;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
-.dash-list-meta { margin-left: auto; font-size: 0.8rem; white-space: nowrap; }
+.dash-list-meta {
+  max-width: 122px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
-.dash-empty { font-size: 0.88rem; margin: 0.25rem 0; }
+.dash-list-date {
+  display: block;
+  font-size: 0.76rem;
+  color: #888;
+  margin-top: 2px;
+}
+
+.dash-empty { font-size: 0.88rem; margin: 0.27rem 0; }
 
 .dash-card-link {
   margin-top: auto;
-  padding-top: 0.7rem;
-  font-size: 0.82rem;
+  padding-top: 0.71rem;
+  font-size: 0.81rem;
   font-weight: 600;
   color: var(--primary-blue);
   text-decoration: none;
 }
 
 .dash-card-link:hover { text-decoration: underline; }
+
+/* Table cards (e.g. Heavily Reserved) and their badges scale with the rest. */
+.dash-card .table { font-size: 0.77rem; }
+.dash-card .rfq-badge { font-size: 0.68rem; }
 
 .audience-preview {
   background: #f9fafb;

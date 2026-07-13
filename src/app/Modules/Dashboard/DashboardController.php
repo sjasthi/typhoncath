@@ -3,11 +3,11 @@ namespace App\Modules\Dashboard;
 
 class DashboardController
 {
-    private DashboardRepository $repo;
+    private DashboardService $service;
 
     public function __construct()
     {
-        $this->repo = new DashboardRepository();
+        $this->service = new DashboardService();
     }
 
     public function index(): void
@@ -26,14 +26,25 @@ class DashboardController
     private function cards(): array
     {
         return [
-            new Cards\ActiveRfqsCard($this->repo),
-            new Cards\ActiveCampaignsCard($this->repo),
-            new Cards\TotalAccountsCard($this->repo),
-            new Cards\ReservedInventoryCard($this->repo),
-            new Cards\PipelineStageCard($this->repo),
-            new Cards\RecentRfqsCard($this->repo),
-            new Cards\LowStockCard($this->repo),
-            new Cards\RecentInteractionsCard($this->repo),
+            // RFQ
+            new Cards\ActiveRfqsCard($this->service),
+            new Cards\RfqValueByStageCard($this->service),
+            new Cards\RecentRfqsCard($this->service),
+            new Cards\WinRateByAccountCard($this->service),
+            new Cards\ExpiringQuotesCard($this->service),
+            // Campaign
+            new Cards\ActiveCampaignsCard($this->service),
+            new Cards\CampaignPerformanceCard($this->service),
+            new Cards\UpcomingCampaignSendsCard($this->service),
+            // Other modules (owned elsewhere)
+            new Cards\TotalAccountsCard($this->service),
+            // Inventory
+            new Cards\ReservedInventoryCard($this->service),
+            new Cards\LowStockCard($this->service),
+            new Cards\TopReservedProductsCard($this->service),
+            new Cards\PendingReservationsCard($this->service),
+            new Cards\HeavilyReservedCard($this->service),
+            new Cards\RecentInteractionsCard($this->service),
         ];
     }
 }

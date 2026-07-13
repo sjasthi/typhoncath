@@ -57,6 +57,7 @@
     <?php endif; ?>
 
     <form method="POST" action="" class="module-form" id="rfq-edit-form">
+        <?= App\Core\Csrf::field() ?>
 
         <!-- Title -->
         <div class="form-group">
@@ -201,6 +202,7 @@
                     <?php endif; ?>
                     <form method="POST" action="/modules/rfq/edit.php?id=<?= (int)$rfq['id'] ?>" style="display:inline;"
                           onsubmit="return confirm('Remove this reservation?<?= $res['reservation_status'] === 'Reserved' ? ' Stock will be returned to inventory.' : '' ?>');">
+                        <?= App\Core\Csrf::field() ?>
                         <input type="hidden" name="_action"        value="delete_reservation">
                         <input type="hidden" name="reservation_id" value="<?= (int)$res['id'] ?>">
                         <input type="hidden" name="rfq_id"         value="<?= (int)$rfq['id'] ?>">
@@ -214,138 +216,35 @@
     <?php endif; ?>
 </section>
 
+<script src="/assets/js/autocomplete.js"></script>
 <script>
 (function () {
-    const ACCOUNTS = <?= json_encode(array_map(fn($a) => ['id' => $a['id'], 'label' => $a['account_name']], $accounts)) ?>;
-    const CONTACTS = <?= json_encode(array_map(fn($c) => [
-        'id'         => $c['id'],
-        'account_id' => $c['account_id'],
-        'label'      => trim($c['first_name'] . ' ' . $c['last_name']) . ($c['title'] ? ' — ' . $c['title'] : ''),
-    ], $contacts)) ?>;
-
+    // Account + contact pickers, backed by the server-side autocomplete endpoints
+    // (no more embedding the whole accounts/contacts tables in the page).
     const accountValEl    = document.getElementById('rfq-account-val');
     const contactSearchEl = document.getElementById('rfq-contact-search');
     const contactValEl    = document.getElementById('rfq-contact-val');
 
-    function getContactItems() {
-        const accountId = accountValEl.value;
-        if (!accountId) return CONTACTS;
-        return CONTACTS.filter(c => String(c.account_id) === String(accountId));
-    }
-
-    function initSearchDropdown(searchEl, hiddenEl, resultsEl, getItems, onChanged) {
-        let focusedIdx = -1;
-
-        if (hiddenEl.value) {
-            const match = getItems().find(i => String(i.id) === String(hiddenEl.value));
-            if (match) {
-                searchEl.value = match.label;
-                searchEl.classList.add('rfq-search-input--selected');
-            }
-        }
-
-        function renderResults(query) {
-            const items = getItems();
-            const q = query.toLowerCase();
-            const filtered = q ? items.filter(i => i.label.toLowerCase().includes(q)) : items;
-            resultsEl.innerHTML = '';
-            focusedIdx = -1;
-
-            if (filtered.length === 0) {
-                resultsEl.innerHTML = '<div class="rfq-search-option--empty">No results</div>';
-            } else {
-                filtered.forEach((item) => {
-                    const div = document.createElement('div');
-                    div.className = 'rfq-search-option';
-                    div.textContent = item.label;
-                    div.dataset.id = item.id;
-                    div.addEventListener('mousedown', function (e) {
-                        e.preventDefault();
-                        selectItem(item);
-                    });
-                    resultsEl.appendChild(div);
-                });
-            }
-        }
-
-        function selectItem(item) {
-            hiddenEl.value = item.id;
-            searchEl.value = item.label;
-            searchEl.classList.add('rfq-search-input--selected');
-            resultsEl.style.display = 'none';
-            focusedIdx = -1;
-            if (onChanged) onChanged(item.id);
-        }
-
-        function clearSelection() {
-            hiddenEl.value = '';
-            searchEl.classList.remove('rfq-search-input--selected');
-            if (onChanged) onChanged('');
-        }
-
-        searchEl.addEventListener('input', function () {
-            clearSelection();
-            renderResults(this.value);
-            resultsEl.style.display = '';
-        });
-
-        searchEl.addEventListener('focus', function () {
-            renderResults(this.value);
-            resultsEl.style.display = '';
-        });
-
-        searchEl.addEventListener('blur', function () {
-            setTimeout(() => { resultsEl.style.display = 'none'; }, 150);
-            if (!hiddenEl.value && this.value) this.value = '';
-        });
-
-        searchEl.addEventListener('keydown', function (e) {
-            const opts = resultsEl.querySelectorAll('.rfq-search-option');
-            if (!opts.length) return;
-
-            if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                focusedIdx = Math.min(focusedIdx + 1, opts.length - 1);
-            } else if (e.key === 'ArrowUp') {
-                e.preventDefault();
-                focusedIdx = Math.max(focusedIdx - 1, 0);
-            } else if (e.key === 'Enter' && focusedIdx >= 0) {
-                e.preventDefault();
-                const match = getItems().find(i => String(i.id) === opts[focusedIdx].dataset.id);
-                if (match) selectItem(match);
-                return;
-            } else if (e.key === 'Escape') {
-                resultsEl.style.display = 'none';
-                return;
-            } else {
-                return;
-            }
-
-            opts.forEach((o, i) => o.classList.toggle('rfq-search-option--focused', i === focusedIdx));
-            if (opts[focusedIdx]) opts[focusedIdx].scrollIntoView({ block: 'nearest' });
-        });
-    }
-
-    initSearchDropdown(
+    initServerDropdown(
         document.getElementById('rfq-account-search'),
         accountValEl,
         document.getElementById('rfq-account-results'),
-        () => ACCOUNTS,
-        function (newAccountId) {
-            // Point the contact + button to the selected account's detail page, or back to accounts list
-            const contactAddBtn = document.getElementById('rfq-contact-add-btn');
-            if (contactAddBtn) {
-                contactAddBtn.href = newAccountId
-                    ? '/modules/customer/account_detail.php?id=' + newAccountId
-                    : '/modules/customer/accounts.php';
-                contactAddBtn.title = newAccountId
-                    ? 'Add a new contact to this account'
-                    : 'Add a new contact';
-            }
-            // If the current contact doesn't belong to the newly selected account, clear it
-            if (newAccountId && contactValEl.value) {
-                const contact = CONTACTS.find(c => String(c.id) === String(contactValEl.value));
-                if (contact && String(contact.account_id) !== String(newAccountId)) {
+        {
+            url: '/modules/rfq/search_accounts.php',
+            onChanged: function (newAccountId) {
+                // Point the contact "+" button at the selected account (or the list).
+                const contactAddBtn = document.getElementById('rfq-contact-add-btn');
+                if (contactAddBtn) {
+                    contactAddBtn.href = newAccountId
+                        ? '/modules/customer/account_detail.php?id=' + newAccountId
+                        : '/modules/customer/accounts.php';
+                    contactAddBtn.title = newAccountId
+                        ? 'Add a new contact to this account'
+                        : 'Add a new contact';
+                }
+                // Choosing a new account invalidates any previously picked contact
+                // (contacts are account-scoped), so clear it; it re-scopes on focus.
+                if (newAccountId) {
                     contactValEl.value = '';
                     contactSearchEl.value = '';
                     contactSearchEl.classList.remove('rfq-search-input--selected');
@@ -354,14 +253,20 @@
         }
     );
 
-    initSearchDropdown(
+    initServerDropdown(
         contactSearchEl,
         contactValEl,
         document.getElementById('rfq-contact-results'),
-        getContactItems
+        {
+            url: '/modules/rfq/search_contacts.php',
+            // Scope the contact search to the selected account (none = all).
+            params: function () {
+                return accountValEl.value ? { account_id: accountValEl.value } : {};
+            }
+        }
     );
 
-    // Set initial contact + href if an account is already selected on load
+    // Set initial contact "+" href if an account is already selected on load.
     (function () {
         const contactAddBtn = document.getElementById('rfq-contact-add-btn');
         if (contactAddBtn && accountValEl.value) {

@@ -646,6 +646,7 @@ Build a unified dashboard and reports page that summarize the CRM.
 - [x] Add inventory status dashboard cards.
 - [x] Add low-stock products card/table.
 - [x] Add reserved inventory summary.
+- [ ] Add ledger for each item in inventory tracking edits, creations, sales
 
 ### Jonah / Marketing — Removed from Group
 

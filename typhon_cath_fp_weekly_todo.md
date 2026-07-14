@@ -640,6 +640,12 @@ Build a unified dashboard and reports page that summarize the CRM.
 - [x] Add active RFQs count.
 - [x] Add open/won/lost summary.
 - [ ] Add quote/deal tracking summary if available.
+- [ ] implement jquery tables to replace list views
+- 1. excel, csv, pdf export
+- 2. pagination - 10, 25, 50, 100, All
+- 3. table searching
+- 4. column filtering
+- 5. column sorting
 
 ### Casey — Inventory Management
 
@@ -662,6 +668,8 @@ Build a unified dashboard and reports page that summarize the CRM.
 - [x] RFQ metrics
 - [x] Inventory metrics
 - [x] Campaign metrics if reassigned / still in scope
+- [ ] implement pdf download for customer, inventory, rfq, campaigns for report like docs
+- [ ] refactor dashboard
 
 ---
 

@@ -169,4 +169,22 @@ class CustomerRepository
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    public function find(int $id): ?array
+    {
+        $db = Database::connection();
+
+        $stmt = $db->prepare("
+            SELECT *
+            FROM accounts
+            WHERE id = ?
+            LIMIT 1
+        ");
+
+        $stmt->execute([$id]);
+
+        $account = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $account ?: null;
+    }
+
 }

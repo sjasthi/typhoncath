@@ -5,9 +5,7 @@ require_once __DIR__ . '/../../../app/Core/bootstrap.php';
 use App\Core\Auth;
 use App\Core\Database;
 
-require_once __DIR__ . '/../../../vendor/autoload.php';
-
-use Dompdf\Dompdf;
+require_once __DIR__ . '/../../../app/Core/PDF/SimplePDF.php';
 
 Auth::requireLogin();
 
@@ -55,72 +53,91 @@ $stmt->execute([$id]);
 
 $interactions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+//Create PDF
+$pdf = new SimplePDF();
 
+$y = 760;
 
-$html = "
-<h1>{$account['account_name']}</h1>
+$pdf->text(40, $y, "Customer Report");
+$y -= 30;
 
-<h2>Customer Information</h2>
+$pdf->text(40, $y, "Account: " . $account['account_name']);
+$y -= 20;
 
-<table border='1' cellpadding='6'>
-<tr><td>Email</td><td>{$account['email']}</td></tr>
-<tr><td>Phone</td><td>{$account['phone']}</td></tr>
-<tr><td>Address</td><td>{$account['address']}</td></tr>
-<tr><td>Industry</td><td>{$account['industry']}</td></tr>
-<tr><td>Source</td><td>{$account['source']}</td></tr>
-<tr><td>Tags</td><td>{$account['tags']}</td></tr>
-</table>
+$pdf->text(40, $y, "Email: " . $account['email']);
+$y -= 20;
 
+$pdf->text(40, $y, "Phone: " . $account['phone']);
+$y -= 20;
 
-<h2>Contacts</h2>
-";
+$pdf->text(40, $y, "Address: " . $account['address']);
+$y -= 20;
 
+$pdf->text(40, $y, "Industry: " . $account['industry']);
+$y -= 20;
 
-foreach ($contacts as $c) {
+$pdf->text(40, $y, "Source: " . $account['source']);
+$y -= 20;
 
-    $html .= "
-    <p>
-    <strong>{$c['first_name']} {$c['last_name']}</strong><br>
-    {$c['email']}<br>
-    {$c['phone']}
-    </p>
-    ";
+$pdf->text(40, $y, "Tags: " . $account['tags']);
 
+//Contacts
+$y -= 40;
+
+$pdf->text(40, $y, "Contacts");
+$y -= 20;
+
+foreach ($contacts as $contact) {
+
+    $pdf->text(
+        50,
+        $y,
+        $contact['first_name'] . " " .
+        $contact['last_name']
+    );
+
+    $y -= 16;
+
+    $pdf->text(60, $y, $contact['email']);
+    $y -= 16;
+
+    $pdf->text(60, $y, $contact['phone']);
+    $y -= 24;
 }
 
+//Interactions
+$y -= 20;
 
+$pdf->text(40, $y, "Interaction History");
+$y -= 20;
 
-$html .= "<h2>Interaction History</h2>";
+foreach ($interactions as $interaction) {
 
+    $pdf->text(
+        50,
+        $y,
+        "[" .
+        $interaction['interaction_type'] .
+        "] " .
+        $interaction['interaction_subject']
+    );
 
-foreach ($interactions as $i) {
+    $y -= 16;
 
-    $html .= "
-    <p>
-    <strong>{$i['interaction_type']}</strong><br>
-    {$i['interaction_subject']}<br>
-    {$i['notes']}<br>
-    Date: {$i['interaction_date']}
-    </p>
-    <hr>
-    ";
+    $pdf->text(
+        60,
+        $y,
+        $interaction['notes']
+    );
 
+    $y -= 16;
+
+    $pdf->text(
+        60,
+        $y,
+        $interaction['interaction_date']
+    );
+
+    $y -= 28;
 }
 
-
-
-$pdf = new Dompdf();
-
-$pdf->loadHtml($html);
-
-$pdf->setPaper('letter');
-
-$pdf->render();
-
-
-$pdf->stream(
-    $account['account_name'] . "_customer_report.pdf",
-    [
-        "Attachment" => true
-    ]
-);

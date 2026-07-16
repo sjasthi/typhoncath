@@ -62,6 +62,19 @@ if ($page === 'detail') {
     include __DIR__ . '/../../../app/Shared/sidebar.php';
     $controller->reservations();
 
+} elseif ($page === 'ledger') {
+    denyUnlessAllowed('inventory.view');
+    include __DIR__ . '/../../../app/Shared/header.php';
+    include __DIR__ . '/../../../app/Shared/sidebar.php';
+    $controller->ledger();
+
+} elseif ($page === 'ledger_print') {
+    // Bare printable page: renders its own full HTML document, so none of
+    // the shared header/sidebar/footer chrome is included here.
+    denyUnlessAllowed('inventory.view');
+    $controller->ledgerPrint();
+    exit;
+
 } elseif ($page === 'delete') {
     denyUnlessAllowed('inventory.edit');
     if ($isPost) {

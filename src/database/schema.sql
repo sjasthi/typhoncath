@@ -122,6 +122,24 @@ CREATE TABLE rfq_inventory_reservations (
     FOREIGN KEY (product_id) REFERENCES products(id)
 );
 
+-- Append-only audit ledger of inventory-affecting events (see migrations/015_create_inventory_movements.sql).
+CREATE TABLE inventory_movements (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    product_id INT NULL,
+    product_name VARCHAR(255) NOT NULL,
+    sku VARCHAR(100) NOT NULL,
+    user_id INT NULL,
+    user_name VARCHAR(150) NULL,
+    movement_type ENUM('created', 'updated', 'manual_adjustment', 'reserved', 'released', 'converted', 'deleted') NOT NULL,
+    quantity_delta INT NULL,
+    available_quantity_after INT NULL,
+    reserved_quantity_after INT NULL,
+    note VARCHAR(500) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
 CREATE TABLE campaigns (
     id INT AUTO_INCREMENT PRIMARY KEY,
     campaign_name VARCHAR(255) NOT NULL,

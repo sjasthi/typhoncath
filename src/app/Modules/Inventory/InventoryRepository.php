@@ -9,6 +9,9 @@ use App\Core\DataTable\ServerTable;
 // business rules and calls into these methods.
 class InventoryRepository
 {
+    /** Stock-status column values, for the product list's status filter checkboxes. */
+    public static array $statuses = ['In Stock', 'Low Stock', 'No Stock'];
+
     /**
      * Server-side DataTables source for the products list. Shared by the data
      * and export endpoints. Status is a view-only computed column (available vs.
@@ -38,26 +41,32 @@ class InventoryRepository
     }
     /**
      * Get all products joined with their inventory counts.
-     * Optionally filter by a search term (name or SKU) and/or low stock only
-     * (available_quantity below that row's own low_stock_threshold).
+     * Optionally filter by a search term (name or SKU) and/or one or more
+     * stock-status values (a column filter on the computed Status column —
+     * available_quantity vs. that row's own low_stock_threshold).
+     *
+     * @param string[] $statuses subset of self::$statuses
      */
-    public function all(?string $search = null, bool $lowStockOnly = false, ?int $limit = null, int $offset = 0): array
+    public function all(?string $search = null, array $statuses = [], string $sortCol = 'product_name', string $sortDir = 'ASC', ?int $limit = null, int $offset = 0): array
     {
         $db = Database::connection();
 
-        $lowStockFilter = $lowStockOnly ? " AND i.available_quantity < i.low_stock_threshold" : "";
+        $colMap = [
+            'sku'                => 'p.sku',
+            'product_name'       => 'p.product_name',
+            'price'              => 'p.price',
+            'available_quantity' => 'i.available_quantity',
+            'reserved_quantity'  => 'i.reserved_quantity',
+        ];
+        $orderCol = $colMap[$sortCol] ?? 'p.product_name';
+        $orderDir = strtoupper($sortDir) === 'DESC' ? 'DESC' : 'ASC';
+
+        [$from, $params] = $this->buildProductFrom($search, $statuses);
 
         $sql = "SELECT p.id, p.product_name, p.sku, p.price, p.description,
                        i.available_quantity, i.reserved_quantity, i.low_stock_threshold
-                FROM products p
-                LEFT JOIN inventory i ON i.product_id = p.id
-                WHERE 1=1{$lowStockFilter}";
-        [$from, $params] = $this->buildProductFrom($search, $lowStockOnly);
-
-        $sql = "SELECT p.id, p.product_name, p.sku, p.price, p.description,
-                       i.available_quantity, i.reserved_quantity
                 {$from}
-                ORDER BY p.product_name ASC";
+                ORDER BY {$orderCol} {$orderDir}";
 
         if ($limit !== null) {
             $limit  = max(1, $limit);   // guard the interpolated LIMIT/OFFSET
@@ -71,22 +80,20 @@ class InventoryRepository
     }
 
     // Total products matching the same filters (for pagination).
-    public function count(?string $search = null, bool $lowStockOnly = false): int
+    public function count(?string $search = null, array $statuses = []): int
     {
         $db = Database::connection();
-        [$from, $params] = $this->buildProductFrom($search, $lowStockOnly);
+        [$from, $params] = $this->buildProductFrom($search, $statuses);
         $stmt = $db->prepare("SELECT COUNT(*) {$from}");
         $stmt->execute($params);
         return (int) $stmt->fetchColumn();
     }
 
     // Shared FROM/JOIN/WHERE for all() and count() so the list and its total agree.
-    private function buildProductFrom(?string $search, bool $lowStockOnly): array
+    private function buildProductFrom(?string $search, array $statuses): array
     {
-        $lowStockJoin = $lowStockOnly ? " AND i.available_quantity < 10" : "";
-
         $sql = "FROM products p
-                LEFT JOIN inventory i ON i.product_id = p.id{$lowStockJoin}
+                LEFT JOIN inventory i ON i.product_id = p.id
                 WHERE 1=1";
 
         $params = [];
@@ -95,6 +102,21 @@ class InventoryRepository
             $like = '%' . $search . '%';
             $params[] = $like;
             $params[] = $like;
+        }
+
+        $validStatuses = array_values(array_intersect($statuses, self::$statuses));
+        if (!empty($validStatuses)) {
+            $statusClauses = [];
+            foreach ($validStatuses as $status) {
+                if ($status === 'No Stock') {
+                    $statusClauses[] = 'COALESCE(i.available_quantity, 0) = 0';
+                } elseif ($status === 'Low Stock') {
+                    $statusClauses[] = '(i.available_quantity > 0 AND i.available_quantity < i.low_stock_threshold)';
+                } elseif ($status === 'In Stock') {
+                    $statusClauses[] = 'i.available_quantity >= i.low_stock_threshold';
+                }
+            }
+            $sql .= ' AND (' . implode(' OR ', $statusClauses) . ')';
         }
 
         return [$sql, $params];
@@ -300,5 +322,143 @@ class InventoryRepository
         );
         $stmt->execute([$productId]);
         return (int) $stmt->fetchColumn();
+    }
+
+    // ── Inventory Ledger ──────────────────────────────────────────────────────
+    // Append-only audit trail (migrations/015_create_inventory_movements.sql)
+    // backing the printable Inventory Ledger report: what happened to a product,
+    // when, and who did it.
+
+    /** Matches the movement_type ENUM in migrations/015_create_inventory_movements.sql. */
+    public static array $movementTypes = [
+        'created', 'updated', 'manual_adjustment', 'reserved', 'released', 'converted', 'deleted',
+    ];
+
+    /**
+     * Append an immutable ledger row for a product-affecting event. Snapshots
+     * the product name/SKU and acting user's name at write time so the ledger
+     * stays meaningful even after the product is deleted or the user account
+     * removed (both FKs are ON DELETE SET NULL, not CASCADE).
+     *
+     * Uses Database::connection() directly (no transaction of its own), so a
+     * caller that's already inside a transaction — e.g. the RFQ reservation
+     * flow — gets this write folded into that same transaction/rollback.
+     *
+     * Must be called *before* deleting a product (movement_type 'deleted'):
+     * afterward there is no product row left to snapshot from.
+     */
+    public function logMovement(int $productId, ?int $userId, string $movementType, ?int $quantityDelta, ?string $note = null): void
+    {
+        $db = Database::connection();
+
+        $stmt = $db->prepare(
+            "SELECT p.product_name, p.sku, i.available_quantity, i.reserved_quantity
+             FROM products p
+             LEFT JOIN inventory i ON i.product_id = p.id
+             WHERE p.id = ?"
+        );
+        $stmt->execute([$productId]);
+        $product = $stmt->fetch();
+        if ($product === false) {
+            return;
+        }
+
+        $userName = null;
+        if ($userId !== null) {
+            $userStmt = $db->prepare("SELECT name FROM users WHERE id = ?");
+            $userStmt->execute([$userId]);
+            $userName = $userStmt->fetchColumn() ?: null;
+        }
+
+        $insert = $db->prepare(
+            "INSERT INTO inventory_movements
+                (product_id, product_name, sku, user_id, user_name, movement_type,
+                 quantity_delta, available_quantity_after, reserved_quantity_after, note)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        );
+        $insert->execute([
+            $productId,
+            $product['product_name'],
+            $product['sku'],
+            $userId,
+            $userName,
+            $movementType,
+            $quantityDelta,
+            $product['available_quantity'] !== null ? (int) $product['available_quantity'] : null,
+            $product['reserved_quantity']  !== null ? (int) $product['reserved_quantity']  : null,
+            $note,
+        ]);
+    }
+
+    // Total ledger rows matching the given filters (for pagination).
+    public function movementsCount(?int $productId, string $search, array $movementTypes): int
+    {
+        [$where, $params] = $this->buildMovementsWhere($productId, $search, $movementTypes);
+        $db   = Database::connection();
+        $stmt = $db->prepare("SELECT COUNT(*) FROM inventory_movements m{$where}");
+        $stmt->execute($params);
+        return (int) $stmt->fetchColumn();
+    }
+
+    /**
+     * Paged, sorted, filtered ledger rows for the report view/print page.
+     * $sortCol is resolved through an allowlist so it's safe to pass ORDER BY
+     * straight from a request parameter.
+     */
+    public function movements(?int $productId, string $search, array $movementTypes, string $sortCol, string $sortDir, int $limit, int $offset): array
+    {
+        $colMap = [
+            'created_at'     => 'm.created_at',
+            'product_name'   => 'm.product_name',
+            'sku'            => 'm.sku',
+            'user_name'      => 'm.user_name',
+            'movement_type'  => 'm.movement_type',
+            'quantity_delta' => 'm.quantity_delta',
+        ];
+        $orderCol = $colMap[$sortCol] ?? 'm.created_at';
+        $orderDir = strtoupper($sortDir) === 'ASC' ? 'ASC' : 'DESC';
+
+        [$where, $params] = $this->buildMovementsWhere($productId, $search, $movementTypes);
+        $limit  = max(1, $limit);   // guard the interpolated LIMIT/OFFSET
+        $offset = max(0, $offset);
+
+        $db   = Database::connection();
+        $stmt = $db->prepare(
+            "SELECT m.id, m.product_id, m.product_name, m.sku, m.user_id, m.user_name,
+                    m.movement_type, m.quantity_delta, m.available_quantity_after,
+                    m.reserved_quantity_after, m.note, m.created_at
+             FROM inventory_movements m
+             {$where}
+             ORDER BY {$orderCol} {$orderDir}
+             LIMIT {$limit} OFFSET {$offset}"
+        );
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
+    // Shared WHERE for movements()/movementsCount() so the list and its total agree.
+    private function buildMovementsWhere(?int $productId, string $search, array $movementTypes): array
+    {
+        $clauses = [];
+        $params  = [];
+
+        if ($productId !== null) {
+            $clauses[] = 'm.product_id = ?';
+            $params[]  = $productId;
+        }
+        if ($search !== '') {
+            $clauses[] = '(m.product_name LIKE ? OR m.sku LIKE ? OR m.user_name LIKE ? OR m.note LIKE ?)';
+            $like = '%' . $search . '%';
+            array_push($params, $like, $like, $like, $like);
+        }
+        $validTypes = array_values(array_intersect($movementTypes, self::$movementTypes));
+        if (!empty($validTypes)) {
+            $placeholders = implode(',', array_fill(0, count($validTypes), '?'));
+            $clauses[]    = "m.movement_type IN ({$placeholders})";
+            array_push($params, ...$validTypes);
+        }
+
+        $sql = $clauses ? ' WHERE ' . implode(' AND ', $clauses) : '';
+        return [$sql, $params];
     }
 }

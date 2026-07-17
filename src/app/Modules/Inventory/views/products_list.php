@@ -1,7 +1,10 @@
 <section class="card">
     <div class="rfq-board-header">
         <h1>Inventory</h1>
-        <a href="/modules/inventory/products.php?page=detail" class="btn btn-primary">+ Add Product</a>
+        <div style="display:flex; gap:0.5rem;">
+            <a href="/modules/inventory/products.php?page=ledger" class="btn">Inventory Ledger</a>
+            <a href="/modules/inventory/products.php?page=detail" class="btn btn-primary">+ Add Product</a>
+        </div>
     </div>
 
     <table class="table rfq-list-table js-dt"

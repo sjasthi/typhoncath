@@ -16,13 +16,16 @@ class InventoryService
     }
 
     /**
-     * Get the product list, optionally searched/filtered, with a computed
-     * 'low_stock' flag (available_quantity below that product's own
+     * Get the product list, optionally searched/filtered/sorted, with a
+     * computed 'low_stock' flag (available_quantity below that product's own
      * low_stock_threshold) added to each row for the view.
+     *
+     * @param string[] $statuses subset of InventoryRepository::$statuses — a
+     *                            column filter on the Status column.
      */
-    public function getProductList(?string $search = null, bool $lowStockOnly = false, ?int $limit = null, int $offset = 0): array
+    public function getProductList(?string $search = null, array $statuses = [], string $sortCol = 'product_name', string $sortDir = 'ASC', ?int $limit = null, int $offset = 0): array
     {
-        $products = $this->repo->all($search, $lowStockOnly, $limit, $offset);
+        $products = $this->repo->all($search, $statuses, $sortCol, $sortDir, $limit, $offset);
 
         foreach ($products as &$product) {
             $available = (int) ($product['available_quantity'] ?? 0);
@@ -34,9 +37,9 @@ class InventoryService
     }
 
     // Total products matching the same filters (for pagination).
-    public function getProductCount(?string $search = null, bool $lowStockOnly = false): int
+    public function getProductCount(?string $search = null, array $statuses = []): int
     {
-        return $this->repo->count($search, $lowStockOnly);
+        return $this->repo->count($search, $statuses);
     }
 
     /**
@@ -51,7 +54,7 @@ class InventoryService
      * Business rule: validate and create a new product + starting stock.
      * Returns the new product id, or throws on invalid input.
      */
-    public function createProduct(string $productName, string $sku, float $price, ?string $description, int $startingQuantity, int $lowStockThreshold = self::DEFAULT_LOW_STOCK_THRESHOLD): int
+    public function createProduct(string $productName, string $sku, float $price, ?string $description, int $startingQuantity, int $lowStockThreshold = self::DEFAULT_LOW_STOCK_THRESHOLD, ?int $userId = null): int
     {
         if (trim($productName) === '') {
             throw new \InvalidArgumentException('Product name is required.');
@@ -72,13 +75,16 @@ class InventoryService
             throw new \InvalidArgumentException("SKU \"{$sku}\" is already in use by another product.");
         }
 
-        return $this->repo->create($productName, $sku, $price, $description, $startingQuantity, $lowStockThreshold);
+        $productId = $this->repo->create($productName, $sku, $price, $description, $startingQuantity, $lowStockThreshold);
+        $this->repo->logMovement($productId, $userId, 'created', $startingQuantity, 'Product created.');
+
+        return $productId;
     }
 
     /**
      * Business rule: validate and apply product detail edits.
      */
-    public function updateProduct(int $id, string $productName, string $sku, float $price, ?string $description, int $lowStockThreshold): bool
+    public function updateProduct(int $id, string $productName, string $sku, float $price, ?string $description, int $lowStockThreshold, ?int $userId = null): bool
     {
         if (trim($productName) === '') {
             throw new \InvalidArgumentException('Product name is required.');
@@ -99,6 +105,7 @@ class InventoryService
 
         $result = $this->repo->updateProduct($id, $productName, $sku, $price, $description);
         $this->repo->updateLowStockThreshold($id, $lowStockThreshold);
+        $this->repo->logMovement($id, $userId, 'updated', null, 'Product details updated (name, SKU, price, description, and/or low stock threshold).');
 
         return $result;
     }
@@ -110,13 +117,19 @@ class InventoryService
      * convert), so a product's reserved count always traces back to real
      * reservation rows.
      */
-    public function updateStock(int $productId, int $availableQuantity): bool
+    public function updateStock(int $productId, int $availableQuantity, ?int $userId = null): bool
     {
         if ($availableQuantity < 0) {
             throw new \InvalidArgumentException('Available quantity cannot be negative.');
         }
 
-        return $this->repo->updateAvailableQuantity($productId, $availableQuantity);
+        $before = $this->repo->findById($productId);
+        $delta  = $before !== null ? $availableQuantity - (int) $before['available_quantity'] : null;
+
+        $result = $this->repo->updateAvailableQuantity($productId, $availableQuantity);
+        $this->repo->logMovement($productId, $userId, 'manual_adjustment', $delta, 'Manual stock adjustment.');
+
+        return $result;
     }
 
     /**
@@ -124,7 +137,7 @@ class InventoryService
      * Blocked if the product has active (Reserved) reservations —
      * those must be released or converted first.
      */
-    public function deleteProduct(int $id): bool
+    public function deleteProduct(int $id, ?int $userId = null): bool
     {
         $active = $this->repo->countActiveReservations($id);
         if ($active > 0) {
@@ -133,6 +146,10 @@ class InventoryService
                 "Release or convert them first."
             );
         }
+
+        // Log before deleting: logMovement snapshots product_name/sku by
+        // reading the product row, which won't exist once delete() runs.
+        $this->repo->logMovement($id, $userId, 'deleted', null, 'Product deleted.');
         return $this->repo->delete($id);
     }
 
@@ -145,6 +162,22 @@ class InventoryService
     }
 
     /**
+     * Inventory Ledger: paged/filtered/sorted movement rows for the report
+     * and print views. $limit === null means "no limit" (used by the print
+     * view, which always renders every matching row).
+     */
+    public function getLedger(?int $productId, string $search, array $movementTypes, string $sortCol, string $sortDir, ?int $limit, int $offset): array
+    {
+        return $this->repo->movements($productId, $search, $movementTypes, $sortCol, $sortDir, $limit ?? PHP_INT_MAX, $offset);
+    }
+
+    // Total ledger rows matching the same filters (for pagination).
+    public function getLedgerCount(?int $productId, string $search, array $movementTypes): int
+    {
+        return $this->repo->movementsCount($productId, $search, $movementTypes);
+    }
+
+    /**
      * Business rule: reserving inventory for an RFQ.
      * - Cannot reserve more than what's currently available.
      * - On success, moves quantity from available -> reserved on the product,
@@ -154,7 +187,7 @@ class InventoryService
      * reservation to exceed available_quantity and flag the excess instead
      * of rejecting it outright.
      */
-    public function reserveForRfq(int $rfqId, int $productId, int $quantity): int
+    public function reserveForRfq(int $rfqId, int $productId, int $quantity, ?int $userId = null): int
     {
         if ($quantity <= 0) {
             throw new \InvalidArgumentException('Reservation quantity must be greater than zero.');
@@ -174,14 +207,17 @@ class InventoryService
         $newReserved = (int) $product['reserved_quantity'] + $quantity;
         $this->repo->updateStock($productId, $newAvailable, $newReserved);
 
-        return $this->repo->createReservation($rfqId, $productId, $quantity);
+        $reservationId = $this->repo->createReservation($rfqId, $productId, $quantity);
+        $this->repo->logMovement($productId, $userId, 'reserved', -$quantity, "Reserved for RFQ #{$rfqId}.");
+
+        return $reservationId;
     }
 
     /**
      * Business rule: releasing a reservation (RFQ was Lost or cancelled)
      * returns the reserved quantity back to available stock.
      */
-    public function releaseReservation(int $reservationId): bool
+    public function releaseReservation(int $reservationId, ?int $userId = null): bool
     {
         $reservation = $this->repo->findReservationById($reservationId);
         if ($reservation === null) {
@@ -191,12 +227,17 @@ class InventoryService
             throw new \RuntimeException('Only active reservations can be released.');
         }
 
-        $product = $this->repo->findById((int) $reservation['product_id']);
-        $newAvailable = (int) $product['available_quantity'] + (int) $reservation['quantity_reserved'];
-        $newReserved = (int) $product['reserved_quantity'] - (int) $reservation['quantity_reserved'];
+        $productId = (int) $reservation['product_id'];
+        $qty       = (int) $reservation['quantity_reserved'];
+        $product   = $this->repo->findById($productId);
+        $newAvailable = (int) $product['available_quantity'] + $qty;
+        $newReserved  = (int) $product['reserved_quantity'] - $qty;
 
-        $this->repo->updateStock((int) $reservation['product_id'], $newAvailable, max(0, $newReserved));
-        return $this->repo->updateReservationStatus($reservationId, 'Released');
+        $this->repo->updateStock($productId, $newAvailable, max(0, $newReserved));
+        $result = $this->repo->updateReservationStatus($reservationId, 'Released');
+        $this->repo->logMovement($productId, $userId, 'released', $qty, "Reservation #{$reservationId} released back to available stock.");
+
+        return $result;
     }
 
     /**
@@ -204,7 +245,7 @@ class InventoryService
      * removes the stock from reserved (it has been sold/shipped), and
      * does NOT return it to available.
      */
-    public function convertReservation(int $reservationId): bool
+    public function convertReservation(int $reservationId, ?int $userId = null): bool
     {
         $reservation = $this->repo->findReservationById($reservationId);
         if ($reservation === null) {
@@ -214,14 +255,15 @@ class InventoryService
             throw new \RuntimeException('Only active reservations can be converted.');
         }
 
-        $product = $this->repo->findById((int) $reservation['product_id']);
-        $newReserved = (int) $product['reserved_quantity'] - (int) $reservation['quantity_reserved'];
+        $productId = (int) $reservation['product_id'];
+        $qty       = (int) $reservation['quantity_reserved'];
+        $product   = $this->repo->findById($productId);
+        $newReserved = (int) $product['reserved_quantity'] - $qty;
 
-        $this->repo->updateStock(
-            (int) $reservation['product_id'],
-            (int) $product['available_quantity'],
-            max(0, $newReserved)
-        );
-        return $this->repo->updateReservationStatus($reservationId, 'Converted');
+        $this->repo->updateStock($productId, (int) $product['available_quantity'], max(0, $newReserved));
+        $result = $this->repo->updateReservationStatus($reservationId, 'Converted');
+        $this->repo->logMovement($productId, $userId, 'converted', 0, "Reservation #{$reservationId} converted (sold/shipped).");
+
+        return $result;
     }
 }

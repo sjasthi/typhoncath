@@ -19,14 +19,29 @@ class InventoryController
     public function index(): void
     {
         $search = trim($_GET['search'] ?? '');
-        $lowStockOnly = isset($_GET['low_stock']);
         $searchArg = $search !== '' ? $search : null;
+        $sort = $_GET['sort'] ?? 'product_name';
+        $dir  = $_GET['dir'] ?? 'ASC';
+
+        // Status column filter (In Stock / Low Stock / No Stock checkboxes).
+        // ?low_stock=1 (no explicit ?status[]) is kept working for the
+        // Dashboard's "Low Stock" card link, which predates this filter.
+        if (isset($_GET['status'])) {
+            $rawStatuses = $_GET['status'];
+            $statuses = is_array($rawStatuses) ? $rawStatuses : [$rawStatuses];
+        } elseif (isset($_GET['low_stock'])) {
+            $statuses = ['Low Stock', 'No Stock'];
+        } else {
+            $statuses = [];
+        }
 
         // Shared pagination. NOTE: this module already uses ?page= for routing
         // (detail/stock/delete), so the pagination page number rides on ?p= instead.
-        $total    = $this->service->getProductCount($searchArg, $lowStockOnly);
-        $pager    = new \App\Core\Paginator($total, $_GET['per_page'] ?? 25, $_GET['p'] ?? 1);
-        $products = $this->service->getProductList($searchArg, $lowStockOnly, $pager->limit(), $pager->offset());
+        // 10 is added to the RFQ module's default [25,50,100] allowlist here since
+        // the product catalog is typically smaller than the RFQ pipeline.
+        $total    = $this->service->getProductCount($searchArg, $statuses);
+        $pager    = new \App\Core\Paginator($total, $_GET['per_page'] ?? 25, $_GET['p'] ?? 1, [10, 25, 50, 100]);
+        $products = $this->service->getProductList($searchArg, $statuses, $sort, $dir, $pager->limit(), $pager->offset());
 
         include __DIR__ . '/views/products_list.php';
     }
@@ -58,15 +73,17 @@ class InventoryController
         $startingQuantity = (int) ($_POST['available_quantity'] ?? 0);
         $lowStockThreshold = (int) ($_POST['low_stock_threshold'] ?? InventoryService::DEFAULT_LOW_STOCK_THRESHOLD);
 
+        $userId = (int) (\App\Core\Auth::user()['id'] ?? 0) ?: null;
+
         try {
             if ($id === null) {
-                $newId = $this->service->createProduct($productName, $sku, $price, $description, $startingQuantity, $lowStockThreshold);
+                $newId = $this->service->createProduct($productName, $sku, $price, $description, $startingQuantity, $lowStockThreshold, $userId);
                 $_SESSION['flash'] = ['type' => 'success', 'message' => "\"{$productName}\" was created successfully."];
                 header('Location: /modules/inventory/products.php?page=detail&id=' . $newId);
                 exit;
             }
 
-            $this->service->updateProduct($id, $productName, $sku, $price, $description, $lowStockThreshold);
+            $this->service->updateProduct($id, $productName, $sku, $price, $description, $lowStockThreshold, $userId);
             $_SESSION['flash'] = ['type' => 'success', 'message' => "\"{$productName}\" was saved successfully."];
             header('Location: /modules/inventory/products.php?page=detail&id=' . $id);
             exit;
@@ -115,9 +132,10 @@ class InventoryController
     {
         $productId = (int) ($_POST['product_id'] ?? 0);
         $availableQuantity = (int) ($_POST['available_quantity'] ?? 0);
+        $userId = (int) (\App\Core\Auth::user()['id'] ?? 0) ?: null;
 
         try {
-            $this->service->updateStock($productId, $availableQuantity);
+            $this->service->updateStock($productId, $availableQuantity, $userId);
             $_SESSION['flash'] = ['type' => 'success', 'message' => 'Stock levels updated successfully.'];
             header('Location: /modules/inventory/products.php?page=detail&id=' . $productId);
             exit;
@@ -153,11 +171,12 @@ class InventoryController
     public function handleDelete(): void
     {
         $id = (int) ($_POST['id'] ?? 0);
+        $userId = (int) (\App\Core\Auth::user()['id'] ?? 0) ?: null;
 
         try {
             $product = $this->service->getProductDetail($id);
             $name    = $product['product_name'] ?? "Product #{$id}";
-            $this->service->deleteProduct($id);
+            $this->service->deleteProduct($id, $userId);
             $_SESSION['flash'] = [
                 'type'    => 'success',
                 'message' => "\"{$name}\" was deleted successfully.",
@@ -192,13 +211,14 @@ class InventoryController
     {
         $id = (int) ($_POST['reservation_id'] ?? 0);
         $action = $_POST['action'] ?? '';
+        $userId = (int) (\App\Core\Auth::user()['id'] ?? 0) ?: null;
 
         try {
             if ($action === 'release') {
-                $this->service->releaseReservation($id);
+                $this->service->releaseReservation($id, $userId);
                 $_SESSION['flash'] = ['type' => 'success', 'message' => 'Reservation released.'];
             } elseif ($action === 'convert') {
-                $this->service->convertReservation($id);
+                $this->service->convertReservation($id, $userId);
                 $_SESSION['flash'] = ['type' => 'success', 'message' => 'Reservation converted.'];
             } else {
                 throw new \InvalidArgumentException('Unknown action.');
@@ -210,5 +230,57 @@ class InventoryController
             header('Location: /modules/inventory/products.php?page=reservations');
             exit;
         }
+    }
+
+    /**
+     * GET ?page=ledger
+     * Inventory Ledger report: what happened to inventory, when, and who did
+     * it. Supports a product/search/movement-type filter, column sorting, and
+     * pagination — the same shared Paginator/pagination.php pattern used by
+     * the RFQ pipeline list and the product list above.
+     */
+    public function ledger(): void
+    {
+        extract($this->fetchLedgerFilters());
+
+        $total     = $this->service->getLedgerCount($ledgerProductId, $ledgerSearch, $ledgerTypes);
+        $pager     = new \App\Core\Paginator($total, $_GET['per_page'] ?? 25, $_GET['p'] ?? 1, [10, 25, 50, 100]);
+        $movements = $this->service->getLedger($ledgerProductId, $ledgerSearch, $ledgerTypes, $ledgerSort, $ledgerDir, $pager->limit(), $pager->offset());
+
+        $movementTypes = InventoryRepository::$movementTypes;
+        $product       = $ledgerProductId !== null ? $this->service->getProductDetail($ledgerProductId) : null;
+
+        include __DIR__ . '/views/ledger.php';
+    }
+
+    /**
+     * GET ?page=ledger_print
+     * Bare, print-styled version of the ledger honoring the same filters as
+     * the report above, but unpaginated — every matching row is included so
+     * the printed/PDF'd document is a complete record. Renders its own full
+     * HTML document (no shared header/sidebar/footer chrome).
+     */
+    public function ledgerPrint(): void
+    {
+        extract($this->fetchLedgerFilters());
+
+        $movements = $this->service->getLedger($ledgerProductId, $ledgerSearch, $ledgerTypes, $ledgerSort, $ledgerDir, null, 0);
+        $product   = $ledgerProductId !== null ? $this->service->getProductDetail($ledgerProductId) : null;
+
+        include __DIR__ . '/views/ledger_print.php';
+    }
+
+    // Shared GET-parameter parsing for ledger()/ledgerPrint() so both pages
+    // apply identical filters — what you see in the report is what prints.
+    private function fetchLedgerFilters(): array
+    {
+        $ledgerProductId = isset($_GET['product_id']) && $_GET['product_id'] !== '' ? (int) $_GET['product_id'] : null;
+        $ledgerSearch    = trim($_GET['q'] ?? '');
+        $rawTypes        = $_GET['type'] ?? [];
+        $ledgerTypes     = is_array($rawTypes) ? $rawTypes : [$rawTypes];
+        $ledgerSort      = $_GET['sort'] ?? 'created_at';
+        $ledgerDir       = $_GET['dir']  ?? 'DESC';
+
+        return compact('ledgerProductId', 'ledgerSearch', 'ledgerTypes', 'ledgerSort', 'ledgerDir');
     }
 }

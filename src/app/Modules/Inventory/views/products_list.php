@@ -4,16 +4,51 @@ $statusBadge = [
     'Low Stock' => 'rfq-badge-low-stock',
     'No Stock'  => 'rfq-badge-out-of-stock',
 ];
+
+// Sort-link helper for the product table's column headers. Toggles ASC/DESC
+// when clicking the currently-sorted column, otherwise defaults to ASC.
+// Mirrors RFQ\views\pipeline_board.php's rfqSortUrl()/rfqSortIcon(), kept as a
+// separate function (not shared) since the two views are never included in
+// the same request.
+function inventorySortUrl(string $col, string $cur, string $dir, string $search, array $statuses, string $perPage): string
+{
+    $nextDir = ($cur === $col && $dir === 'ASC') ? 'DESC' : 'ASC';
+    $params  = array_filter(['search' => $search, 'sort' => $col, 'dir' => $nextDir], fn($v) => $v !== '');
+    if (!empty($statuses)) $params['status'] = $statuses;
+    if ($perPage !== '25') $params['per_page'] = $perPage;
+    return '?' . http_build_query($params);
+}
+
+function inventorySortIcon(string $col, string $cur, string $dir): string
+{
+    if ($cur !== $col) return '<span class="rfq-sort-icon rfq-sort-idle">↕</span>';
+    return $dir === 'ASC'
+        ? '<span class="rfq-sort-icon rfq-sort-asc">▲</span>'
+        : '<span class="rfq-sort-icon rfq-sort-desc">▼</span>';
+}
+
+$sortCols = [
+    'sku'                => 'SKU',
+    'product_name'       => 'Product Name',
+    'price'              => 'Price',
+    'available_quantity' => 'Available',
+    'reserved_quantity'  => 'Reserved',
+];
 ?>
 
 <section class="card">
     <div class="rfq-board-header">
         <h1>Inventory</h1>
-        <a href="/modules/inventory/products.php?page=detail" class="btn btn-primary">+ Add Product</a>
+        <div style="display:flex; gap:0.5rem;">
+            <a href="/modules/inventory/products.php?page=ledger" class="btn">Inventory Ledger</a>
+            <a href="/modules/inventory/products.php?page=detail" class="btn btn-primary">+ Add Product</a>
+        </div>
     </div>
 
     <!-- Search / filter toolbar -->
     <form method="GET" class="rfq-list-toolbar" style="flex-direction:row; flex-wrap:wrap; align-items:center; gap:0.5rem; margin-bottom:1rem;">
+        <input type="hidden" name="sort" value="<?= htmlspecialchars($sort) ?>">
+        <input type="hidden" name="dir" value="<?= htmlspecialchars($dir) ?>">
         <input
             type="text"
             name="search"
@@ -22,22 +57,25 @@ $statusBadge = [
             value="<?= htmlspecialchars($search ?? '') ?>"
             style="max-width:280px; margin-bottom:0;"
         >
-        <label style="display:flex; align-items:center; gap:0.4rem; font-weight:600; font-size:0.9rem; margin:0;">
-            <input
-                type="checkbox"
-                name="low_stock"
-                value="1"
-                <?= ($lowStockOnly ?? false) ? 'checked' : '' ?>
-                onchange="this.form.submit()"
-            >
-            Low Stock Only
-        </label>
-        <button type="submit" class="btn">Search</button>
-        <?php if (!empty($search) || !empty($lowStockOnly)): ?>
-            <a href="/modules/inventory/products.php" class="btn rfq-list-clear-btn">Clear</a>
+
+        <!-- Column filter on Status (In Stock / Low Stock / No Stock) -->
+        <div class="rfq-stage-checks">
+            <?php foreach (\App\Modules\Inventory\InventoryRepository::$statuses as $s): ?>
+            <label class="rfq-stage-check">
+                <input type="checkbox" name="status[]" value="<?= htmlspecialchars($s) ?>"
+                    <?= in_array($s, $statuses, true) ? 'checked' : '' ?>>
+                <?= htmlspecialchars($s) ?>
+            </label>
+            <?php endforeach; ?>
+        </div>
+
+        <button type="submit" class="btn">Filter</button>
+        <?php if (!empty($search) || !empty($statuses)): ?>
+            <a href="/modules/inventory/products.php?sort=<?= urlencode($sort) ?>&dir=<?= urlencode($dir) ?>" class="btn rfq-list-clear-btn">Clear</a>
         <?php endif; ?>
         <?php
             $perPageClass = 'form-control rfq-list-perpage-select';
+            $perPageAutoSubmit = true;
             include __DIR__ . '/../../../Shared/per_page_select.php';
         ?>
     </form>
@@ -46,11 +84,14 @@ $statusBadge = [
     <table class="table rfq-list-table">
         <thead>
             <tr>
-                <th>SKU</th>
-                <th>Product Name</th>
-                <th>Price</th>
-                <th>Available</th>
-                <th>Reserved</th>
+                <?php foreach ($sortCols as $key => $label): ?>
+                <th>
+                    <a href="<?= inventorySortUrl($key, $sort, $dir, $search ?? '', $statuses, (string)$pager->perPageValue) ?>" class="rfq-sort-link">
+                        <?= $label ?>
+                        <?= inventorySortIcon($key, $sort, $dir) ?>
+                    </a>
+                </th>
+                <?php endforeach; ?>
                 <th>Status</th>
                 <th>Actions</th>
             </tr>
@@ -82,6 +123,7 @@ $statusBadge = [
                     <td style="white-space:nowrap;">
                         <a href="/modules/inventory/products.php?page=detail&id=<?= (int)$p['id'] ?>" class="btn" style="font-size:0.85rem; padding:4px 10px;">Edit</a>
                         <a href="/modules/inventory/products.php?page=stock&id=<?= (int)$p['id'] ?>" class="btn" style="font-size:0.85rem; padding:4px 10px;">Stock</a>
+                        <a href="/modules/inventory/products.php?page=ledger&product_id=<?= (int)$p['id'] ?>" class="btn" style="font-size:0.85rem; padding:4px 10px;">History</a>
                         <a href="/modules/inventory/products.php?page=delete&id=<?= (int)$p['id'] ?>" class="btn" style="font-size:0.85rem; padding:4px 10px; background:#fde8e8; color:#b91c1c; border-color:#fca5a5;">Delete</a>
                     </td>
                 </tr>
@@ -105,8 +147,6 @@ $statusBadge = [
     <div class="rfq-list-footer">
         Showing <?= $pager->from() ?>–<?= $pager->to() ?> of <?= number_format($total) ?> product<?= $total !== 1 ? 's' : '' ?>
     </div>
-
-    <p class="rfq-list-footer"><?= count($products ?? []) ?> product(s)</p>
 </section>
 
 <script src="/assets/js/inventory.js"></script>

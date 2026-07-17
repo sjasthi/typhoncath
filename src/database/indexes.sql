@@ -41,3 +41,15 @@ CREATE INDEX idx_campaigns_created_at_status ON campaigns(created_at, status);
 -- campaignMomentum segment subqueries: IN (SELECT DISTINCT campaign_id FROM campaign_audience WHERE account_id/contact_id IS NOT NULL)
 CREATE INDEX idx_campaign_audience_campaign_account ON campaign_audience(campaign_id, account_id);
 CREATE INDEX idx_campaign_audience_campaign_contact ON campaign_audience(campaign_id, contact_id);
+
+-- Inventory product list sortable columns (InventoryRepository::all()/count())
+CREATE INDEX idx_products_product_name ON products(product_name);
+CREATE INDEX idx_inventory_available_quantity ON inventory(available_quantity);
+
+-- Inventory Ledger (see migrations/015_create_inventory_movements.sql). Repeated
+-- here, matching the indexes.sql/migration duplication convention established by
+-- 014_dashboard_indexes.sql, in case indexes.sql is applied ahead of migrations.
+CREATE INDEX idx_inventory_movements_product_id    ON inventory_movements(product_id);
+CREATE INDEX idx_inventory_movements_created_at    ON inventory_movements(created_at);
+CREATE INDEX idx_inventory_movements_user_id       ON inventory_movements(user_id);
+CREATE INDEX idx_inventory_movements_movement_type ON inventory_movements(movement_type);

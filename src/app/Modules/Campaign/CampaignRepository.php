@@ -2,6 +2,7 @@
 namespace App\Modules\Campaign;
 
 use App\Core\Database;
+use App\Core\DataTable\ServerTable;
 use PDO;
 
 class CampaignRepository
@@ -14,6 +15,33 @@ class CampaignRepository
     public function __construct()
     {
         $this->db = Database::connection();
+    }
+
+    /**
+     * Server-side DataTables source for the campaigns list (the top table on the
+     * Campaigns page — the analytics/momentum sections below it are unaffected).
+     * Shared by the data + export endpoints. Name search uses the ft_campaigns_name
+     * FULLTEXT index; type/status are exact per-column select filters.
+     */
+    public static function listTable(): ServerTable
+    {
+        return new ServerTable(
+            Database::connection(),
+            'campaigns c',
+            'c.id, c.campaign_name, c.campaign_type, c.status, c.sent_count, c.open_rate, c.click_rate, c.created_at',
+            [
+                ['data' => 'id',            'sql' => 'c.id',            'order' => true, 'search' => 'like'],
+                ['data' => 'campaign_name', 'sql' => 'c.campaign_name', 'order' => true, 'search' => 'fulltext', 'ft' => 'c.campaign_name'],
+                ['data' => 'campaign_type', 'sql' => 'c.campaign_type', 'order' => true, 'search' => 'exact'],
+                ['data' => 'status',        'sql' => 'c.status',        'order' => true, 'search' => 'exact'],
+                ['data' => 'sent_count',    'sql' => 'c.sent_count',    'order' => true, 'search' => false],
+                ['data' => 'open_rate',     'sql' => 'c.open_rate',     'order' => true, 'search' => false],
+                ['data' => 'click_rate',    'sql' => 'c.click_rate',    'order' => true, 'search' => false],
+                ['data' => 'created_at',    'sql' => 'c.created_at',    'order' => true, 'search' => false],
+            ],
+            'c.created_at',
+            'DESC'
+        );
     }
 
     // ── List / Search ──────────────────────────────────────────────────────────

@@ -2,10 +2,49 @@
 namespace App\Modules\Customer;
 
 use App\Core\Database;
+use App\Core\DataTable\ServerTable;
 use PDO;
 
 class CustomerRepository
 {
+    /**
+     * Server-side DataTables source for the accounts list. Shared by the data
+     * and export endpoints. Name search uses the ft_accounts_name FULLTEXT index;
+     * industry/source are exact per-column select filters (index-friendly).
+     */
+    public static function listTable(): ServerTable
+    {
+        return new ServerTable(
+            Database::connection(),
+            'accounts',
+            'id, account_name, email, phone, industry, source, tags',
+            [
+                ['data' => 'account_name', 'sql' => 'account_name', 'order' => true, 'search' => 'fulltext', 'ft' => 'account_name'],
+                ['data' => 'email',        'sql' => 'email',        'order' => true, 'search' => 'like'],
+                ['data' => 'phone',        'sql' => 'phone',        'order' => true, 'search' => 'like'],
+                ['data' => 'industry',     'sql' => 'industry',     'order' => true, 'search' => 'exact'],
+                ['data' => 'source',       'sql' => 'source',       'order' => true, 'search' => 'exact'],
+                ['data' => 'tags',         'sql' => 'tags',         'order' => true, 'search' => 'like'],
+            ],
+            'account_name',
+            'ASC'
+        );
+    }
+
+    /** Distinct non-empty values of a whitelisted column, for a per-column filter <select>. */
+    public function distinctValues(string $column): array
+    {
+        if (!in_array($column, ['industry', 'source'], true)) {
+            return [];
+        }
+        $db   = Database::connection();
+        $stmt = $db->query(
+            "SELECT DISTINCT {$column} AS v FROM accounts
+             WHERE {$column} IS NOT NULL AND {$column} <> '' ORDER BY {$column} ASC"
+        );
+        return array_map(static fn($r) => $r['v'], $stmt->fetchAll(PDO::FETCH_ASSOC));
+    }
+
     public function all(): array
     {
         $db = Database::connection();

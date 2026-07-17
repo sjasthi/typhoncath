@@ -18,8 +18,9 @@ class RFQController
 
     public function index(): void
     {
-        extract($this->fetchList());
-
+        // The RFQ list is now a client-driven DataTable: this just renders the
+        // table shell. Rows are fetched from /modules/rfq/pipeline_data.php
+        // (server-side processing), so there is no server-side query here.
         include __DIR__ . '/views/pipeline_board.php';
     }
 
@@ -32,34 +33,6 @@ class RFQController
         $rows  = $this->repo->winRateByAccount($pager->limit(), $pager->offset());
 
         include __DIR__ . '/views/win_rate.php';
-    }
-
-    // Parses and validates GET parameters, then runs the paginated RFQ list query.
-    private function fetchList(): array
-    {
-        $listSearch     = trim($_GET['q']        ?? '');
-        $listIdSearch   = trim($_GET['id']       ?? '');
-        $rawStages      = $_GET['stage']         ?? [];
-        $listStages     = is_array($rawStages) ? $rawStages : [$rawStages];
-        $listSort       = $_GET['sort']          ?? 'created_at';
-        $listDir        = $_GET['dir']           ?? 'DESC';
-
-        // Pagination math is delegated to the shared Paginator: it whitelists
-        // per_page (incl. "all"), clamps the page, and yields limit()/offset().
-        $listTotal      = $this->repo->searchCount($listSearch, $listIdSearch, $listStages);
-        $pager          = new Paginator($listTotal, $_GET['per_page'] ?? 25, $_GET['page'] ?? 1);
-        $listPerPageVal = $pager->perPageValue; // for the per-page <select> + links
-
-        $listRfqs       = $this->repo->search(
-            $listSearch, $listSort, $listDir,
-            $pager->limit(), $pager->offset(),
-            $listIdSearch, $listStages
-        );
-
-        return compact(
-            'listSearch', 'listIdSearch', 'listStages', 'listSort', 'listDir',
-            'listPerPageVal', 'listTotal', 'listRfqs', 'pager'
-        );
     }
 
     // ── Detail ────────────────────────────────────────────────────────────────

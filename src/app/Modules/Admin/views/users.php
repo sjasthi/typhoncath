@@ -1,13 +1,3 @@
-<?php
-$roleBadgeMap = [
-    'Super Admin'       => 'rfq-badge-danger',
-    'Admin'             => 'rfq-badge-warning',
-    'Sales User'        => 'rfq-badge-info',
-    'Marketing User'    => 'rfq-badge-success',
-    'Inventory Manager' => 'rfq-badge-quoted',
-];
-?>
-
 <section class="card">
 
     <div class="module-header">
@@ -18,81 +8,28 @@ $roleBadgeMap = [
         </div>
     </div>
 
-    <form method="GET" action="/admin/users.php" class="rfq-list-toolbar" style="margin-bottom:1rem; display:flex; justify-content:flex-end;">
-        <?php
-            $perPageClass      = 'form-control rfq-list-perpage-select';
-            $perPageAutoSubmit = true; // no filter button on this toolbar
-            include __DIR__ . '/../../../Shared/per_page_select.php';
-        ?>
-    </form>
-
-    <?php if (empty($users)): ?>
-    <p class="text-muted">No users found.</p>
-    <?php else: ?>
-
-    <table class="table">
+    <table class="table js-dt"
+           data-dt-url="/admin/users_data.php"
+           data-dt-export="/admin/users_export.php">
         <thead>
-            <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th>Created</th>
-                <th>Actions</th>
+            <tr class="dt-title">
+                <th data-col="name">Name</th>
+                <th data-col="email">Email</th>
+                <th data-col="role">Role</th>
+                <th data-col="created_at">Created</th>
+                <th data-col="actions" data-orderable="false" data-searchable="false">Actions</th>
+            </tr>
+            <tr class="dt-filter">
+                <th data-filter="text"></th>
+                <th data-filter="text"></th>
+                <th data-filter="text"></th>
+                <th></th>
+                <th></th>
             </tr>
         </thead>
-        <tbody>
-            <?php foreach ($users as $u):
-                $isCustom = !empty($u['owner_user_id']);
-                $badge    = $isCustom ? 'rfq-badge-warning' : ($roleBadgeMap[$u['role_name']] ?? 'rfq-badge-neutral');
-                $isSelf   = (int)$u['id'] === (int)(App\Core\Auth::user()['id'] ?? 0);
-            ?>
-            <tr>
-                <td>
-                    <?= htmlspecialchars($u['name']) ?>
-                    <?php if ($isSelf): ?>
-                    <span class="rfq-badge rfq-badge-neutral" style="font-size:0.65rem;margin-left:4px;">you</span>
-                    <?php endif; ?>
-                </td>
-                <td><?= htmlspecialchars($u['email']) ?></td>
-                <td>
-                    <span class="rfq-badge <?= $badge ?>">
-                        <?= $isCustom ? 'Custom' : htmlspecialchars($u['role_name']) ?>
-                    </span>
-                </td>
-                <td><?= htmlspecialchars(date('M j, Y', strtotime($u['created_at']))) ?></td>
-                <td>
-                    <a href="/admin/users.php?action=edit&id=<?= (int)$u['id'] ?>" class="btn btn-secondary btn-sm">Edit</a>
-
-                    <?php if (!$isSelf): ?>
-                    <form method="POST" action="/admin/users.php" style="display:inline;"
-                          onsubmit="return confirm('Delete <?= htmlspecialchars(addslashes($u['name'])) ?>? This cannot be undone.');">
-                        <?= App\Core\Csrf::field() ?>
-                        <input type="hidden" name="_action" value="delete">
-                        <input type="hidden" name="user_id" value="<?= (int)$u['id'] ?>">
-                        <button type="submit" class="btn btn-danger btn-sm">&times;</button>
-                    </form>
-                    <?php endif; ?>
-                </td>
-            </tr>
-            <?php endforeach; ?>
-        </tbody>
+        <tbody></tbody>
     </table>
 
-    <?php
-        $paginationClasses = [
-            'container' => 'rfq-pagination',
-            'item'      => 'rfq-page-btn',
-            'nav'       => 'rfq-pagination-nav',
-            'disabled'  => 'rfq-page-disabled',
-            'active'    => 'rfq-page-active',
-            'ellipsis'  => 'rfq-page-ellipsis',
-        ];
-        include __DIR__ . '/../../../Shared/pagination.php';
-    ?>
-    <div class="rfq-list-footer">
-        Showing <?= $pager->from() ?>–<?= $pager->to() ?> of <?= number_format($total) ?> user<?= $total !== 1 ? 's' : '' ?>
-    </div>
-
-    <?php endif; ?>
-
 </section>
+
+<?php include __DIR__ . '/../../../Shared/datatables_assets.php'; ?>

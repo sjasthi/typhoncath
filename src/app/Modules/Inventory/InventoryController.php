@@ -18,31 +18,9 @@ class InventoryController
      */
     public function index(): void
     {
-        $search = trim($_GET['search'] ?? '');
-        $searchArg = $search !== '' ? $search : null;
-        $sort = $_GET['sort'] ?? 'product_name';
-        $dir  = $_GET['dir'] ?? 'ASC';
-
-        // Status column filter (In Stock / Low Stock / No Stock checkboxes).
-        // ?low_stock=1 (no explicit ?status[]) is kept working for the
-        // Dashboard's "Low Stock" card link, which predates this filter.
-        if (isset($_GET['status'])) {
-            $rawStatuses = $_GET['status'];
-            $statuses = is_array($rawStatuses) ? $rawStatuses : [$rawStatuses];
-        } elseif (isset($_GET['low_stock'])) {
-            $statuses = ['Low Stock', 'No Stock'];
-        } else {
-            $statuses = [];
-        }
-
-        // Shared pagination. NOTE: this module already uses ?page= for routing
-        // (detail/stock/delete), so the pagination page number rides on ?p= instead.
-        // 10 is added to the RFQ module's default [25,50,100] allowlist here since
-        // the product catalog is typically smaller than the RFQ pipeline.
-        $total    = $this->service->getProductCount($searchArg, $statuses);
-        $pager    = new \App\Core\Paginator($total, $_GET['per_page'] ?? 25, $_GET['p'] ?? 1, [10, 25, 50, 100]);
-        $products = $this->service->getProductList($searchArg, $statuses, $sort, $dir, $pager->limit(), $pager->offset());
-
+        // The products list is now a client-driven DataTable (server-side
+        // processing). This just renders the shell; rows are fetched from
+        // /modules/inventory/products_data.php.
         include __DIR__ . '/views/products_list.php';
     }
 

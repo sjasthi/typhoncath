@@ -37,10 +37,9 @@ class AdminController
 
     public function listUsers(): void
     {
-        // Shared pagination: whitelists per_page, clamps the page, yields limit()/offset().
-        $total = $this->userRepo->countUsers();
-        $pager = new \App\Core\Paginator($total, $_GET['per_page'] ?? 25, $_GET['page'] ?? 1);
-        $users = $this->userRepo->allUsers($pager->limit(), $pager->offset());
+        // The users list is now a client-driven DataTable (server-side
+        // processing). This just renders the shell; rows are fetched from
+        // /admin/users_data.php.
         include __DIR__ . '/views/users.php';
     }
 

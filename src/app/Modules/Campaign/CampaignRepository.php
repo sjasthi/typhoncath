@@ -44,51 +44,6 @@ class CampaignRepository
         );
     }
 
-    // ── List / Search ──────────────────────────────────────────────────────────
-    // status filter hits idx_campaigns_status; created_at sort hits idx_campaigns_created_at
-
-    public function searchCount(string $q = '', array $statuses = []): int
-    {
-        [$where, $params] = $this->buildWhere($q, $statuses);
-        $stmt = $this->db->prepare("SELECT COUNT(*) FROM campaigns c" . $where);
-        $stmt->execute($params);
-        return (int)$stmt->fetchColumn();
-    }
-
-    public function search(
-        string $q        = '',
-        string $sortCol  = 'created_at',
-        string $sortDir  = 'DESC',
-        int    $limit    = 25,
-        int    $offset   = 0,
-        array  $statuses = []
-    ): array {
-        $colMap = [
-            'id'            => 'c.id',
-            'campaign_name' => 'c.campaign_name',
-            'campaign_type' => 'c.campaign_type',
-            'status'        => 'c.status',
-            'sent_count'    => 'c.sent_count',
-            'created_at'    => 'c.created_at',
-            'updated_at'    => 'c.updated_at',
-        ];
-        $orderCol = $colMap[$sortCol] ?? 'c.created_at';
-        $orderDir = strtoupper($sortDir) === 'ASC' ? 'ASC' : 'DESC';
-
-        [$where, $params] = $this->buildWhere($q, $statuses);
-
-        $stmt = $this->db->prepare("
-            SELECT c.id, c.campaign_name, c.campaign_type, c.status,
-                   c.sent_count, c.open_rate, c.click_rate, c.created_at
-            FROM campaigns c
-            {$where}
-            ORDER BY {$orderCol} {$orderDir}
-            LIMIT {$limit} OFFSET {$offset}
-        ");
-        $stmt->execute($params);
-        return $stmt->fetchAll();
-    }
-
     // ── Lookups ────────────────────────────────────────────────────────────────
     // JOIN to users hits users.id (PK) — fast. campaigns.created_by_user_id covered by idx_campaigns_created_by_user_id.
 
@@ -528,28 +483,5 @@ public function campaignMomentum(
         ");
         $stmt->execute();
         return $stmt->fetch() ?: [];
-    }
-
-    // ── Private Helpers ────────────────────────────────────────────────────────
-
-    private function buildWhere(string $q, array $statuses): array
-    {
-        $clauses = [];
-        $params  = [];
-
-        if ($q !== '') {
-            $clauses[] = 'c.campaign_name LIKE ?';
-            $params[]  = "%{$q}%";
-        }
-
-        $validStatuses = array_values(array_intersect($statuses, self::$statuses));
-        if (!empty($validStatuses)) {
-            $ph        = implode(',', array_fill(0, count($validStatuses), '?'));
-            $clauses[] = "c.status IN ({$ph})";
-            array_push($params, ...$validStatuses);
-        }
-
-        $sql = $clauses ? ' WHERE ' . implode(' AND ', $clauses) : '';
-        return [$sql, $params];
     }
 }

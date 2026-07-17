@@ -2,6 +2,7 @@
 namespace App\Modules\Admin;
 
 use App\Core\Database;
+use App\Core\DataTable\ServerTable;
 use PDO;
 
 class UserRepository
@@ -11,6 +12,28 @@ class UserRepository
     public function __construct()
     {
         $this->db = Database::connection();
+    }
+
+    /**
+     * Server-side DataTables source for the Admin users list. Shared by the data
+     * and export endpoints.
+     */
+    public static function listTable(): ServerTable
+    {
+        return new ServerTable(
+            Database::connection(),
+            'users u JOIN roles r ON r.id = u.role_id',
+            'u.id, u.name, u.email, u.role_id, r.role_name, r.owner_user_id, u.created_at',
+            [
+                ['data' => 'name',       'sql' => 'u.name',       'order' => true,  'search' => 'like'],
+                ['data' => 'email',      'sql' => 'u.email',      'order' => true,  'search' => 'like'],
+                ['data' => 'role',       'sql' => 'r.role_name',  'order' => true,  'search' => 'like'],
+                ['data' => 'created_at', 'sql' => 'u.created_at', 'order' => true,  'search' => false],
+                ['data' => 'actions',    'sql' => '',             'order' => false, 'search' => false],
+            ],
+            'u.name',
+            'ASC'
+        );
     }
 
     public function allUsers(?int $limit = null, int $offset = 0): array

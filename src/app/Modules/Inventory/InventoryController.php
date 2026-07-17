@@ -18,16 +18,9 @@ class InventoryController
      */
     public function index(): void
     {
-        $search = trim($_GET['search'] ?? '');
-        $lowStockOnly = isset($_GET['low_stock']);
-        $searchArg = $search !== '' ? $search : null;
-
-        // Shared pagination. NOTE: this module already uses ?page= for routing
-        // (detail/stock/delete), so the pagination page number rides on ?p= instead.
-        $total    = $this->service->getProductCount($searchArg, $lowStockOnly);
-        $pager    = new \App\Core\Paginator($total, $_GET['per_page'] ?? 25, $_GET['p'] ?? 1);
-        $products = $this->service->getProductList($searchArg, $lowStockOnly, $pager->limit(), $pager->offset());
-
+        // The products list is now a client-driven DataTable (server-side
+        // processing). This just renders the shell; rows are fetched from
+        // /modules/inventory/products_data.php.
         include __DIR__ . '/views/products_list.php';
     }
 

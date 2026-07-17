@@ -2,12 +2,40 @@
 namespace App\Modules\Inventory;
 
 use App\Core\Database;
+use App\Core\DataTable\ServerTable;
 
 // Data access layer for products, their stock levels, and RFQ reservations.
 // All SQL for the Inventory module lives here — InventoryService owns the
 // business rules and calls into these methods.
 class InventoryRepository
 {
+    /**
+     * Server-side DataTables source for the products list. Shared by the data
+     * and export endpoints. Status is a view-only computed column (available vs.
+     * low_stock_threshold), so it is neither ordered nor searched in SQL.
+     */
+    public static function listTable(): ServerTable
+    {
+        return new ServerTable(
+            Database::connection(),
+            'products p LEFT JOIN inventory i ON i.product_id = p.id',
+            'p.id, p.sku, p.product_name, p.price,
+             COALESCE(i.available_quantity, 0) AS available_quantity,
+             COALESCE(i.reserved_quantity, 0)  AS reserved_quantity,
+             COALESCE(i.low_stock_threshold, 10) AS low_stock_threshold',
+            [
+                ['data' => 'sku',          'sql' => 'p.sku',                          'order' => true,  'search' => 'like'],
+                ['data' => 'product_name', 'sql' => 'p.product_name',                 'order' => true,  'search' => 'like'],
+                ['data' => 'price',        'sql' => 'p.price',                        'order' => true,  'search' => false],
+                ['data' => 'available',    'sql' => 'COALESCE(i.available_quantity, 0)', 'order' => true, 'search' => false],
+                ['data' => 'reserved',     'sql' => 'COALESCE(i.reserved_quantity, 0)',  'order' => true, 'search' => false],
+                ['data' => 'status',       'sql' => '',                               'order' => false, 'search' => false],
+                ['data' => 'actions',      'sql' => '',                               'order' => false, 'search' => false],
+            ],
+            'p.product_name',
+            'ASC'
+        );
+    }
     /**
      * Get all products joined with their inventory counts.
      * Optionally filter by a search term (name or SKU) and/or low stock only

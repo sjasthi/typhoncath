@@ -25,7 +25,9 @@ class CampaignController
 
     public function index(): void
     {
-        [$campaigns, $listSearch, $listStatuses, $totalCount, $pager] = $this->fetchList();
+        // The campaigns list table is now a client-driven DataTable (server-side
+        // processing) fed by /modules/campaign/campaigns_data.php — no list query
+        // here. The analytics + momentum sections below it are unchanged.
         $stats         = $this->repo->dashboardStats();
         $upcoming      = $this->repo->upcomingScheduledSends();
         $topPerformers = $this->repo->topPerformers();
@@ -273,22 +275,6 @@ class CampaignController
     // ── Private Helpers ────────────────────────────────────────────────────────
 
     // Parses and validates GET params, then runs the paginated campaign list query.
-    private function fetchList(): array
-    {
-        $q        = trim($_GET['q']      ?? '');
-        $statuses = (array)($_GET['status'] ?? []);
-        $sortCol  = $_GET['sort']  ?? 'created_at';
-        $sortDir  = $_GET['dir']   ?? 'DESC';
-
-        // Pagination delegated to the shared Paginator (whitelists per_page incl.
-        // "all", clamps the page, yields limit()/offset()).
-        $totalCount = $this->repo->searchCount($q, $statuses);
-        $pager      = new Paginator($totalCount, $_GET['per_page'] ?? 25, $_GET['page'] ?? 1);
-        $campaigns  = $this->repo->search($q, $sortCol, $sortDir, $pager->limit(), $pager->offset(), $statuses);
-
-        return [$campaigns, $q, $statuses, $totalCount, $pager];
-    }
-
     // Extracts and sanitises campaign name, type, status, and optional scheduled date from POST.
     private function parseFormInput(): array
     {

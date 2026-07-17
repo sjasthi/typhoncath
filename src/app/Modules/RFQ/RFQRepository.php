@@ -2,11 +2,38 @@
 namespace App\Modules\RFQ;
 
 use App\Core\Database;
+use App\Core\DataTable\ServerTable;
 use PDO;
 
 class RFQRepository
 {
     public static array $stages = ['New', 'In Review', 'Quoted', 'Negotiation', 'Won', 'Lost'];
+
+    /**
+     * Server-side DataTables source for the RFQ list. Shared by the data
+     * endpoint (paged JSON) and the export endpoint (full filtered set) so their
+     * filter/sort semantics can never diverge. Text search on title/account uses
+     * the FULLTEXT indexes (ft_rfqs_title, ft_accounts_name); stage is an exact
+     * per-column select filter.
+     */
+    public static function listTable(): ServerTable
+    {
+        return new ServerTable(
+            Database::connection(),
+            'rfqs r LEFT JOIN accounts a ON a.id = r.account_id',
+            'r.id, r.title, a.account_name AS account_name, r.stage, r.created_at, r.updated_at',
+            [
+                ['data' => 'id',           'sql' => 'r.id',           'order' => true, 'search' => 'like'],
+                ['data' => 'title',        'sql' => 'r.title',        'order' => true, 'search' => 'fulltext', 'ft' => 'r.title'],
+                ['data' => 'account_name', 'sql' => 'a.account_name', 'order' => true, 'search' => 'fulltext', 'ft' => 'a.account_name'],
+                ['data' => 'stage',        'sql' => 'r.stage',        'order' => true, 'search' => 'exact'],
+                ['data' => 'created_at',   'sql' => 'r.created_at',   'order' => true, 'search' => false],
+                ['data' => 'updated_at',   'sql' => 'r.updated_at',   'order' => true, 'search' => false],
+            ],
+            'r.created_at',
+            'DESC'
+        );
+    }
 
     /** How long (seconds) cached analytics results stay fresh. */
     private const ANALYTICS_TTL = 300;

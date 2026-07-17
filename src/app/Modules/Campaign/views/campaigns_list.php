@@ -1,18 +1,5 @@
 <?php
-$campaigns    = $campaigns    ?? [];
-$listSearch   = $listSearch   ?? trim($_GET['q']      ?? '');
-$listStatuses = $listStatuses ?? (array)($_GET['status'] ?? []);
-
-$statusBadge = [
-    'Draft'     => 'badge-neutral',
-    'Scheduled' => 'badge-info',
-    'Sent'      => 'badge-quoted',
-    'Completed' => 'badge-success',
-];
-$typeBadge = [
-    'Email'          => 'badge-info',
-    'SMS Simulation' => 'badge-warning',
-];
+use App\Modules\Campaign\CampaignRepository;
 ?>
 
 <section class="card">
@@ -21,101 +8,36 @@ $typeBadge = [
         <a href="/modules/campaign/create.php" class="btn btn-primary">+ Create Campaign</a>
     </div>
 
-    <!-- Search & status filters -->
-    <form method="GET" action="" class="rfq-list-search-form">
-        <input
-            type="text"
-            name="q"
-            value="<?= htmlspecialchars($listSearch) ?>"
-            placeholder="Search by campaign name…"
-            class="form-control rfq-list-search-input"
-        >
-        <div class="rfq-stage-checks">
-            <?php foreach (['Draft', 'Scheduled', 'Sent', 'Completed'] as $s): ?>
-            <label class="rfq-stage-check">
-                <input type="checkbox" name="status[]" value="<?= $s ?>"
-                    <?= in_array($s, $listStatuses, true) ? 'checked' : '' ?>>
-                <?= $s ?>
-            </label>
-            <?php endforeach; ?>
-        </div>
-        <?php
-            $perPageClass = 'form-control rfq-list-perpage-select';
-            include __DIR__ . '/../../../Shared/per_page_select.php';
-        ?>
-        <button type="submit" class="btn btn-primary">Filter</button>
-        <?php if ($listSearch !== '' || !empty($listStatuses)): ?>
-            <a href="/modules/campaign/campaigns.php" class="btn btn-secondary">Clear</a>
-        <?php endif; ?>
-    </form>
-
-    <?php if (empty($campaigns)): ?>
-        <p class="text-muted rfq-list-empty">
-            No campaigns found.
-            <a href="/modules/campaign/create.php">Create your first campaign →</a>
-        </p>
-    <?php else: ?>
-    <table class="table">
+    <table class="table js-dt"
+           data-dt-url="/modules/campaign/campaigns_data.php"
+           data-dt-export="/modules/campaign/campaigns_export.php">
         <thead>
-            <tr>
-                <th>#</th>
-                <th>Name</th>
-                <th>Type</th>
-                <th>Status</th>
-                <th>Sent</th>
-                <th>Open Rate</th>
-                <th>Click Rate</th>
-                <th>Created</th>
+            <tr class="dt-title">
+                <th data-col="id">#</th>
+                <th data-col="campaign_name">Name</th>
+                <th data-col="campaign_type">Type</th>
+                <th data-col="status">Status</th>
+                <th data-col="sent_count">Sent</th>
+                <th data-col="open_rate">Open Rate</th>
+                <th data-col="click_rate">Click Rate</th>
+                <th data-col="created_at">Created</th>
+            </tr>
+            <tr class="dt-filter">
+                <th data-filter="text"></th>
+                <th data-filter="text"></th>
+                <th data-filter="select" data-options='<?= htmlspecialchars(json_encode(CampaignRepository::$types), ENT_QUOTES) ?>'></th>
+                <th data-filter="select" data-options='<?= htmlspecialchars(json_encode(CampaignRepository::$statuses), ENT_QUOTES) ?>'></th>
+                <th></th>
+                <th></th>
+                <th></th>
+                <th></th>
             </tr>
         </thead>
-        <tbody>
-            <?php foreach ($campaigns as $c): ?>
-            <tr>
-                <td class="rfq-list-id">#<?= (int)$c['id'] ?></td>
-                <td>
-                    <a href="/modules/campaign/detail.php?id=<?= (int)$c['id'] ?>">
-                        <?= htmlspecialchars($c['campaign_name']) ?>
-                    </a>
-                </td>
-                <td>
-                    <span class="badge <?= $typeBadge[$c['campaign_type']] ?? 'badge-neutral' ?>">
-                        <?= htmlspecialchars($c['campaign_type']) ?>
-                    </span>
-                </td>
-                <td>
-                    <span class="badge <?= $statusBadge[$c['status']] ?? 'badge-neutral' ?>">
-                        <?= htmlspecialchars($c['status']) ?>
-                    </span>
-                </td>
-                <td><?= (int)$c['sent_count'] ?></td>
-                <td><?= $c['open_rate']  !== null ? number_format((float)$c['open_rate'],  1) . '%' : '—' ?></td>
-                <td><?= $c['click_rate'] !== null ? number_format((float)$c['click_rate'], 1) . '%' : '—' ?></td>
-                <td class="rfq-list-date"><?= date('M j, Y', strtotime($c['created_at'])) ?></td>
-            </tr>
-            <?php endforeach; ?>
-        </tbody>
+        <tbody></tbody>
     </table>
-    <?php endif; ?>
-
-    <?php
-        // Windowed pager + footer via the shared components (App\Core\Paginator
-        // + Shared/pagination.php). Reuses the rfq-* pager styles.
-        $paginationClasses = [
-            'container' => 'rfq-pagination',
-            'item'      => 'rfq-page-btn',
-            'nav'       => 'rfq-pagination-nav',
-            'disabled'  => 'rfq-page-disabled',
-            'active'    => 'rfq-page-active',
-            'ellipsis'  => 'rfq-page-ellipsis',
-        ];
-        include __DIR__ . '/../../../Shared/pagination.php';
-    ?>
-    <div class="rfq-list-footer">
-        Showing <?= $pager->from() ?>–<?= $pager->to() ?> of <?= number_format($totalCount) ?> campaign<?= $totalCount !== 1 ? 's' : '' ?>
-        <?= $listSearch !== '' ? ' matching "' . htmlspecialchars($listSearch) . '"' : '' ?>
-    </div>
-
 </section>
+
+<?php include __DIR__ . '/../../../Shared/datatables_assets.php'; ?>
 
 <?php
 $typeBadge = [

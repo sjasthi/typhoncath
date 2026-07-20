@@ -65,14 +65,18 @@ final class Exporter
      * Print-to-PDF: a self-contained HTML page that auto-opens the browser print
      * dialog. The user chooses "Save as PDF". No server-side PDF engine involved.
      */
-    public static function printableHtml(array $columns, array $rows, string $title): void
+    public static function printableHtml(array $columns, array $rows, string $title, ?string $downloadName = null): void
     {
         $h = static fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 
         header('Content-Type: text/html; charset=utf-8');
 
+        // The browser derives the "Save as PDF" filename from document.title, so we
+        // set it to the dated download name while the on-page <h1> stays readable.
+        $docTitle = self::safeName($downloadName ?? $title);
+
         echo '<!doctype html><html lang="en"><head><meta charset="utf-8">';
-        echo '<title>' . $h($title) . '</title><style>'
+        echo '<title>' . $h($docTitle) . '</title><style>'
             . 'body{font:13px/1.4 Arial,Helvetica,sans-serif;color:#111;margin:24px}'
             . 'h1{font-size:18px;margin:0 0 4px}.meta{color:#666;font-size:11px;margin:0 0 16px}'
             . 'table{border-collapse:collapse;width:100%}'
@@ -102,12 +106,15 @@ final class Exporter
     /** Dispatch on ?format= — the shared tail of every *_export.php endpoint. */
     public static function stream(string $format, array $columns, array $rows, string $filename, string $title): void
     {
+        // Download filenames are prefixed with the export date: e.g. 2026-07-17-campaigns.csv
+        $filename = date('Y-m-d') . '-' . $filename;
+
         switch ($format) {
             case 'xml':
                 self::xml($columns, $rows, $filename);
                 break;
             case 'pdf':
-                self::printableHtml($columns, $rows, $title);
+                self::printableHtml($columns, $rows, $title, $filename);
                 break;
             case 'csv':
             default:

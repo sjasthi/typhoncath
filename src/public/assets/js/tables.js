@@ -122,15 +122,15 @@
                 pageLength: 25,
                 lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, '⚠️ All']],
                 layout: {
-                    topStart: buttons.length ? 'buttons' : null,
+                    topStart: buttons.length ? ['pageLength', 'buttons'] : 'pageLength',
                     topEnd: 'search',
-                    bottomStart: ['pageLength', 'info'],
+                    bottomStart: 'info',
                     bottomEnd: 'paging'
                 },
                 buttons: buttons,
                 language: {
                     search: 'Search all:',
-                    lengthMenu: 'Show _MENU_',
+                    lengthMenu: '_MENU_',
                     info: 'Showing _START_–_END_ of _TOTAL_',
                     infoFiltered: ' (filtered from _MAX_)',
                     processing: 'Loading…'

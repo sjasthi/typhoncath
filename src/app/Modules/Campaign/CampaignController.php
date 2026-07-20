@@ -3,7 +3,6 @@ namespace App\Modules\Campaign;
 
 use App\Core\Auth;
 use App\Core\Permissions;
-use App\Core\Paginator;
 class CampaignController
 {
     private CampaignRepository $repo;
@@ -274,7 +273,6 @@ class CampaignController
 
     // ── Private Helpers ────────────────────────────────────────────────────────
 
-    // Parses and validates GET params, then runs the paginated campaign list query.
     // Extracts and sanitises campaign name, type, status, and optional scheduled date from POST.
     private function parseFormInput(): array
     {

@@ -4,14 +4,9 @@ require_once __DIR__ . '/../../../app/Core/bootstrap.php';
 
 use App\Core\Auth;
 use App\Core\Database;
-use Dompdf\Dompdf;
-use Dompdf\Options;
-
-require_once __DIR__ . '/../../../vendor/autoload.php';
-
+use App\Core\PDF\SimplePDF;
 
 Auth::requireLogin();
-
 
 $accountId = $_GET['id'] ?? null;
 
@@ -71,7 +66,7 @@ $stmt = $db->prepare("
         i.*,
         u.name AS user_name
     FROM interactions i
-    LEFT JOIN users u
+    LEFT JOIN users u 
         ON i.user_id = u.id
     WHERE i.account_id = ?
     ORDER BY i.interaction_date DESC
@@ -83,341 +78,170 @@ $interactions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 
 
-// -------------------------
-// Build HTML
-// -------------------------
-
-$html = "
-
-<html>
-<head>
-
-<style>
-
-body {
-    font-family: Arial, sans-serif;
-    font-size: 12px;
-    color: #333;
-}
-
-h1 {
-    text-align: center;
-    font-size: 22px;
-    margin-bottom: 25px;
-}
-
-h2 {
-    background: #1f4e79;
-    color: white;
-    padding: 8px;
-    font-size: 15px;
-    margin-top: 20px;
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 10px;
-}
-
-th {
-    background: #eeeeee;
-    padding: 8px;
-    text-align: left;
-}
-
-td {
-    border: 1px solid #cccccc;
-    padding: 8px;
-}
-
-.info td:first-child {
-    width: 120px;
-    font-weight: bold;
-    background: #f5f5f5;
-}
-
-.interaction {
-    margin-bottom: 15px;
-}
-
-.notes {
-    margin-left: 20px;
-    color: #555;
-}
-
-.footer {
-    margin-top: 30px;
-    font-size: 10px;
-}
-
-</style>
-
-</head>
-
-<body>
-
-
-<h1>
-TyphonCath CRM - Account Report
-</h1>
-
-
-
-<h2>
-Account Information
-</h2>
-
-
-<table class='info'>
-
-<tr>
-<td>Company:</td>
-<td>" . htmlspecialchars($account['account_name'] ?? 'N/A') . "</td>
-</tr>
-
-
-<tr>
-<td>Email:</td>
-<td>" . htmlspecialchars($account['email'] ?: 'N/A') . "</td>
-</tr>
-
-
-<tr>
-<td>Phone:</td>
-<td>" . htmlspecialchars($account['phone'] ?: 'N/A') . "</td>
-</tr>
-
-
-<tr>
-<td>Address:</td>
-<td>" . htmlspecialchars($account['address'] ?: 'N/A') . "</td>
-</tr>
-
-
-<tr>
-<td>Industry:</td>
-<td>" . htmlspecialchars($account['industry'] ?: 'N/A') . "</td>
-</tr>
-
-
-</table>
-
-
-
-
-
-<h2>
-Contacts
-</h2>
-";
-
-
-if (count($contacts) > 0) {
-
-    $html .= "
-
-    <table>
-
-    <tr>
-        <th>Name</th>
-        <th>Email</th>
-        <th>Phone</th>
-    </tr>
-
-    ";
-
-
-    foreach ($contacts as $contact) {
-
-        $name = trim(
-            ($contact['first_name'] ?? '') .
-            " " .
-            ($contact['last_name'] ?? '')
-        );
-
-
-        $html .= "
-
-        <tr>
-
-        <td>
-        " . htmlspecialchars($name ?: 'Unnamed Contact') . "
-        </td>
-
-        <td>
-        " . htmlspecialchars($contact['email'] ?: 'N/A') . "
-        </td>
-
-        <td>
-        " . htmlspecialchars($contact['phone'] ?: 'N/A') . "
-        </td>
-
-        </tr>
-
-        ";
-    }
-
-
-    $html .= "</table>";
-
-} else {
-
-    $html .= "<p>No contacts found.</p>";
-
-}
-
-
-
-
-
-$html .= "
-
-<h2>
-Interaction History
-</h2>
-
-";
-
-
-
-if (count($interactions) > 0) {
-
-
-    foreach ($interactions as $interaction) {
-
-
-        $html .= "
-
-        <div class='interaction'>
-
-        <strong>
-        "
-        . htmlspecialchars($interaction['interaction_type'] ?? 'Note')
-        .
-        " - "
-        .
-        htmlspecialchars($interaction['interaction_subject'] ?? 'No Subject')
-        .
-        "
-        </strong>
-
-        <br>
-
-        Date:
-        "
-        .
-        htmlspecialchars($interaction['interaction_date'] ?? '')
-        .
-        "
-
-        <br>
-
-        User:
-        "
-        .
-        htmlspecialchars($interaction['user_name'] ?? 'Unknown')
-        .
-        "
-        ";
-
-
-        if (!empty($interaction['notes'])) {
-
-            $html .= "
-
-            <div class='notes'>
-
-            Notes:
-            "
-            .
-            nl2br(htmlspecialchars($interaction['notes']))
-            .
-            "
-
-            </div>
-
-            ";
-        }
-
-
-        $html .= "</div>";
-
-    }
-
-
-} else {
-
-    $html .= "<p>No interactions found.</p>";
-
-}
-
-
-
-$html .= "
-
-<div class='footer'>
-
-Generated:
-"
-.
-date("m-d-Y")
-.
-"
-
-</div>
-
-
-</body>
-</html>
-
-";
-
-
-
 
 // -------------------------
 // Generate PDF
 // -------------------------
 
-$options = new Options();
-
-$options->set('isHtml5ParserEnabled', true);
-$options->set('isRemoteEnabled', true);
+$pdf = new SimplePDF();
 
 
-$dompdf = new Dompdf($options);
+// Title
 
-
-$dompdf->loadHtml($html);
-
-$dompdf->setPaper('letter', 'portrait');
-
-$dompdf->render();
-
-
-
-$cleanName = preg_replace(
-    '/[^A-Za-z0-9]+/',
-    '_',
-    $account['account_name']
+$pdf->title(
+    "TyphonCath CRM - Account Report"
 );
 
-$cleanName = trim($cleanName, '_');
 
 
-$filename =
-    date("m-d-Y")
-    .
-    "_"
-    .
-    $cleanName
-    .
-    "_Account_Report.pdf";
+// =========================
+// ACCOUNT INFORMATION
+// =========================
+
+$pdf->heading(
+    "Account Information",
+    690
+);
 
 
-$dompdf->stream($filename, [
-    "Attachment" => false
-]);
+$pdf->multiline(
+    60,
+    665,
+    [
+        "Company: " . ($account['account_name'] ?: 'N/A'),
+        "Email: " . ($account['email'] ?: 'N/A'),
+        "Phone: " . ($account['phone'] ?: 'N/A'),
+        "Address: " . ($account['address'] ?: 'N/A'),
+        "Industry: " . ($account['industry'] ?: 'N/A')
+    ],
+    16
+);
 
-exit;
+
+
+// =========================
+// CONTACTS
+// =========================
+
+$pdf->heading(
+    "Contacts",
+    545
+);
+
+
+$y = 520;
+
+
+if (count($contacts) > 0) {
+
+    foreach ($contacts as $contact) {
+
+        $name =
+            trim(
+                ($contact['first_name'] ?? '') .
+                " " .
+                ($contact['last_name'] ?? '')
+            );
+
+
+        $pdf->text(
+            60,
+            $y,
+            ($name ?: 'Unnamed Contact') .
+            " | " .
+            ($contact['email'] ?: 'No Email') .
+            " | " .
+            ($contact['phone'] ?: 'No Phone')
+        );
+
+
+        $y -= 18;
+    }
+
+} else {
+
+    $pdf->text(
+        60,
+        $y,
+        "No contacts found."
+    );
+}
+
+
+
+// =========================
+// INTERACTION HISTORY
+// =========================
+
+$pdf->heading(
+    "Interaction History",
+    390
+);
+
+
+$y = 365;
+
+
+if (count($interactions) > 0) {
+
+    foreach ($interactions as $interaction) {
+
+
+        $pdf->text(
+            60,
+            $y,
+            ($interaction['interaction_type'] ?? 'Note') .
+            " - " .
+            ($interaction['interaction_subject'] ?? 'No Subject') .
+            " (" .
+            ($interaction['interaction_date'] ?? '') .
+            ")"
+        );
+
+
+        $y -= 18;
+
+
+        if (!empty($interaction['notes'])) {
+
+            $pdf->text(
+                80,
+                $y,
+                "Notes: " . $interaction['notes']
+            );
+
+            $y -= 18;
+        }
+
+
+        // blank line between interactions
+        $y -= 8;
+    }
+
+
+} else {
+
+    $pdf->text(
+        60,
+        $y,
+        "No interactions found."
+    );
+}
+
+
+
+// -------------------------
+// Footer
+// -------------------------
+
+$pdf->text(
+    60,
+    50,
+    "Generated: " . date("m/d/Y")
+);
+
+
+
+$pdf->output(
+    "account_report.pdf"
+);

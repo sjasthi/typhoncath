@@ -248,7 +248,6 @@ $cleanName = preg_replace(
 
 $cleanName = trim($cleanName, '_');
 
-
 $filename =
     date("m-d-Y")
     .

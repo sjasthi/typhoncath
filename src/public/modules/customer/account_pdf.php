@@ -240,8 +240,24 @@ $pdf->text(
     "Generated: " . date("m/d/Y")
 );
 
+$cleanName = preg_replace(
+    '/[^A-Za-z0-9]+/',
+    '_',
+    $account['account_name']
+);
 
+$cleanName = trim($cleanName, '_');
+
+
+$filename =
+    date("m-d-Y")
+    .
+    "_"
+    .
+    $cleanName
+    .
+    "_Account_Report.pdf";
 
 $pdf->output(
-    "account_report.pdf"
+    $filename
 );

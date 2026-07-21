@@ -17,7 +17,7 @@ if (!Permissions::can('campaigns.view')) {
 }
 
 $format = (string)($_GET['format'] ?? 'csv');
-$rows   = CampaignRepository::listTable()->allRows($_GET);
+$rows   = CampaignRepository::listTable()->exportRows($_GET);
 
 $columns = [
     'id'            => '#',

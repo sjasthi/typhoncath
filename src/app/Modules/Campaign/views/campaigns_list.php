@@ -3,7 +3,7 @@ use App\Modules\Campaign\CampaignRepository;
 ?>
 
 <section class="card">
-    <div class="module-header">
+    <div class="page-header">
         <h1>Campaigns</h1>
         <a href="/modules/campaign/create.php" class="btn btn-primary">+ Create Campaign</a>
     </div>

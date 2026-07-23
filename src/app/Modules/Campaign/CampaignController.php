@@ -93,9 +93,8 @@ class CampaignController
     {
     if (!Permissions::can('campaigns.edit')) {
     http_response_code(403);
-
     include __DIR__ . '/../../../app/Shared/error_403.php';
-    include __DIR__ . '/../../../app/Shared/footer.php';
+    layout_close();
     exit;
 }
         $campaign = $this->repo->findById($id);
@@ -239,11 +238,7 @@ class CampaignController
     public function handleDeletePost(int $id): void
     {
     if (!Permissions::can('campaigns.delete')) {
-    http_response_code(403);
-    include __DIR__ . '/../../../app/Shared/header.php';
-    include __DIR__ . '/../../../app/Shared/sidebar.php';
-    include __DIR__ . '/../../../app/Shared/error_403.php';
-    include __DIR__ . '/../../../app/Shared/footer.php';
+    layout_deny();
     exit;
 }
     {
@@ -258,11 +253,7 @@ class CampaignController
     public function handleSimulatePost(int $id): void
     {
     if (!Permissions::can('campaigns.metrics')) {
-    http_response_code(403);
-    include __DIR__ . '/../../../app/Shared/header.php';
-    include __DIR__ . '/../../../app/Shared/sidebar.php';
-    include __DIR__ . '/../../../app/Shared/error_403.php';
-    include __DIR__ . '/../../../app/Shared/footer.php';
+    layout_deny();
     exit;
 }
         $this->service->simulateSend($id);

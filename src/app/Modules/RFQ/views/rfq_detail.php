@@ -17,7 +17,7 @@ $allStages = ['New', 'In Review', 'Quoted', 'Negotiation', 'Won', 'Lost'];
 
 <!-- ── Header ─────────────────────────────────────────── -->
 <section class="card">
-    <div class="module-header">
+    <div class="page-header">
         <div class="rfq-detail-title-row">
             <h1><?= htmlspecialchars($rfq['title']) ?></h1>
 
@@ -121,7 +121,7 @@ $allStages = ['New', 'In Review', 'Quoted', 'Negotiation', 'Won', 'Lost'];
         $quoteRequired = in_array($rfq['stage'], ['Quoted', 'Negotiation', 'Won', 'Lost'], true);
         $addQuoteTitle = $quoteRequired ? 'Add a quote' : 'Quotes are not required for ' . $rfq['stage'] . ' stage';
     ?>
-    <div class="module-header">
+    <div class="page-header">
         <h2 class="rfq-detail-card-title">Quotes</h2>
         <a
             href="<?= $quoteRequired ? '/modules/rfq/create_quote.php?rfq_id=' . (int)$rfq['id'] : '#' ?>"
@@ -208,7 +208,7 @@ $allStages = ['New', 'In Review', 'Quoted', 'Negotiation', 'Won', 'Lost'];
     <?php
         $addResTitle = $quoteRequired ? 'Reserve inventory for this RFQ' : 'Inventory reservation not available for ' . $rfq['stage'] . ' stage';
     ?>
-    <div class="module-header">
+    <div class="page-header">
         <h2 class="rfq-detail-card-title">Inventory Reservations</h2>
         <a
             href="<?= $quoteRequired ? '/modules/rfq/create_reservation.php?rfq_id=' . (int)$rfq['id'] : '#' ?>"

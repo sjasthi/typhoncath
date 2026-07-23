@@ -30,7 +30,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     };
 }
 
-include __DIR__ . '/../../../app/Shared/header.php';
-include __DIR__ . '/../../../app/Shared/sidebar.php';
+layout_open();
 $controller->audience($campaignId);
-include __DIR__ . '/../../../app/Shared/footer.php';
+layout_close();

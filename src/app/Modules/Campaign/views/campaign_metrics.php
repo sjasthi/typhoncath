@@ -21,7 +21,7 @@ $typeBadge = [
 
 <!-- ── Header ─────────────────────────────────────────── -->
 <section class="card">
-    <div class="module-header">
+    <div class="page-header">
         <div class="detail-title-row">
             <h1><?= htmlspecialchars($campaign['campaign_name']) ?></h1>
             <span class="badge <?= $statusBadge[$campaign['status']] ?? 'badge-neutral' ?> detail-stage">
@@ -77,7 +77,7 @@ $typeBadge = [
 
 <!-- ── Metrics ─────────────────────────────────────────── -->
 <section class="card">
-    <div class="module-header">
+    <div class="page-header">
         <h2 class="detail-card-title">Performance Metrics</h2>
         <?php if ($campaign['status'] !== 'Sent' && $campaign['status'] !== 'Completed'): ?>
         <form method="POST" action="/modules/campaign/detail.php?id=<?= (int)$campaign['id'] ?>" style="margin:0;">
@@ -129,9 +129,9 @@ $typeBadge = [
 
 <!-- ── Audience ────────────────────────────────────────── -->
 <section class="card">
-    <div class="module-header">
+    <div class="page-header">
         <h2 class="detail-card-title">Audience</h2>
-        <a href="/modules/campaign/audience.php?campaign_id=<?= (int)$campaign['id'] ?>" class="add-btn" title="Add audience segment">+</a>
+        <a href="/modules/campaign/audience.php?campaign_id=<?= (int)$campaign['id'] ?>" class="btn btn-primary" title="Add audience segment">+ Add Segment</a>
     </div>
 
     <?php if (empty($audience)): ?>

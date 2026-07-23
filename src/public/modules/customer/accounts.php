@@ -13,7 +13,6 @@ $repo       = new CustomerRepository();
 $industries = $repo->distinctValues('industry');
 $sources    = $repo->distinctValues('source');
 
-include __DIR__ . '/../../../app/Shared/header.php';
-include __DIR__ . '/../../../app/Shared/sidebar.php';
+layout_open();
 include __DIR__ . '/../../../app/Modules/Customer/views/accounts_list.php';
-include __DIR__ . '/../../../app/Shared/footer.php';
+layout_close();

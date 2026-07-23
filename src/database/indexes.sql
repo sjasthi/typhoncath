@@ -53,3 +53,9 @@ CREATE INDEX idx_inventory_movements_product_id    ON inventory_movements(produc
 CREATE INDEX idx_inventory_movements_created_at    ON inventory_movements(created_at);
 CREATE INDEX idx_inventory_movements_user_id       ON inventory_movements(user_id);
 CREATE INDEX idx_inventory_movements_movement_type ON inventory_movements(movement_type);
+
+-- Reporting/dashboard heavy paths (see migrations/018_reporting_indexes.sql).
+-- Recent Interactions ordering (interactions.interaction_date) and the Win Rate
+-- by Account aggregation (rfqs by account_id+stage).
+CREATE INDEX idx_interactions_interaction_date ON interactions(interaction_date);
+CREATE INDEX idx_rfqs_account_stage            ON rfqs(account_id, stage);

@@ -32,6 +32,7 @@ $typeBadge = [
             </span>
         </div>
         <div class="header-actions">
+            <a href="/modules/campaign/campaign_pdf.php?id=<?= (int)$campaign['id'] ?>" class="btn btn-secondary" style="font-size:0.85rem;padding:6px 14px;" title="Download this campaign, its metrics &amp; audience as a PDF">Download PDF</a>
             <a href="/modules/campaign/edit.php?id=<?= (int)$campaign['id'] ?>" class="btn btn-primary" style="font-size:0.85rem;padding:6px 14px;">Edit</a>
             <a href="/modules/campaign/audience.php?campaign_id=<?= (int)$campaign['id'] ?>" class="btn btn-secondary" style="font-size:0.85rem;padding:6px 14px;">Audience</a>
             <form method="POST" action="/modules/campaign/detail.php?id=<?= (int)$campaign['id'] ?>" style="margin:0;"

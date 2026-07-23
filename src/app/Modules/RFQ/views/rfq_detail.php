@@ -38,6 +38,7 @@ $allStages = ['New', 'In Review', 'Quoted', 'Negotiation', 'Won', 'Lost'];
             </form>
         </div>
         <div class="header-actions">
+            <a href="/modules/rfq/rfq_pdf.php?id=<?= (int)$rfq['id'] ?>" class="btn btn-secondary" style="font-size:0.85rem;padding:6px 14px;" title="Download this RFQ and its quotes &amp; reservations as a PDF">Download PDF</a>
             <a href="/modules/rfq/edit.php?id=<?= (int)$rfq['id'] ?>" class="btn btn-primary" style="font-size:0.85rem;padding:6px 14px;">Edit</a>
             <form method="POST" action="/modules/rfq/detail.php?id=<?= (int)$rfq['id'] ?>" style="margin:0;"
                   onsubmit="return confirm('Delete this RFQ and all its quotes and reservations? This cannot be undone.');">

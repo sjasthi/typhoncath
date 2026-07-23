@@ -86,12 +86,7 @@ if (!empty($campaign['scheduled_at'])) {
 
 $section("Performance Metrics");
 
-$openRate  = $campaign['open_rate']  !== null ? number_format((float)$campaign['open_rate'], 1) . '%'  : 'N/A';
-$clickRate = $campaign['click_rate'] !== null ? number_format((float)$campaign['click_rate'], 1) . '%' : 'N/A';
-
 $line("Sent: " . number_format((int)$campaign['sent_count']) . " recipients");
-$line("Open Rate: " . $openRate . " of sent");
-$line("Click Rate: " . $clickRate . " of opens");
 
 if ((int)$campaign['sent_count'] === 0) {
     $line("Campaign has not been sent yet.");

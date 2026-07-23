@@ -101,26 +101,6 @@ $typeBadge = [
             </div>
         </div>
 
-        <div class="metric-card">
-            <div class="metric-card-inner">
-                <p class="metric-label">Open Rate</p>
-                <p class="metric-value">
-                    <?= $campaign['open_rate'] !== null ? number_format((float)$campaign['open_rate'], 1) . '%' : '—' ?>
-                </p>
-                <p class="metric-sub">of sent</p>
-            </div>
-        </div>
-
-        <div class="metric-card">
-            <div class="metric-card-inner">
-                <p class="metric-label">Click Rate</p>
-                <p class="metric-value">
-                    <?= $campaign['click_rate'] !== null ? number_format((float)$campaign['click_rate'], 1) . '%' : '—' ?>
-                </p>
-                <p class="metric-sub">of opens</p>
-            </div>
-        </div>
-
     </div>
 
     <?php if ($campaign['sent_count'] === 0 || $campaign['sent_count'] === '0'): ?>

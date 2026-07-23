@@ -24,15 +24,9 @@ class CampaignController
 
     public function index(): void
     {
-        // The campaigns list table is now a client-driven DataTable (server-side
+        // The campaigns list table is a client-driven DataTable (server-side
         // processing) fed by /modules/campaign/campaigns_data.php — no list query
-        // here. The analytics + momentum sections below it are unchanged.
-        $stats         = $this->repo->dashboardStats();
-        $upcoming      = $this->repo->upcomingScheduledSends();
-        $topPerformers = $this->repo->topPerformers();
-        $reEngagement  = $this->repo->reEngagementCandidates();
-        $engagementGap = $this->repo->engagementGap();
-        $momentum      = $this->repo->campaignMomentum(date('Y-m-d', strtotime('-12 weeks')), date('Y-m-d 23:59:59'));
+        // needed here.
         include __DIR__ . '/views/campaigns_list.php';
     }
 

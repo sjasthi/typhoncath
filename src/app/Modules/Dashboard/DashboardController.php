@@ -46,7 +46,6 @@ class DashboardController
             ],
             'Campaigns' => [
                 new Cards\ActiveCampaignsCard($this->service),
-                new Cards\CampaignPerformanceCard($this->service),
                 new Cards\UpcomingCampaignSendsCard($this->service),
             ],
             'Customers' => [

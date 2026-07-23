@@ -71,9 +71,6 @@ echo json_encode([
     'labels'        => array_values(array_column($rows, 'period_label')),
     'recipients'    => array_values(array_map('intval', array_column($rows, 'total_recipients'))),
     'sent'          => array_values(array_map('intval', array_column($rows, 'campaigns_sent'))),
-    'openRate'      => array_values(array_map(fn($v) => $v !== null ? (float)$v : null, array_column($rows, 'avg_open_rate'))),
-    'clickRate'     => array_values(array_map(fn($v) => $v !== null ? (float)$v : null, array_column($rows, 'avg_click_rate'))),
-    'engagementGap' => array_values(array_map(fn($v) => $v !== null ? (float)$v : null, array_column($rows, 'avg_engagement_gap'))),
 ]);
 } catch (Throwable $e) {
     http_response_code(500);

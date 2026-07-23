@@ -28,15 +28,13 @@ class CampaignRepository
         return new ServerTable(
             Database::connection(),
             'campaigns c',
-            'c.id, c.campaign_name, c.campaign_type, c.status, c.sent_count, c.open_rate, c.click_rate, c.created_at',
+            'c.id, c.campaign_name, c.campaign_type, c.status, c.sent_count, c.created_at',
             [
                 ['data' => 'id',            'sql' => 'c.id',            'order' => true, 'search' => 'like'],
                 ['data' => 'campaign_name', 'sql' => 'c.campaign_name', 'order' => true, 'search' => 'fulltext', 'ft' => 'c.campaign_name'],
                 ['data' => 'campaign_type', 'sql' => 'c.campaign_type', 'order' => true, 'search' => 'exact'],
                 ['data' => 'status',        'sql' => 'c.status',        'order' => true, 'search' => 'exact'],
                 ['data' => 'sent_count',    'sql' => 'c.sent_count',    'order' => true, 'search' => false],
-                ['data' => 'open_rate',     'sql' => 'c.open_rate',     'order' => true, 'search' => false],
-                ['data' => 'click_rate',    'sql' => 'c.click_rate',    'order' => true, 'search' => false],
                 ['data' => 'created_at',    'sql' => 'c.created_at',    'order' => true, 'search' => false],
             ],
             'c.created_at',
@@ -51,7 +49,7 @@ class CampaignRepository
     {
         $stmt = $this->db->prepare("
             SELECT c.id, c.campaign_name, c.campaign_type, c.status, c.scheduled_at,
-                   c.sent_count, c.open_rate, c.click_rate,
+                   c.sent_count,
                    c.created_at, c.updated_at,
                    u.name AS created_by_name
             FROM campaigns c
@@ -299,18 +297,16 @@ class CampaignRepository
         $stmt->execute([$id]);
     }
 
-    // Sets sent_count, open_rate, click_rate and flips status to Sent atomically.
+    // Sets sent_count and flips status to Sent atomically (simulated send).
     public function updateMetrics(int $id, array $data): void
     {
         $stmt = $this->db->prepare("
             UPDATE campaigns
-            SET sent_count = ?, open_rate = ?, click_rate = ?, status = 'Sent'
+            SET sent_count = ?, status = 'Sent'
             WHERE id = ?
         ");
         $stmt->execute([
             (int)$data['sent_count'],
-            $data['open_rate']  !== null ? (float)$data['open_rate']  : null,
-            $data['click_rate'] !== null ? (float)$data['click_rate'] : null,
             $id,
         ]);
     }
@@ -328,52 +324,6 @@ class CampaignRepository
             LEFT JOIN users u ON u.id = c.created_by_user_id
             WHERE c.status = 'Scheduled' AND c.scheduled_at >= NOW()
             ORDER BY c.scheduled_at ASC
-            LIMIT {$limit}
-        ");
-        $stmt->execute();
-        return $stmt->fetchAll();
-    }
-
-    // Top-performing Sent/Completed campaigns ordered by open_rate DESC.
-    // idx_campaigns_status_open_rate covers (status, open_rate, sent_count).
-    public function topPerformers(int $limit = 50): array
-    {
-        $stmt = $this->db->prepare("
-            SELECT id, campaign_name, campaign_type, status,
-                   sent_count, open_rate, click_rate, scheduled_at
-            FROM campaigns
-            WHERE status IN ('Sent', 'Completed') AND open_rate IS NOT NULL
-            ORDER BY open_rate DESC, sent_count DESC
-            LIMIT {$limit}
-        ");
-        $stmt->execute();
-        return $stmt->fetchAll();
-    }
-
-    // Contacts/accounts that appear in sent campaigns with 0 click-through — cold list.
-    // Grouped by recipient; ordered by most zero-click campaigns first.
-    public function reEngagementCandidates(int $limit = 20): array
-    {
-        $stmt = $this->db->prepare("
-            SELECT
-                CASE WHEN ca.contact_id IS NOT NULL
-                     THEN CONCAT(con.first_name, ' ', con.last_name)
-                     ELSE a.account_name
-                END AS recipient_name,
-                CASE WHEN ca.contact_id IS NOT NULL THEN 'Contact' ELSE 'Account' END AS recipient_type,
-                COUNT(DISTINCT ca.campaign_id) AS campaigns_targeted,
-                SUM(CASE WHEN c.click_rate IS NULL OR c.click_rate = 0 THEN 1 ELSE 0 END) AS zero_click_campaigns,
-                ROUND(AVG(c.open_rate), 1) AS avg_open_rate,
-                DATE(MAX(c.created_at)) AS last_targeted_at
-            FROM campaign_audience ca
-            JOIN campaigns c ON c.id = ca.campaign_id
-                AND c.status IN ('Sent', 'Completed')
-            LEFT JOIN contacts con ON con.id = ca.contact_id
-            LEFT JOIN accounts a   ON a.id   = ca.account_id
-            WHERE ca.contact_id IS NOT NULL OR ca.account_id IS NOT NULL
-            GROUP BY ca.contact_id, ca.account_id
-            HAVING SUM(CASE WHEN c.click_rate IS NULL OR c.click_rate = 0 THEN 1 ELSE 0 END) > 0
-            ORDER BY zero_click_campaigns DESC, campaigns_targeted DESC
             LIMIT {$limit}
         ");
         $stmt->execute();
@@ -425,12 +375,7 @@ public function campaignMomentum(
 
             COUNT(*) AS campaigns_sent,
 
-            COALESCE(SUM(c.sent_count), 0) AS total_recipients,
-
-            ROUND(AVG(c.open_rate), 1) AS avg_open_rate,
-            ROUND(AVG(c.click_rate), 1) AS avg_click_rate,
-
-            ROUND(AVG(c.open_rate - c.click_rate), 1) AS avg_engagement_gap
+            COALESCE(SUM(c.sent_count), 0) AS total_recipients
 
         FROM campaigns c
         WHERE c.status IN ('Sent', 'Completed')
@@ -444,28 +389,6 @@ public function campaignMomentum(
     return $stmt->fetchAll();
 }
 
-    // Campaigns with largest open→click drop-off (high gap = good subject, weak CTA).
-    // Ordered by engagement_gap DESC so worst content/CTA problems surface first.
-    public function engagementGap(int $limit = 20): array
-    {
-        $stmt = $this->db->prepare("
-            SELECT id, campaign_name, campaign_type, sent_count,
-                   open_rate, click_rate,
-                   ROUND(open_rate - click_rate, 1) AS engagement_gap,
-                   CASE WHEN open_rate > 0
-                        THEN ROUND((click_rate / open_rate) * 100, 1)
-                        ELSE 0 END AS ctr_ratio
-            FROM campaigns
-            WHERE status IN ('Sent', 'Completed')
-              AND open_rate IS NOT NULL
-              AND click_rate IS NOT NULL
-            ORDER BY engagement_gap DESC
-            LIMIT {$limit}
-        ");
-        $stmt->execute();
-        return $stmt->fetchAll();
-    }
-
     // Summary stats for the dashboard stat cards. Computed in a single pass over
     // campaigns (idx_campaigns_status). "active" = Scheduled or Sent — campaigns
     // that are queued to go out or in-flight, excluding Drafts and Completed.
@@ -476,9 +399,7 @@ public function campaignMomentum(
                 COUNT(*) AS total,
                 SUM(status = 'Scheduled') AS scheduled,
                 SUM(status IN ('Scheduled','Sent')) AS active,
-                SUM(status IN ('Sent','Completed')) AS sent_completed,
-                ROUND(AVG(CASE WHEN status IN ('Sent','Completed') AND open_rate  IS NOT NULL THEN open_rate  END), 1) AS avg_open_rate,
-                ROUND(AVG(CASE WHEN status IN ('Sent','Completed') AND click_rate IS NOT NULL THEN click_rate END), 1) AS avg_click_rate
+                SUM(status IN ('Sent','Completed')) AS sent_completed
             FROM campaigns
         ");
         $stmt->execute();

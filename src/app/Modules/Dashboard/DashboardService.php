@@ -97,22 +97,6 @@ class DashboardService
         return (int)($this->campaignStats()['active'] ?? 0);
     }
 
-    /**
-     * Average open/click rates across delivered campaigns (Campaign Performance
-     * card). Rates are NULL until at least one campaign has been sent.
-     *
-     * @return array{avg_open:?float,avg_click:?float,sent_completed:int}
-     */
-    public function campaignPerformance(): array
-    {
-        $s = $this->campaignStats();
-        return [
-            'avg_open'       => isset($s['avg_open_rate'])  && $s['avg_open_rate']  !== null ? (float)$s['avg_open_rate']  : null,
-            'avg_click'      => isset($s['avg_click_rate']) && $s['avg_click_rate'] !== null ? (float)$s['avg_click_rate'] : null,
-            'sent_completed' => (int)($s['sent_completed'] ?? 0),
-        ];
-    }
-
     /** Campaigns scheduled to go out soonest (Upcoming Sends card). */
     public function upcomingCampaignSends(int $limit = 5): array
     {

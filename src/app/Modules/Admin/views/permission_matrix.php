@@ -30,7 +30,7 @@ $moduleColors = [
 
 <section class="card">
 
-    <div class="page-header">
+    <div class="module-header">
         <h1>Role Permission Matrix</h1>
     </div>
 

@@ -87,6 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-layout_open();
+include __DIR__ . '/../../../app/Shared/header.php';
+include __DIR__ . '/../../../app/Shared/sidebar.php';
 include __DIR__ . '/../../../app/Modules/Customer/views/create_account.php';
-layout_close();
+include __DIR__ . '/../../../app/Shared/footer.php';

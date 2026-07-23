@@ -26,6 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-layout_open();
+include __DIR__ . '/../../../app/Shared/header.php';
+include __DIR__ . '/../../../app/Shared/sidebar.php';
 $controller->show($id);
-layout_close();
+include __DIR__ . '/../../../app/Shared/footer.php';

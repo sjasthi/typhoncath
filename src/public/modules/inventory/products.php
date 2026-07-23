@@ -15,7 +15,11 @@ require_once __DIR__ . '/../../../app/Middleware/csrf.php';
 function denyUnlessAllowed(string $permission): void
 {
     if (!Permissions::can($permission)) {
-        layout_deny();
+        http_response_code(403);
+        include __DIR__ . '/../../../app/Shared/header.php';
+        include __DIR__ . '/../../../app/Shared/sidebar.php';
+        include __DIR__ . '/../../../app/Shared/error_403.php';
+        include __DIR__ . '/../../../app/Shared/footer.php';
         exit;
     }
 }
@@ -32,7 +36,8 @@ if ($page === 'detail') {
         exit;
     }
     denyUnlessAllowed('inventory.view');
-    layout_open();
+    include __DIR__ . '/../../../app/Shared/header.php';
+    include __DIR__ . '/../../../app/Shared/sidebar.php';
     $controller->show();
 
 } elseif ($page === 'stock') {
@@ -42,7 +47,8 @@ if ($page === 'detail') {
         exit;
     }
     denyUnlessAllowed('inventory.view');
-    layout_open();
+    include __DIR__ . '/../../../app/Shared/header.php';
+    include __DIR__ . '/../../../app/Shared/sidebar.php';
     $controller->editStock();
 
 } elseif ($page === 'reservations') {
@@ -52,12 +58,14 @@ if ($page === 'detail') {
         exit;
     }
     denyUnlessAllowed('inventory.view');
-    layout_open();
+    include __DIR__ . '/../../../app/Shared/header.php';
+    include __DIR__ . '/../../../app/Shared/sidebar.php';
     $controller->reservations();
 
 } elseif ($page === 'ledger') {
     denyUnlessAllowed('inventory.view');
-    layout_open();
+    include __DIR__ . '/../../../app/Shared/header.php';
+    include __DIR__ . '/../../../app/Shared/sidebar.php';
     $controller->ledger();
 
 } elseif ($page === 'ledger_print') {
@@ -75,14 +83,16 @@ if ($page === 'detail') {
     }
     // GET with ?page=delete&id=X shows a confirmation page
     denyUnlessAllowed('inventory.view');
-    layout_open();
+    include __DIR__ . '/../../../app/Shared/header.php';
+    include __DIR__ . '/../../../app/Shared/sidebar.php';
     $controller->confirmDelete();
 
 } else {
     // Default: product list
     denyUnlessAllowed('inventory.view');
-    layout_open();
+    include __DIR__ . '/../../../app/Shared/header.php';
+    include __DIR__ . '/../../../app/Shared/sidebar.php';
     $controller->index();
 }
 
-layout_close();
+include __DIR__ . '/../../../app/Shared/footer.php';

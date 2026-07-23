@@ -10,7 +10,11 @@ Auth::requireLogin();
 // Reject state-changing (POST) requests without a valid CSRF token.
 require_once __DIR__ . '/../../../app/Middleware/csrf.php';
 if (!Permissions::can('rfqs.edit')) {
-    layout_deny();
+    http_response_code(403);
+    include __DIR__ . '/../../../app/Shared/header.php';
+    include __DIR__ . '/../../../app/Shared/sidebar.php';
+    include __DIR__ . '/../../../app/Shared/error_403.php';
+    include __DIR__ . '/../../../app/Shared/footer.php';
     exit;
 }
 
@@ -30,8 +34,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     };
 }
 
-layout_open();
+include __DIR__ . '/../../../app/Shared/header.php';
+include __DIR__ . '/../../../app/Shared/sidebar.php';
 
 $controller->edit($id);
 
-layout_close();
+include __DIR__ . '/../../../app/Shared/footer.php';

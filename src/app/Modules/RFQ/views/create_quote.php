@@ -1,6 +1,6 @@
 <section class="card">
 
-    <div class="page-header">
+    <div class="module-header">
         <h1>Add Quote</h1>
         <a href="/modules/rfq/detail.php?id=<?= (int)$rfq['id'] ?>" class="btn btn-secondary">&#8592; Back</a>
     </div>

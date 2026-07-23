@@ -346,5 +346,8 @@ $pdf->text(
 
 
 $pdf->output(
-    SimplePDF::filename('Customer', $account['account_name'])
+    SimplePDF::filename(
+        'Customer',
+        $account['account_name']
+    )
 );

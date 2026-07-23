@@ -30,6 +30,10 @@ CREATE INDEX idx_reservations_product_id ON rfq_inventory_reservations(product_i
 -- Campaign dashboard queries
 -- upcomingScheduledSends: WHERE status='Scheduled' AND scheduled_at >= NOW() ORDER BY scheduled_at ASC
 CREATE INDEX idx_campaigns_status_scheduled_at ON campaigns(status, scheduled_at);
+-- topPerformers: WHERE status IN (...) AND open_rate IS NOT NULL ORDER BY open_rate DESC, sent_count DESC
+CREATE INDEX idx_campaigns_status_open_rate ON campaigns(status, open_rate, sent_count);
+-- campaignsWithMetrics: ORDER BY open_rate DESC
+CREATE INDEX idx_campaigns_open_rate ON campaigns(open_rate);
 
 -- campaignMomentum: WHERE created_at BETWEEN — covering index with status for the SUM()
 CREATE INDEX idx_campaigns_created_at_status ON campaigns(created_at, status);
@@ -49,9 +53,3 @@ CREATE INDEX idx_inventory_movements_product_id    ON inventory_movements(produc
 CREATE INDEX idx_inventory_movements_created_at    ON inventory_movements(created_at);
 CREATE INDEX idx_inventory_movements_user_id       ON inventory_movements(user_id);
 CREATE INDEX idx_inventory_movements_movement_type ON inventory_movements(movement_type);
-
--- Reporting/dashboard heavy paths (see migrations/018_reporting_indexes.sql).
--- Recent Interactions ordering (interactions.interaction_date) and the Win Rate
--- by Account aggregation (rfqs by account_id+stage).
-CREATE INDEX idx_interactions_interaction_date ON interactions(interaction_date);
-CREATE INDEX idx_rfqs_account_stage            ON rfqs(account_id, stage);

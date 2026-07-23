@@ -48,8 +48,3 @@ spl_autoload_register(function ($class) {
         require $file;
     }
 });
-
-// Shared page-layout helpers (layout_open/layout_close/layout_deny/page_header).
-// Plain functions, not a class, so the autoloader doesn't cover them — load here
-// so every page and view can rely on them.
-require_once __DIR__ . '/../Shared/layout.php';

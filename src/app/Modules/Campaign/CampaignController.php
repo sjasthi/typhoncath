@@ -24,15 +24,9 @@ class CampaignController
 
     public function index(): void
     {
-        // The campaigns list table is now a client-driven DataTable (server-side
+        // The campaigns list table is a client-driven DataTable (server-side
         // processing) fed by /modules/campaign/campaigns_data.php — no list query
-        // here. The analytics + momentum sections below it are unchanged.
-        $stats         = $this->repo->dashboardStats();
-        $upcoming      = $this->repo->upcomingScheduledSends();
-        $topPerformers = $this->repo->topPerformers();
-        $reEngagement  = $this->repo->reEngagementCandidates();
-        $engagementGap = $this->repo->engagementGap();
-        $momentum      = $this->repo->campaignMomentum(date('Y-m-d', strtotime('-12 weeks')), date('Y-m-d 23:59:59'));
+        // needed here.
         include __DIR__ . '/views/campaigns_list.php';
     }
 
@@ -93,9 +87,8 @@ class CampaignController
     {
     if (!Permissions::can('campaigns.edit')) {
     http_response_code(403);
-
     include __DIR__ . '/../../../app/Shared/error_403.php';
-    include __DIR__ . '/../../../app/Shared/footer.php';
+    layout_close();
     exit;
 }
         $campaign = $this->repo->findById($id);
@@ -239,11 +232,7 @@ class CampaignController
     public function handleDeletePost(int $id): void
     {
     if (!Permissions::can('campaigns.delete')) {
-    http_response_code(403);
-    include __DIR__ . '/../../../app/Shared/header.php';
-    include __DIR__ . '/../../../app/Shared/sidebar.php';
-    include __DIR__ . '/../../../app/Shared/error_403.php';
-    include __DIR__ . '/../../../app/Shared/footer.php';
+    layout_deny();
     exit;
 }
     {
@@ -258,11 +247,7 @@ class CampaignController
     public function handleSimulatePost(int $id): void
     {
     if (!Permissions::can('campaigns.metrics')) {
-    http_response_code(403);
-    include __DIR__ . '/../../../app/Shared/header.php';
-    include __DIR__ . '/../../../app/Shared/sidebar.php';
-    include __DIR__ . '/../../../app/Shared/error_403.php';
-    include __DIR__ . '/../../../app/Shared/footer.php';
+    layout_deny();
     exit;
 }
         $this->service->simulateSend($id);

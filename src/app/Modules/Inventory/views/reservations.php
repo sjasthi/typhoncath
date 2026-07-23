@@ -8,7 +8,7 @@ $statusBadge = [
 ?>
 
 <section class="card">
-    <div class="page-header">
+    <div class="rfq-board-header">
         <h1>Inventory Reservations</h1>
         <a href="/modules/inventory/products.php" class="btn rfq-list-clear-btn">&#8592; Back to Inventory</a>
     </div>

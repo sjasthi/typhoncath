@@ -148,6 +148,8 @@ CREATE TABLE campaigns (
     scheduled_at DATETIME NULL,
     created_by_user_id INT NOT NULL,
     sent_count INT DEFAULT 0,
+    open_rate DECIMAL(5,2),
+    click_rate DECIMAL(5,2),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (created_by_user_id) REFERENCES users(id)

@@ -6,8 +6,9 @@ use App\Modules\Dashboard\DashboardController;
 
 Auth::requireLogin();
 
-layout_open();
+include __DIR__ . '/../app/Shared/header.php';
+include __DIR__ . '/../app/Shared/sidebar.php';
 
 (new DashboardController())->index();
 
-layout_close();
+include __DIR__ . '/../app/Shared/footer.php';

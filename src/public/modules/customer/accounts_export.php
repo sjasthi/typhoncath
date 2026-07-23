@@ -11,7 +11,7 @@ use App\Core\DataTable\Exporter;
 Auth::requireLogin();
 
 $format = (string)($_GET['format'] ?? 'csv');
-$rows   = CustomerRepository::listTable()->exportRows($_GET);
+$rows   = CustomerRepository::listTable()->allRows($_GET);
 
 $columns = [
     'account_name' => 'Name',

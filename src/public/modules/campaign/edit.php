@@ -21,6 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $controller->handleUpdatePost($id); // redirects + exits on success
 }
 
-layout_open();
+include __DIR__ . '/../../../app/Shared/header.php';
+include __DIR__ . '/../../../app/Shared/sidebar.php';
 $controller->edit($id);
-layout_close();
+include __DIR__ . '/../../../app/Shared/footer.php';

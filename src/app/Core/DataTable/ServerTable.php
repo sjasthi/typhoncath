@@ -48,7 +48,9 @@ final class ServerTable
      */
     public function handle(array $req, ?callable $rowFormatter = null): array
     {
-        $draw = (int)($req['draw'] ?? 0);
+        $draw   = (int)($req['draw'] ?? 0);
+        $start  = max(0, (int)($req['start'] ?? 0));
+        $length = (int)($req['length'] ?? 25);
 
         [$where, $params] = $this->buildWhere($req);
         $orderSql = $this->buildOrder($req);
@@ -64,7 +66,12 @@ final class ServerTable
             $recordsFiltered = (int)$stmt->fetchColumn();
         }
 
-        $limitSql = $this->buildLimit($req, 25);
+        // length === -1 is DataTables' "All"; otherwise window the result set.
+        $limitSql = '';
+        if ($length !== -1) {
+            $length   = max(1, $length);
+            $limitSql = " LIMIT {$length} OFFSET {$start}";
+        }
 
         $stmt = $this->db->prepare(
             "SELECT {$this->selectSql} FROM {$this->baseFrom}{$where}{$orderSql}{$limitSql}"
@@ -83,20 +90,16 @@ final class ServerTable
     }
 
     /**
-     * The rows behind the current view — same filters, sort AND page window as
-     * the table the user is looking at. Used by the export endpoints, so a
-     * CSV/XML/PDF contains exactly the rows on screen: the selected page length
-     * (25 / 50 / 100) starting at the current page, or every filtered row when
-     * the length menu is set to "All" (DataTables sends length = -1).
+     * All rows matching the current filters/order with NO limit — used by the
+     * export endpoints so an export reflects the full filtered set, not one page.
      * Returns raw DB rows (export formats them itself).
      */
-    public function exportRows(array $req): array
+    public function allRows(array $req): array
     {
         [$where, $params] = $this->buildWhere($req);
         $orderSql = $this->buildOrder($req);
-        $limitSql = $this->buildLimit($req);
         $stmt = $this->db->prepare(
-            "SELECT {$this->selectSql} FROM {$this->baseFrom}{$where}{$orderSql}{$limitSql}"
+            "SELECT {$this->selectSql} FROM {$this->baseFrom}{$where}{$orderSql}"
         );
         $stmt->execute($params);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -173,23 +176,6 @@ final class ServerTable
         $ph = "p{$i}"; $i++;
         $params[$ph] = '%' . $value . '%';
         return "{$col['sql']} LIKE :{$ph}";
-    }
-
-    /**
-     * Window the result set to the requested page. `length === -1` is
-     * DataTables' "All" and yields no LIMIT at all. $default applies when the
-     * request carries no length (e.g. an export URL opened by hand).
-     * Both values are cast to int, so nothing user-supplied reaches the SQL.
-     */
-    private function buildLimit(array $req, int $default = -1): string
-    {
-        $length = isset($req['length']) ? (int)$req['length'] : $default;
-        if ($length === -1) {
-            return '';
-        }
-        $length = max(1, $length);
-        $start  = max(0, (int)($req['start'] ?? 0));
-        return " LIMIT {$length} OFFSET {$start}";
     }
 
     private function buildOrder(array $req): string

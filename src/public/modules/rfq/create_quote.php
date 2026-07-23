@@ -22,8 +22,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $controller->handleCreateQuotePost(); // redirects + exits on success
 }
 
-layout_open();
+include __DIR__ . '/../../../app/Shared/header.php';
+include __DIR__ . '/../../../app/Shared/sidebar.php';
 
 $controller->createQuote($rfqId);
 
-layout_close();
+include __DIR__ . '/../../../app/Shared/footer.php';

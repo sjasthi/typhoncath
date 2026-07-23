@@ -2,10 +2,19 @@
 namespace App\Modules\Dashboard\Cards;
 
 use App\Modules\Dashboard\DashboardCard;
-use App\Modules\Customer\CustomerRepository;
 
 /**
- * Stat card — total number of accounts, with a contact-count sub-line.
+ * OWNER: Max (Customer) — DROP-IN SLOT
+ *
+ * Stat card — total number of accounts.
+ *
+ * TODO (Max): replace the stub with a real query. Add to DashboardRepository:
+ *
+ *   public function accountCount(): int {
+ *       // SELECT COUNT(*) FROM accounts
+ *   }
+ *
+ * Consider a sub-line with contact count too (SELECT COUNT(*) FROM contacts).
  */
 class TotalAccountsCard extends DashboardCard
 {
@@ -15,14 +24,12 @@ class TotalAccountsCard extends DashboardCard
 
     public function body(): string
     {
-        $repo = new CustomerRepository();
-
-        $accounts = $repo->searchCount();   // COUNT(*) FROM accounts (no filters)
-        $contacts = $repo->contactCount();
+        // STUB
+        $accounts = 0;
 
         return $this->stat(
             $accounts,
-            number_format($contacts) . ' contact' . ($contacts === 1 ? '' : 's'),
+            '0 contacts',
             '/modules/customer/accounts.php',
             'View accounts'
         );

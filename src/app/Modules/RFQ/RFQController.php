@@ -200,11 +200,7 @@ class RFQController
     public function handleDeletePost(int $id): void
     {
     if (!Permissions::can('rfqs.delete')) {
-        http_response_code(403);
-        include __DIR__ . '/../../../app/Shared/header.php';
-        include __DIR__ . '/../../../app/Shared/sidebar.php';
-        include __DIR__ . '/../../../app/Shared/error_403.php';
-        include __DIR__ . '/../../../app/Shared/footer.php';
+        layout_deny();
         exit;
     }
         $this->repo->delete($id);
@@ -218,11 +214,7 @@ class RFQController
     public function handleUpdateStagePost(int $id): void
     {
     if (!Permissions::can('rfqs.update_stage')) {
-        http_response_code(403);
-        include __DIR__ . '/../../../app/Shared/header.php';
-        include __DIR__ . '/../../../app/Shared/sidebar.php';
-        include __DIR__ . '/../../../app/Shared/error_403.php';
-        include __DIR__ . '/../../../app/Shared/footer.php';
+        layout_deny();
         exit;
     }
         $stage = $_POST['stage'] ?? '';

@@ -30,17 +30,14 @@ try {
         'SMS Simulation' => 'badge-warning',
     ];
     $h    = static fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
-    $rate = static fn($v) => $v !== null ? number_format((float)$v, 1) . '%' : '—';
 
-    $response = CampaignRepository::listTable()->handle($_GET, static function (array $c) use ($statusBadge, $typeBadge, $h, $rate) {
+    $response = CampaignRepository::listTable()->handle($_GET, static function (array $c) use ($statusBadge, $typeBadge, $h) {
         return [
             'id'            => '#' . (int)$c['id'],
             'campaign_name' => '<a href="/modules/campaign/detail.php?id=' . (int)$c['id'] . '">' . $h($c['campaign_name']) . '</a>',
             'campaign_type' => '<span class="badge ' . ($typeBadge[$c['campaign_type']] ?? 'badge-neutral') . '">' . $h($c['campaign_type']) . '</span>',
             'status'        => '<span class="badge ' . ($statusBadge[$c['status']] ?? 'badge-neutral') . '">' . $h($c['status']) . '</span>',
             'sent_count'    => (int)$c['sent_count'],
-            'open_rate'     => $rate($c['open_rate']),
-            'click_rate'    => $rate($c['click_rate']),
             'created_at'    => date('M j, Y', strtotime($c['created_at'])),
         ];
     });

@@ -80,17 +80,44 @@ $interactions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 
 // -------------------------
+// Text wrapping helper
+// -------------------------
+
+function wrapText(
+    string $text,
+    int $length = 85
+): array {
+
+    return explode(
+        "\n",
+        wordwrap(
+            $text,
+            $length,
+            "\n",
+            true
+        )
+    );
+}
+
+
+
+
+// -------------------------
 // Generate PDF
 // -------------------------
 
 $pdf = new SimplePDF();
 
 
+
+// -------------------------
 // Title
+// -------------------------
 
 $pdf->title(
     "TyphonCath CRM - Account Report"
 );
+
 
 
 
@@ -119,22 +146,28 @@ $pdf->multiline(
 
 
 
+
 // =========================
 // CONTACTS
 // =========================
 
+$contactsHeadingY = 545;
+
+
 $pdf->heading(
     "Contacts",
-    545
+    $contactsHeadingY
 );
 
 
-$y = 520;
+$y = $contactsHeadingY - 25;
 
 
 if (count($contacts) > 0) {
 
+
     foreach ($contacts as $contact) {
+
 
         $name =
             trim(
@@ -144,28 +177,51 @@ if (count($contacts) > 0) {
             );
 
 
-        $pdf->text(
-            60,
-            $y,
+        $contactText =
             ($name ?: 'Unnamed Contact') .
             " | " .
             ($contact['email'] ?: 'No Email') .
             " | " .
-            ($contact['phone'] ?: 'No Phone')
-        );
+            ($contact['phone'] ?: 'No Phone');
 
 
-        $y -= 18;
+
+        foreach (
+            wrapText($contactText, 85)
+            as $line
+        ) {
+
+
+            $pdf->text(
+                60,
+                $y,
+                $line
+            );
+
+
+            $y -= 16;
+
+
+            $pdf->checkPageBreak($y);
+        }
+
+
+        $y -= 4;
     }
 
+
+
 } else {
+
 
     $pdf->text(
         60,
         $y,
         "No contacts found."
     );
+
 }
+
 
 
 
@@ -173,60 +229,106 @@ if (count($contacts) > 0) {
 // INTERACTION HISTORY
 // =========================
 
+
+$pdf->checkPageBreak($y);
+
+
+$interactionHeadingY = $y - 20;
+
+
 $pdf->heading(
     "Interaction History",
-    390
+    $interactionHeadingY
 );
 
 
-$y = 365;
+$y = $interactionHeadingY - 25;
+
 
 
 if (count($interactions) > 0) {
 
+
     foreach ($interactions as $interaction) {
 
 
-        $pdf->text(
-            60,
-            $y,
+        $interactionTitle =
             ($interaction['interaction_type'] ?? 'Note') .
             " - " .
             ($interaction['interaction_subject'] ?? 'No Subject') .
             " (" .
             ($interaction['interaction_date'] ?? '') .
-            ")"
-        );
+            ")";
 
 
-        $y -= 18;
+
+        foreach (
+            wrapText($interactionTitle, 85)
+            as $line
+        ) {
+
+
+            $pdf->text(
+                60,
+                $y,
+                $line
+            );
+
+
+            $y -= 16;
+
+
+            $pdf->checkPageBreak($y);
+        }
+
+
 
 
         if (!empty($interaction['notes'])) {
 
-            $pdf->text(
-                80,
-                $y,
-                "Notes: " . $interaction['notes']
-            );
 
-            $y -= 18;
+            foreach (
+                wrapText(
+                    "Notes: " . $interaction['notes'],
+                    80
+                )
+                as $line
+            ) {
+
+
+                $pdf->text(
+                    80,
+                    $y,
+                    $line
+                );
+
+
+                $y -= 16;
+
+
+                $pdf->checkPageBreak($y);
+            }
+
         }
 
 
-        // blank line between interactions
+
         $y -= 8;
     }
 
 
+
 } else {
+
 
     $pdf->text(
         60,
         $y,
         "No interactions found."
     );
+
 }
+
 
 
 
@@ -240,23 +342,12 @@ $pdf->text(
     "Generated: " . date("m/d/Y")
 );
 
-$cleanName = preg_replace(
-    '/[^A-Za-z0-9]+/',
-    '_',
-    $account['account_name']
-);
 
-$cleanName = trim($cleanName, '_');
 
-$filename =
-    date("m-d-Y")
-    .
-    "_"
-    .
-    $cleanName
-    .
-    "_Account_Report.pdf";
 
 $pdf->output(
-    $filename
+    SimplePDF::filename(
+        'Customer',
+        $account['account_name']
+    )
 );

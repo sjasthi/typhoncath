@@ -5,3 +5,10 @@ secret/
 .venv/
 commit_activity.html
 __pycache__/
+
+# .NET build files
+bin/
+obj/
+
+# Playwright generated files
+.playwright/

@@ -103,11 +103,60 @@ class InventoryService
             throw new \InvalidArgumentException("SKU \"{$sku}\" is already in use by another product.");
         }
 
+        $before = $this->repo->findById($id);
+
         $result = $this->repo->updateProduct($id, $productName, $sku, $price, $description);
         $this->repo->updateLowStockThreshold($id, $lowStockThreshold);
-        $this->repo->logMovement($id, $userId, 'updated', null, 'Product details updated (name, SKU, price, description, and/or low stock threshold).');
+
+        $note = $this->buildUpdateNote($before, [
+            'product_name'        => $productName,
+            'sku'                 => $sku,
+            'price'               => $price,
+            'description'         => $description,
+            'low_stock_threshold' => $lowStockThreshold,
+        ]);
+        $this->repo->logMovement($id, $userId, 'updated', null, $note);
 
         return $result;
+    }
+
+    /**
+     * Build a "field: old → new" ledger note listing only what actually
+     * changed on a product edit (e.g. "Price: $10.00 → $12.50"), instead of
+     * a generic "product updated" message.
+     */
+    private function buildUpdateNote(?array $before, array $after): string
+    {
+        if ($before === null) {
+            return 'Product details updated.';
+        }
+
+        $labels = [
+            'product_name'        => 'Name',
+            'sku'                 => 'SKU',
+            'price'               => 'Price',
+            'description'         => 'Description',
+            'low_stock_threshold' => 'Low stock threshold',
+        ];
+
+        $changes = [];
+        foreach ($after as $field => $newValue) {
+            $oldValue = $before[$field] ?? null;
+
+            if ($field === 'price') {
+                $oldDisplay = '$' . number_format((float) $oldValue, 2);
+                $newDisplay = '$' . number_format((float) $newValue, 2);
+            } else {
+                $oldDisplay = (string) ($oldValue ?? '') !== '' ? (string) $oldValue : '(none)';
+                $newDisplay = (string) ($newValue ?? '') !== '' ? (string) $newValue : '(none)';
+            }
+
+            if ($oldDisplay !== $newDisplay) {
+                $changes[] = "{$labels[$field]}: {$oldDisplay} \u{2192} {$newDisplay}";
+            }
+        }
+
+        return $changes ? implode('; ', $changes) . '.' : 'Saved with no field changes.';
     }
 
     /**
@@ -124,10 +173,15 @@ class InventoryService
         }
 
         $before = $this->repo->findById($productId);
-        $delta  = $before !== null ? $availableQuantity - (int) $before['available_quantity'] : null;
+        $previousQty = $before !== null ? (int) $before['available_quantity'] : null;
+        $delta = $previousQty !== null ? $availableQuantity - $previousQty : null;
 
         $result = $this->repo->updateAvailableQuantity($productId, $availableQuantity);
-        $this->repo->logMovement($productId, $userId, 'manual_adjustment', $delta, 'Manual stock adjustment.');
+
+        $note = $previousQty !== null
+            ? "Available quantity: {$previousQty} \u{2192} {$availableQuantity}."
+            : 'Manual stock adjustment.';
+        $this->repo->logMovement($productId, $userId, 'manual_adjustment', $delta, $note);
 
         return $result;
     }
@@ -147,6 +201,20 @@ class InventoryService
             );
         }
 
+        // The product_id foreign key on rfq_inventory_reservations has no
+        // ON DELETE clause, so a product can never be deleted while ANY
+        // reservation — even a historical Released/Converted one — still
+        // references it. Surface that as a normal business-rule error here
+        // instead of letting a raw foreign-key violation reach the caller
+        // (see InventoryController::handleDelete()'s PDOException safety net
+        // for the last line of defense if this check is ever bypassed).
+        $total = $this->repo->countReservations($id);
+        if ($total > 0) {
+            throw new \RuntimeException(
+                "Cannot delete — this product has {$total} reservation record(s) in its history that must be preserved."
+            );
+        }
+
         // Log before deleting: logMovement snapshots product_name/sku by
         // reading the product row, which won't exist once delete() runs.
         $this->repo->logMovement($id, $userId, 'deleted', null, 'Product deleted.');
@@ -159,6 +227,16 @@ class InventoryService
     public function getReservations(): array
     {
         return $this->repo->allReservations();
+    }
+
+    /**
+     * Total reservation history count for a product (any status). Lets the
+     * delete-confirmation screen warn upfront about the same rule
+     * deleteProduct() enforces, instead of the user only finding out after submitting.
+     */
+    public function getReservationHistoryCount(int $id): int
+    {
+        return $this->repo->countReservations($id);
     }
 
     /**

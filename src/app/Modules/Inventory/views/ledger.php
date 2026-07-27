@@ -21,7 +21,10 @@ $movementLabel = [
 function ledgerSortUrl(string $col, string $cur, string $dir, string $q, array $types, ?int $productId, string $perPage): string
 {
     $nextDir = ($cur === $col && $dir === 'ASC') ? 'DESC' : 'ASC';
-    $params  = array_filter(['q' => $q, 'sort' => $col, 'dir' => $nextDir], fn($v) => $v !== '');
+    // 'page' => 'ledger' is required here: a bare "?sort=…" link (no page param)
+    // resolves back to the router's default product list, not this report —
+    // that's why the column headers looked like they didn't do anything.
+    $params  = array_filter(['page' => 'ledger', 'q' => $q, 'sort' => $col, 'dir' => $nextDir], fn($v) => $v !== '');
     if ($productId !== null) $params['product_id'] = $productId;
     if (!empty($types)) $params['type'] = $types;
     if ($perPage !== '25') $params['per_page'] = $perPage;
@@ -52,21 +55,16 @@ $sortCols = [
     'user_name'      => 'User',
 ];
 
-// Carries the current filters into the print link / cleared-filter link.
-$printParams = array_filter([
-    'q'    => $ledgerSearch,
-    'sort' => $ledgerSort,
-    'dir'  => $ledgerDir,
-], fn($v) => $v !== '');
-if ($ledgerProductId !== null) $printParams['product_id'] = $ledgerProductId;
-if (!empty($ledgerTypes)) $printParams['type'] = $ledgerTypes;
 ?>
 
 <section class="card">
     <div class="rfq-board-header">
         <h1>Inventory Ledger</h1>
         <div style="display:flex; gap:0.5rem;">
-            <a href="/modules/inventory/products.php?page=ledger_print&<?= http_build_query($printParams) ?>" class="btn" target="_blank" rel="noopener">🖨 Print</a>
+            <!-- Same convention as the rest of the app: print the page itself
+                 via the browser's native print (the shared print stylesheet
+                 hides the sidebar), rather than a separate print-only route. -->
+            <button type="button" class="btn" onclick="window.print()">🖨 Print</button>
             <a href="/modules/inventory/products.php" class="btn rfq-list-clear-btn">&#8592; Back to Inventory</a>
         </div>
     </div>

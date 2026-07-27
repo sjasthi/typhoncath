@@ -37,6 +37,11 @@
             This product has <strong><?= (int)$product['reserved_quantity'] ?></strong> unit(s) reserved by active RFQs.
             You must release or convert those reservations before deleting.
         </div>
+    <?php elseif (($reservationHistoryCount ?? 0) > 0): ?>
+        <div class="alert alert-warning">
+            This product has <strong><?= (int)$reservationHistoryCount ?></strong> reservation record(s) in its history.
+            It cannot be deleted while that history exists.
+        </div>
     <?php endif; ?>
 
     <form method="POST" action="/modules/inventory/products.php?page=delete" class="rfq-form-actions" style="margin-top:1rem;">

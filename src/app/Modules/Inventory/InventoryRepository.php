@@ -296,6 +296,24 @@ class InventoryRepository
         return (int) $stmt->fetchColumn();
     }
 
+    /**
+     * Count ALL reservation rows referencing a product, regardless of status.
+     * The product_id foreign key on rfq_inventory_reservations has no ON
+     * DELETE clause, so even a fully Released/Converted (historical)
+     * reservation still blocks deletion at the database level. Used to give
+     * an accurate business-rule error before attempting the delete, instead
+     * of letting a raw foreign-key violation reach the caller.
+     */
+    public function countReservations(int $productId): int
+    {
+        $db   = Database::connection();
+        $stmt = $db->prepare(
+            "SELECT COUNT(*) FROM rfq_inventory_reservations WHERE product_id = ?"
+        );
+        $stmt->execute([$productId]);
+        return (int) $stmt->fetchColumn();
+    }
+
     // ── Inventory Ledger ──────────────────────────────────────────────────────
     // Append-only audit trail (migrations/015_create_inventory_movements.sql)
     // backing the printable Inventory Ledger report: what happened to a product,

@@ -31,7 +31,13 @@ $isPost     = $_SERVER['REQUEST_METHOD'] === 'POST';
 // ── Route ──────────────────────────────────────────────────────────────────
 if ($page === 'detail') {
     if ($isPost) {
-        denyUnlessAllowed(!empty($_POST['id']) ? 'inventory.edit' : 'inventory.create');
+        // Must match InventoryController::save()'s own isset()/'' check exactly.
+        // !empty($_POST['id']) looks equivalent but isn't: PHP's empty() treats
+        // the string "0" as empty, so a submitted id=0 would satisfy the
+        // weaker 'inventory.create' gate here while save() still takes the
+        // update path — a real (if currently narrow) permission-check bypass.
+        $isEdit = isset($_POST['id']) && $_POST['id'] !== '';
+        denyUnlessAllowed($isEdit ? 'inventory.edit' : 'inventory.create');
         $controller->save();
         exit;
     }
@@ -67,13 +73,6 @@ if ($page === 'detail') {
     include __DIR__ . '/../../../app/Shared/header.php';
     include __DIR__ . '/../../../app/Shared/sidebar.php';
     $controller->ledger();
-
-} elseif ($page === 'ledger_print') {
-    // Bare printable page: renders its own full HTML document, so none of
-    // the shared header/sidebar/footer chrome is included here.
-    denyUnlessAllowed('inventory.view');
-    $controller->ledgerPrint();
-    exit;
 
 } elseif ($page === 'delete') {
     denyUnlessAllowed('inventory.edit');

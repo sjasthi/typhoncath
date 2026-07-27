@@ -143,6 +143,11 @@ class InventoryController
             $_SESSION['flash'] = ['type' => 'error', 'message' => $e->getMessage()];
             header('Location: /modules/inventory/products.php?page=stock&id=' . $productId);
             exit;
+        } catch (\PDOException $e) {
+            // Safety net: never let a raw DB error reach the user.
+            $_SESSION['flash'] = ['type' => 'error', 'message' => 'Something went wrong updating stock levels.'];
+            header('Location: /modules/inventory/products.php?page=stock&id=' . $productId);
+            exit;
         }
     }
 
@@ -160,6 +165,8 @@ class InventoryController
             echo '<section class="card"><h1>Product Not Found</h1><p class="text-muted">No product exists with that ID.</p><a href="/modules/inventory/products.php" class="btn mt-3">Back to Inventory</a></section>';
             return;
         }
+
+        $reservationHistoryCount = $this->service->getReservationHistoryCount($id);
 
         include __DIR__ . '/views/delete_confirm.php';
     }
@@ -180,6 +187,14 @@ class InventoryController
             $_SESSION['flash'] = [
                 'type'    => 'success',
                 'message' => "\"{$name}\" was deleted successfully.",
+            ];
+        } catch (\PDOException $e) {
+            // Safety net: deleteProduct() already blocks deletion when reservation
+            // history exists, but never let a raw DB error (e.g. an unexpected
+            // foreign-key violation) leak schema/constraint details to the user.
+            $_SESSION['flash'] = [
+                'type'    => 'error',
+                'message' => 'Cannot delete this product — other records still reference it.',
             ];
         } catch (\Exception $e) {
             $_SESSION['flash'] = [
@@ -225,6 +240,11 @@ class InventoryController
             }
             header('Location: /modules/inventory/products.php?page=reservations');
             exit;
+        } catch (\PDOException $e) {
+            // Safety net: never let a raw DB error reach the user.
+            $_SESSION['flash'] = ['type' => 'error', 'message' => 'Something went wrong updating this reservation.'];
+            header('Location: /modules/inventory/products.php?page=reservations');
+            exit;
         } catch (\Exception $e) {
             $_SESSION['flash'] = ['type' => 'error', 'message' => $e->getMessage()];
             header('Location: /modules/inventory/products.php?page=reservations');
@@ -237,11 +257,19 @@ class InventoryController
      * Inventory Ledger report: what happened to inventory, when, and who did
      * it. Supports a product/search/movement-type filter, column sorting, and
      * pagination — the same shared Paginator/pagination.php pattern used by
-     * the RFQ pipeline list and the product list above.
+     * the RFQ pipeline list and the product list above. Printing is handled
+     * the same way it is on RFQ pages: the browser's native print (Ctrl+P or
+     * the on-page Print button) on this page itself, with the shared
+     * sidebar-hiding print stylesheet — there's no separate print route.
      */
     public function ledger(): void
     {
-        extract($this->fetchLedgerFilters());
+        $ledgerProductId = isset($_GET['product_id']) && $_GET['product_id'] !== '' ? (int) $_GET['product_id'] : null;
+        $ledgerSearch    = trim($_GET['q'] ?? '');
+        $rawTypes        = $_GET['type'] ?? [];
+        $ledgerTypes     = is_array($rawTypes) ? $rawTypes : [$rawTypes];
+        $ledgerSort      = $_GET['sort'] ?? 'created_at';
+        $ledgerDir       = $_GET['dir']  ?? 'DESC';
 
         $total     = $this->service->getLedgerCount($ledgerProductId, $ledgerSearch, $ledgerTypes);
         $pager     = new \App\Core\Paginator($total, $_GET['per_page'] ?? 25, $_GET['p'] ?? 1, [10, 25, 50, 100]);
@@ -251,36 +279,5 @@ class InventoryController
         $product       = $ledgerProductId !== null ? $this->service->getProductDetail($ledgerProductId) : null;
 
         include __DIR__ . '/views/ledger.php';
-    }
-
-    /**
-     * GET ?page=ledger_print
-     * Bare, print-styled version of the ledger honoring the same filters as
-     * the report above, but unpaginated — every matching row is included so
-     * the printed/PDF'd document is a complete record. Renders its own full
-     * HTML document (no shared header/sidebar/footer chrome).
-     */
-    public function ledgerPrint(): void
-    {
-        extract($this->fetchLedgerFilters());
-
-        $movements = $this->service->getLedger($ledgerProductId, $ledgerSearch, $ledgerTypes, $ledgerSort, $ledgerDir, null, 0);
-        $product   = $ledgerProductId !== null ? $this->service->getProductDetail($ledgerProductId) : null;
-
-        include __DIR__ . '/views/ledger_print.php';
-    }
-
-    // Shared GET-parameter parsing for ledger()/ledgerPrint() so both pages
-    // apply identical filters — what you see in the report is what prints.
-    private function fetchLedgerFilters(): array
-    {
-        $ledgerProductId = isset($_GET['product_id']) && $_GET['product_id'] !== '' ? (int) $_GET['product_id'] : null;
-        $ledgerSearch    = trim($_GET['q'] ?? '');
-        $rawTypes        = $_GET['type'] ?? [];
-        $ledgerTypes     = is_array($rawTypes) ? $rawTypes : [$rawTypes];
-        $ledgerSort      = $_GET['sort'] ?? 'created_at';
-        $ledgerDir       = $_GET['dir']  ?? 'DESC';
-
-        return compact('ledgerProductId', 'ledgerSearch', 'ledgerTypes', 'ledgerSort', 'ledgerDir');
     }
 }

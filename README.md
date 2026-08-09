@@ -1,409 +1,267 @@
-# TyphonCath CRM
+# Typhon Cath CRM
 
-An internal CRM for a medical-device distributor, replacing a spreadsheet-based
-workflow. It covers customer accounts, the RFQ-to-quote sales pipeline,
-marketing campaigns, and inventory with reservation tracking — behind a unified
-dashboard and a role-based permission system.
+A modular PHP/MySQL Customer Relationship Management system built for Typhon Cath. It's a browser-based web application, intended to be hosted on a server and used by multiple people (Admin, Sales, Marketing, Inventory roles) at the same time — it centralizes customer records, sales pipeline (RFQ) tracking, digital campaign management, and inventory in one internal tool.
 
-**Stack:** PHP 8.2 (no framework — modular Controller/Service/Repository),
-MySQL 8, Bootstrap 5, jQuery DataTables, Apache. Containerised for development,
-deployed to cPanel shared hosting.
+## Why This Project Exists
 
-| | |
-|---|---|
-| Lines of application code | ~14,000 PHP |
-| Automated tests | 217 PHPUnit tests (569 assertions) + 296 static wiring checks |
-| CI | GitHub Actions — lint, security wiring, unit, integration |
-| Deployment | Automated FTPS to Bluehost on merge to `main` |
+Typhon Cath needed a lightweight, self-hosted CRM instead of paying for a commercial platform. The full functional and non-functional requirements are captured in [`requirements.md`](../requirements.md) (the project's SRS); the short version:
 
----
+- **Centralize customer data** — one place for accounts, contacts, and interaction history instead of scattered spreadsheets.
+- **Track the sales pipeline** — RFQs move through defined stages (New → In Review → Quoted → Negotiation → Won/Lost) instead of being tracked ad hoc.
+- **Manage campaigns** — plan and measure email/SMS campaigns against customer segments.
+- **Track inventory** — keep stock counts accurate and let RFQs reserve inventory against real availability.
+- **Give everyone one dashboard** — a unified, multi-user view across all four areas instead of four disconnected tools.
 
-## Quick start
+This is also a student capstone project: each functional area was built as an independently owned module by a different student, sharing one codebase, one database, and a common `Core` layer for auth, routing, and permissions.
 
-The only prerequisite is **Docker Desktop**
-([Windows](https://docs.docker.com/desktop/install/windows-install/) ·
-[Mac](https://docs.docker.com/desktop/install/mac-install/) ·
-[Linux](https://docs.docker.com/desktop/install/linux-install/)).
-No PHP, no MySQL, no XAMPP.
+## How It Works
 
-```bash
-git clone <repo-url>
-cd typhoncath
-docker compose up
+The app is a monolithic 3-tier application: a PHP presentation/controller layer, a PHP service layer for business rules, and a MySQL data layer, served over HTTP by Apache so any number of users can be logged in and working concurrently through their browser. There is no framework (no Laravel/Symfony) — every piece is a small hand-written class in `app/Core/`, and the modules are plain PHP files that use them.
+
+## Technical Architecture — How the Pieces Fit Together
+
+### 1. Routing: a front controller per module, not a central router
+
+`app/Core/Router.php` and the `*_routes.php` file in each module exist, but **they aren't actually wired up anywhere** — they're placeholders from an earlier design. The routing that really runs the site is simpler and more direct: each module has one "front controller" script under `public/modules/<module>/`, and Apache maps every URL straight to it. That single PHP file reads `$_GET['page']` (and the HTTP method) and branches by hand.
+
+`public/modules/inventory/products.php` is a representative example:
+
+```php
+$controller = new InventoryController();
+$page       = $_GET['page'] ?? 'list';
+$isPost     = $_SERVER['REQUEST_METHOD'] === 'POST';
+
+if ($page === 'detail') {
+    if ($isPost) {
+        denyUnlessAllowed($isEdit ? 'inventory.edit' : 'inventory.create');
+        $controller->save();
+        exit;
+    }
+    denyUnlessAllowed('inventory.view');
+    include '.../Shared/header.php';
+    include '.../Shared/sidebar.php';
+    $controller->show();
+} elseif ($page === 'stock') { /* ... */ }
+  elseif ($page === 'reservations') { /* ... */ }
+  elseif ($page === 'ledger') { /* ... */ }
+  elseif ($page === 'delete') { /* ... */ }
+  else { /* default: product list */ }
+
+include '.../Shared/footer.php';
 ```
 
-Open **<http://localhost:8080>** and sign in:
+So a URL like `/modules/inventory/products.php?page=detail&id=7` means: "run the `detail` branch of the Inventory front controller." Every module (`customer/accounts.php`, `rfq/pipeline.php`, `campaign/campaigns.php`, `inventory/products.php`, `admin/users.php`) follows this same pattern — one file, a `page` switch, and the front controller (not the `Controller` class) is what decides whether to wrap the response in the shared header/sidebar/footer chrome or `exit` early (e.g. after a POST redirect, or a JSON response).
 
-| Field | Value |
-|-------|-------|
-| Email | `admin@typhoncath.test` |
-| Password | `password` |
+### 2. Request lifecycle, end to end
 
-The first run takes a minute or two while Docker builds the image. The database
-is created, seeded and indexed automatically.
+Concretely, saving an edited product walks through every layer of the app. Using `InventoryController::save()` (`app/Modules/Inventory/InventoryController.php`) as the worked example:
 
-> This demo credential is public — the bcrypt hash is in `seed.sql`. Fine
-> locally; it must be changed before any deployment.
-
-### Seeing the permission system work
-
-The seed creates only a Super Admin, and that role deliberately bypasses every
-permission check — so every page looks reachable. To see the matrix actually
-restrict things, load one user per role:
-
-```bash
-docker compose exec -T db mysql -uroot -pdevonly_root typhon_cath_crm \
-  < src/database/seed_dev_users.sql
+```text
+Browser POSTs the product form to
+  /modules/inventory/products.php?page=detail
+        ↓
+products.php (front controller) runs first:
+  require bootstrap.php        → session_start() + autoloader registered
+  Auth::requireLogin()          → no session? redirect to /login.php and stop
+  Middleware/csrf.php           → Csrf::check() — POST without a valid token gets a 403
+  denyUnlessAllowed('inventory.edit'/'inventory.create')
+                                 → Permissions::can() — wrong role gets the shared 403 page
+        ↓
+InventoryController::save()   → reads/casts $_POST into typed values
+        ↓
+InventoryService::updateProduct() → BUSINESS RULES: required fields, price >= 0,
+                                     duplicate-SKU check, computes a human-readable
+                                     change note ("price changed from $10 to $12")
+        ↓
+InventoryRepository::updateProduct() → one UPDATE via a prepared PDO statement
+InventoryRepository::logMovement()   → INSERT into inventory_movements (audit trail)
+        ↓
+Controller sets $_SESSION['flash'] = ['type' => 'success', 'message' => '...']
+Controller sends Location: header and exit()s   (POST/redirect/GET — avoids a
+                                                   resubmission if the user refreshes)
+        ↓
+Browser GETs the redirect target → front controller runs again → Auth/CSRF/permission
+checks again → Controller::show() this time → View include → Shared/header+sidebar+footer
+        ↓
+Shared/sidebar.php reads $_SESSION['flash'], prints the banner once, and unsets it
 ```
 
-| Email | Role | Reaches |
-|-------|------|---------|
-| `admin@typhoncath.test`  | Super Admin       | everything, including the permission matrix |
-| `admin2@typhoncath.test` | Admin             | everything except the permission matrix |
-| `sales@typhoncath.test`  | Sales User        | customers, RFQs, inventory (read-only) |
-| `mktg@typhoncath.test`   | Marketing User    | campaigns, customers (read-only) |
-| `inv@typhoncath.test`    | Inventory Manager | inventory, RFQs (read-only) |
+Every module (Customer, RFQ, Campaign, Inventory, Admin) follows this same **Controller → Service → Repository** shape, and every state-changing action ends with a redirect + one-time flash message rather than re-rendering a POST result directly — that's what makes "hit refresh" safe everywhere in the app.
 
-All five share the demo password. Development only.
+### 3. The three layers, and why the split exists
 
----
+- **Controller** (`*Controller.php`) — HTTP only. Reads `$_GET`/`$_POST`, casts/trims input, calls the Service, and either `include`s a view or sets a flash message and redirects. It never writes SQL and never contains a business rule (no "is this SKU already taken" logic here).
+- **Service** (`*Service.php`) — business rules and orchestration, with no knowledge of `$_GET`/`$_POST`/HTTP at all. `InventoryService::createProduct()` is a good example: it validates every field, checks for a duplicate SKU, calls the repository to insert the row, *then* calls the repository again to log the creation as a movement — two repository calls composed into one business action, so a "create product" is always paired with an audit-trail entry.
+- **Repository** (`*Repository.php`) — the only layer that touches the database, always through `App\Core\Database::connection()` (a lazily-created singleton `PDO` instance) and always with prepared statements (`$db->prepare(...)->execute([...])`) — this is what keeps user input out of SQL strings.
 
-## What it does
+This split means a Controller can be rewritten (say, to return JSON instead of HTML) without touching business logic, and business rules can be unit-tested or reused (e.g. by an export endpoint) without going through HTTP at all.
 
-| Module | Capability |
-|---|---|
-| **Customers** | Accounts and contacts, interaction history, tagging, searchable/filterable lists, PDF and CSV export |
-| **RFQ pipeline** | Six-stage pipeline (New → In Review → Quoted → Negotiation → Won/Lost), quotes with validity windows and discount rules, inventory reservations attached to an RFQ, win-rate reporting |
-| **Campaigns** | Email and SMS-simulation campaigns, audience segments built from tags or explicit account/contact selections, reusable audience presets, scheduling, simulated send with real recipient counts |
-| **Inventory** | Products and stock levels, per-product low-stock thresholds, reserve/release/convert lifecycle driven by the RFQ pipeline, and an append-only movements ledger |
-| **Dashboard** | 19 role-aware cards across the four domains; cards a user lacks permission for are never rendered or queried |
-| **Admin** | User management and a live role/permission matrix |
+### 4. Shared page chrome and the view layer
 
-Cross-cutting: session hardening with idle and absolute timeouts, CSRF
-protection on every state-changing request, login throttling, security response
-headers, and server-side DataTables for every list view.
+Nothing renders a full HTML document by itself. Every page a front controller serves is sandwiched between three shared partials, included directly (there's no template engine):
 
----
-
-## Documentation
-
-Start here depending on what you're looking for:
-
-| Document | Covers |
-|---|---|
-| [`src/docs/writeup/`](src/docs/writeup/) | **The fourteen design documents** — system context, module architecture, ERD, navigation map, role/permission matrix, RFQ state and sequence diagrams, inventory reservation flow, campaign audience flow, dashboard data flow, deployment architecture, CRUD matrix, non-functional qualities. Start at [`00_DIAGRAM_INDEX.md`](src/docs/writeup/00_DIAGRAM_INDEX.md). |
-| [`src/docs/KNOWN_LIMITATIONS.md`](src/docs/KNOWN_LIMITATIONS.md) | **What is simulated, unimplemented, or not production-grade.** Written to be read before a demo, not discovered during one. |
-| [`src/docs/DEPLOYMENT.md`](src/docs/DEPLOYMENT.md) | Bluehost/cPanel deployment, the CI/CD pipeline, rollback, backups |
-| [`src/docs/HANDOFF.md`](src/docs/HANDOFF.md) | Taking ownership: credentials to rotate, where everything lives, routine maintenance |
-| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Branching, running the tests, adding a migration |
-| [`src/docs/modules/`](src/docs/modules/) | One overview per module |
-| [`src/docs/project/requirements.md`](src/docs/project/requirements.md) | The SRS this was built against |
-
----
-
-## Architecture
-
+```text
+Shared/header.php   → <!doctype html>, <head>, opens <body>
+Shared/sidebar.php  → opens .app-shell/.app-sidebar, nav links, reads+clears $_SESSION['flash']
+  ...page-specific view content is include()'d here by the Controller...
+Shared/footer.php    → closes .app-main/.app-shell, loads /assets/js/main.js, </body></html>
 ```
+
+A `*Controller` method typically ends with `include __DIR__ . '/views/some_view.php'` — a plain PHP file that reads whatever variables the controller left in scope (no `extract()`/data-passing layer for these; `App\Core\View::render()` exists as an alternative but is only used in a couple of places). The view is nothing but HTML with inline `<?= ... ?>` — all output is escaped with `htmlspecialchars()` at the point of printing, which is the app's XSS defense.
+
+### 5. Authentication & sessions
+
+`Auth::attempt()` (`app/Core/Auth.php`) is the entire login flow: look up the user by email, `password_verify()` the submitted password against the stored bcrypt hash, then join `role_permissions` to fetch every permission string for that user's role. On success it calls `session_regenerate_id(true)` (prevents session-fixation attacks) and stores a single array in the session:
+
+```php
+$_SESSION['user'] = [
+    'id' => 7, 'name' => 'Jane', 'email' => '...',
+    'role' => 'Sales User',
+    'permissions' => ['customers.view', 'rfqs.create', ...],  // cached at login
+];
+```
+
+Every later `Auth::check()` / `Auth::user()` call just reads this session array — no DB hit per request. That also means a role's permissions are a snapshot taken at login; changing a role's permissions in Admin doesn't affect an already-logged-in user until they log in again.
+
+### 6. Authorization (RBAC)
+
+`Permissions::can('inventory.edit')` (`app/Core/Permissions.php`) checks the current user's cached `permissions` array — unless their role is `Admin`/`Super Admin`, which always short-circuits to `true`. Two enforcement points exist, and modules use them together:
+
+- **Coarse gate**: `Middleware/require_auth.php` (just `Auth::requireLogin()`) — are you logged in at all.
+- **Fine-grained gate**: each front controller defines a local `denyUnlessAllowed()` (or calls `Permissions::require()`) before every branch of its `page` switch, keyed to a permission string like `inventory.view`, `rfqs.update_stage`, or `campaigns.create`. A denied check renders the shared `Shared/error_403.php` inside the normal header/sidebar/footer chrome, so a blocked page still looks like part of the app instead of a bare error.
+
+Because permission checks are re-evaluated on every request (not just once at login), one Sales user and one Admin can be using the same page at the same time and each sees only the actions their role allows.
+
+### 7. CSRF protection
+
+`Csrf::token()` (`app/Core/Csrf.php`) lazily creates one random 64-character token per session and reuses it for every form. `Csrf::field()` in a view renders it as a hidden `_csrf` input; `Middleware/csrf.php` (included right after `bootstrap.php`, before any state-changing logic runs) calls `Csrf::check()`, which no-ops on GET/HEAD/OPTIONS and otherwise does a constant-time (`hash_equals`) comparison against the submitted token, returning a 403 on mismatch. `tests/csrf_coverage.php` statically scans the whole codebase to make sure every `<form method="POST">` renders the token and every POST-handling file requires the middleware, so this can't silently regress.
+
+### 8. Cross-module integration: the Dashboard
+
+The Dashboard is the one part of the app that intentionally reaches across module boundaries. `DashboardService` (`app/Modules/Dashboard/DashboardService.php`) constructs `RFQRepository`, `CampaignRepository`, and its own `DashboardRepository` (which queries Inventory's tables directly for cross-module aggregates like "low stock" and "heavily reserved") and exposes one method per dashboard metric — it never writes SQL itself, it only composes calls into each module's existing repository.
+
+The dashboard grid itself is built from small polymorphic **Card** classes (`app/Modules/Dashboard/Cards/*.php`), each extending `DashboardCard`: a card declares a `title()`, an optional `permission()` (so a Marketing user simply never sees an inventory card), and a `body()` built from one of two shared renderers (`stat()` for a single number, `preview()` for a truncated top-N list with a deep link). `DashboardController` registers the full list of cards and renders only the ones `visible()` returns true for — so the dashboard is really N independent read-only queries into other modules' data, each wrapped in the same card shell.
+
+### 9. Shared utilities
+
+- **`Paginator`** (`app/Core/Paginator.php`) — framework-agnostic pagination math shared by every list page (RFQ pipeline, Customer accounts, Inventory products and ledger, Admin users). A controller does `$pager = new Paginator($total, $_GET['per_page'], $_GET['page'], [10,25,50,100])`, then feeds `$pager->limit()`/`$pager->offset()` straight into the repository's SQL `LIMIT`/`OFFSET`, and the shared `Shared/pagination.php` partial renders the page-number nav from `$pager->windowedNumbers()`.
+- **`Validator`** (`app/Core/Validator.php`) — currently just `Validator::required($data, $fields)`, a simple "were these fields present and non-blank" check used ahead of the more specific per-field business rules each Service enforces itself (e.g. `price < 0`, duplicate SKU).
+
+### 10. The database layer
+
+`Database::connection()` (`app/Core/Database.php`) lazily creates one `PDO` connection per request (`ATTR_ERRMODE => EXCEPTION`, `FETCH_ASSOC` by default) using `config/database.php`, which itself just reads `getenv('DB_HOST')` etc. — the same environment variables `docker-compose.yml` injects locally. Every repository shares this one connection. `database/schema.sql` is the current baseline schema; `database/migrations/NNN_*.sql` are the incremental changes layered on top of it as the schema evolved (see the Setup section above for how these get applied).
+
+## Project Structure
+
+```text
 src/
-├── public/              Entry points — one PHP file per URL. No router.
-│   ├── dashboard.php
-│   ├── admin/
-│   └── modules/{customer,rfq,campaign,inventory}/
 ├── app/
-│   ├── Core/            Auth, Permissions, Csrf, Database, DataTable, PDF
-│   ├── Middleware/       csrf, require_auth, require_role
-│   ├── Shared/           layout, sidebar, header, flash
-│   └── Modules/<Name>/
-│       ├── <Name>Controller.php    request handling, no SQL
-│       ├── <Name>Service.php       business rules and validation
-│       ├── <Name>Repository.php    SQL, and nothing else
-│       └── views/                  templates
-├── config/              app, database, permissions
-├── database/            schema.sql, seed.sql, indexes.sql, migrations/
-├── docs/                design documents and operational guides
-└── tests/               automated suites + manual test plans
+│   ├── Core/            # shared framework: routing, auth, db, permissions, CSRF
+│   ├── Middleware/       # auth / role / CSRF guards applied per-route
+│   ├── Modules/
+│   │   ├── Customer/     # accounts, contacts, interaction history
+│   │   ├── RFQ/          # pipeline, quotes, deal conversion
+│   │   ├── Campaign/     # email/SMS campaigns, audience segmentation
+│   │   ├── Inventory/    # product catalog, stock, RFQ reservations
+│   │   ├── Dashboard/    # cross-module metrics/cards
+│   │   └── Admin/        # user + role/permission management
+│   └── Shared/           # shared layout partials (header, sidebar, login, etc.)
+├── config/               # database.php and other app config
+├── database/
+│   ├── schema.sql        # full baseline schema
+│   ├── seed.sql          # demo data (users, sample records)
+│   ├── indexes.sql       # supplemental indexes
+│   └── migrations/       # numbered incremental schema changes
+├── docs/                 # architecture diagrams and write-ups (ERD, sequence, etc.)
+├── public/               # web-accessible document root (Apache points here)
+├── storage/              # logs
+├── tests/                # test plans + a couple of standalone PHP check scripts
+└── .env.example          # reference list of the env vars the app reads
 ```
 
-There is no framework and no router: a URL maps to a file in `public/`, which
-requires `app/Core/bootstrap.php`, checks a permission, and calls a controller.
-Any request can be followed end to end by reading PHP.
+`public/` is the **only** web-accessible directory — `app/`, `config/`, `database/`, and `storage/` must never be reachable from a browser.
 
-Three deliberate structural decisions are documented where they are made:
-`Database::connection()` is a static singleton (so repositories need no wiring),
-`Super Admin` bypasses the permission matrix (so the matrix cannot lock everyone
-out of itself), and permissions are cached in the session for 60 seconds (traded
-against a query on every check).
+## Module Ownership
 
----
+| Student | Module | Folder |
+|---|---|---|
+| Max | Customer Management | `app/Modules/Customer/` |
+| Trevor | RFQ / Pipeline Management | `app/Modules/RFQ/` |
+| Jonah | Digital Campaign Management | `app/Modules/Campaign/` |
+| Casey | Inventory Management | `app/Modules/Inventory/` |
+| All | Dashboard, Admin, Integration, Auth | `app/Modules/Dashboard/`, `app/Modules/Admin/`, `app/Core/` |
+
+## Local Development / Testing Setup (Docker)
+
+The app itself is just PHP + MySQL behind Apache — in production it runs on a normal hosted LAMP-style server, no Docker involved. Locally, Docker is used **only** to spin up a disposable, consistent environment for development and testing, via [`docker-compose.yml`](../docker-compose.yml) and [`Dockerfile`](../Dockerfile). The only prerequisite is **Docker Desktop** ([Windows](https://docs.docker.com/desktop/install/windows-install/) / [Mac](https://docs.docker.com/desktop/install/mac-install/) / [Linux](https://docs.docker.com/desktop/install/linux-install/)).
+
+1. **Clone the repo** (from the repository root, one level above `src/`):
+   ```bash
+   git clone <repo-url>
+   cd typhoncath
+   ```
+2. **Start the local stack**:
+   ```bash
+   docker compose up
+   ```
+   The first run downloads images and builds the PHP container, so it takes a minute or two. Subsequent starts are fast. This brings up:
+   - `app` — PHP 8.2 + Apache (built from `Dockerfile`), serving `src/public/` on **http://localhost:8080**
+   - `db` — MySQL 8.0, auto-initialized on first boot from `database/schema.sql` then `database/seed.sql`
+   - `adminer` — a web-based DB browser on **http://localhost:8081**
+3. **Log in** at `http://localhost:8080/login.php` with the demo credentials seeded into the database (see `database/seed.sql`, or ask a teammate for the current demo password).
+
+Database credentials are injected as container environment variables directly in `docker-compose.yml` (`DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS`, etc.) — `app/config/database.php` reads them via `getenv()`. `.env.example` documents the same variable names for reference (for setting equivalent environment variables on a real Apache/PHP host), but nothing in the app currently loads a `.env` file automatically — on a production server these values should be set as real environment variables (or hardcoded into `config/database.php`) pointing at the production MySQL instance.
+
+## Daily Use (local Docker environment)
+
+| Task | Command |
+|---|---|
+| Start the app | `docker compose up` |
+| Start in background | `docker compose up -d` |
+| Stop the app | `docker compose down` |
+| View logs | `docker compose logs -f` |
+| Reset the database | `docker compose down -v` then `docker compose up` |
+
+> **Reset warning:** `docker compose down -v` deletes the MySQL data volume. All data is wiped and re-seeded from scratch — use it when the local DB gets into a bad state, or after adding a new migration (see below).
+
+### Schema changes / migrations
+
+`docker-entrypoint-initdb.d` only runs `schema.sql` and `seed.sql` on a **first-ever** boot of a fresh volume — it does not re-run on every `docker compose up`. If someone adds a new file to `database/migrations/`, the simplest way to pick it up locally is `docker compose down -v && docker compose up` (rebuilds the local DB from `schema.sql` + `seed.sql`). On a real production database, migrations should be applied by hand (or via a migration runner) against the live schema — never by dropping the volume.
+
+### Connecting a DB client directly (optional, local only)
+
+If you'd rather use TablePlus, DBeaver, or MySQL Workbench instead of Adminer against the local Docker MySQL instance:
+
+| Setting | Value |
+|---|---|
+| Host | `127.0.0.1` |
+| Port | `3306` |
+| Database | `typhon_cath_crm` |
+| Username | `crm_user` |
+| Password | `secret` |
 
 ## Testing
 
-```bash
-docker compose exec app composer test              # everything
-docker compose exec app composer test:unit         # no database, milliseconds
-docker compose exec app composer test:integration  # needs MySQL
-docker compose exec app composer test:static       # CSRF + authorization wiring
-docker compose exec app composer lint              # php -l over every file
-```
+`tests/` currently holds:
 
-| Suite | Size | Covers |
-|---|---|---|
-| `test:static` | 296 checks | Walks **every** entry point in `public/` and asserts each POST form and handler is CSRF-protected, and each route is permission-gated *before* it dispatches. Also verifies every permission string in code is one the seed actually grants — a typo is deny-all for real roles but invisible to a Super Admin. |
-| `test:unit` | 108 tests | `Csrf`, `Validator`, `Permissions`, login throttling, the DataTables query builders (SQL injection surface), and service validation rules. |
-| `test:integration` | 109 tests | Real MySQL 8: authentication and password rehashing, the inventory reservation lifecycle and its transaction boundaries, repositories, DataTables queries including FULLTEXT, all 19 dashboard cards, and the migration chain. |
+- `csrf_coverage.php` — a standalone static check (no server/DB needed) that scans the codebase to confirm every POST form renders a CSRF token and every POST handler enforces it. Run with `php tests/csrf_coverage.php`; exits non-zero on failure, so it's suitable for CI or a pre-push hook.
+- `http_forms.php` — a helper/checklist script for exercising form submissions.
+- `*_tests.md` — manual test-case checklists per module (customer, RFQ, campaign, inventory, integration), meant to be run against the local Docker environment before shipping changes.
 
-The static harnesses cover something the unit tests structurally cannot: they
-assert a property across the whole codebase, so a *newly added* page that
-forgets CSRF or a permission gate fails the build even though nobody wrote a
-test for it.
+There is no automated feature/unit test suite yet — testing is a mix of the static CSRF check and manual walkthroughs against the checklists above.
 
-`src/tests/*.md` hold manual test plans for what automation does not reach —
-browser behaviour and visual checks.
+## Troubleshooting (local Docker environment)
 
----
+**Port 8080 already in use** — something else is using it. Either stop that process or change `"8080:80"` to e.g. `"8082:80"` in `docker-compose.yml` (note `adminer` already uses 8081) and visit the new port.
 
-## CI/CD
+**Port 3306 already in use** — you have a local MySQL running. Change `"3306:3306"` to `"3307:3306"` in `docker-compose.yml`. The app itself is unaffected; that port is only for connecting an external DB client.
 
-One workflow, [`ci.yml`](.github/workflows/ci.yml), with five jobs:
+**Database connection error on first boot** — the `app` container can start slightly before MySQL finishes initializing. Run `docker compose restart app`.
 
-| Job | Runs on | Does |
-|---|---|---|
-| `lint` | every push; PRs into `main` | `php -l` over every file; `composer validate --strict` |
-| `static` | every push; PRs into `main` | CSRF and authorization wiring harnesses |
-| `unit` | every push; PRs into `main` | PHPUnit unit suite, no database |
-| `integration` | every push; PRs into `main` | PHPUnit integration suite against a `mysql:8.0` service |
-| `deploy` | push to `main`, or manual | builds `vendor/`, uploads to Bluehost over FTPS |
+## Security Notes
 
-The first four run in parallel. `deploy` declares `needs` on all four, so
-nothing reaches the live site unless every one of them is green.
-
-The integration job runs a `mysql:8.0` service container and rebuilds the schema
-from `schema.sql` → `seed.sql` → `indexes.sql` on every run, so CI proves the
-checked-in SQL actually builds a working database.
-
-### Setting up automatic deployment
-
-The pipeline replaces a manual FileZilla drag. It does one thing that dragging
-files cannot: it runs `composer install --no-dev --optimize-autoloader` first.
-`vendor/` is a gitignored build artifact and dompdf is a hard runtime
-dependency, so a hand-copied checkout produces a site whose PDF export fatals.
-
-**1 — Create an FTP account.** cPanel → **Files** → **FTP Accounts**. Note the
-username, password, and server (usually `ftp.yourdomain.com`).
-
-**2 — Find the deploy directory.** The document root points at the app's
-`public/` folder, so `app/`, `config/` and `database/` sit *above* the web root
-where no request can reach them:
-
-```
-/home/<cpaneluser>/
-└── typhoncath/          <-- FTP_SERVER_DIR points HERE (note: not public_html)
-    ├── app/  config/  database/  storage/  vendor/  .env
-    └── public/          <-- the document root
-```
-
-Set this in cPanel → **Domains** → your domain → **Document Root** →
-`typhoncath/public`.
-
-**3 — Add four repository secrets.** GitHub → **Settings** → **Secrets and
-variables** → **Actions** → **New repository secret**:
-
-| Secret | Example | Notes |
-|---|---|---|
-| `FTP_HOST` | `ftp.yourdomain.com` | no `ftp://` prefix |
-| `FTP_USERNAME` | `deploy@yourdomain.com` | the cPanel FTP account |
-| `FTP_PASSWORD` | | that account's password |
-| `FTP_SERVER_DIR` | `/typhoncath/` | the directory *containing* `public/`, trailing slash |
-
-**4 — Dry run first.** Actions → **Deploy to Bluehost** → **Run workflow** →
-tick **dry run**. The transfer is a mirror with `--delete`, meaning it removes
-remote files not present locally; on a site that has only ever been uploaded by
-hand, that difference can be large. The dry run lists every file it *would* send
-and remove without touching anything. Read that log before continuing.
-
-**5 — Deploy.** Re-run without dry run, or push to `main`.
-
-**6 — Verify.** Log in, open the dashboard, search an account by name (proves
-the FULLTEXT indexes loaded), and **export an RFQ as PDF** — that last one is
-what proves the `vendor/` build actually arrived.
-
-### What the deploy will never overwrite
-
-The exclusion list in the `deploy` job is load-bearing, because the mirror deletes
-remote files that are absent locally. Protected on the server:
-
-- `.env` and `config/database.php` — server-owned configuration, never in git
-- `public/uploads/**` — user data, not recoverable from git
-- `storage/logs/**`, `storage/backups/**`, `database/backups/**` — runtime state
-
-Also excluded, as they do not belong on a public host: `tests/`, `docs/`,
-`composer.json`, `composer.lock`, `phpunit.xml`, and `database/seed_dev_users.sql`
-(which creates five accounts sharing one published password).
-
-### How the transfer works
-
-No third-party deployment action is used. The job installs `lftp` from Ubuntu's
-own package repositories and drives it directly, so the only things that handle
-the FTP credentials are the GitHub runner and lftp itself. The password reaches
-lftp through `--env-password` rather than a command-line argument, so it never
-appears in the process list or a script body. Encryption is enforced rather than
-negotiated: the transfer refuses to fall back to plaintext, encrypts the data
-channel as well as the login, and requires a valid certificate.
-
-### Gating deploys on tests
-
-The `deploy` job declares `needs: [lint, static, unit, integration]`, so a
-failing test stops the upload — that is why deployment is a job inside `ci.yml`
-rather than a workflow of its own. Two separate workflows on the same trigger
-start simultaneously, and the upload can finish before the tests do.
-
-Two optional gates on top of that:
-
-- **Branch protection** (**Settings** → **Branches** → `main`) requiring the
-  four CI checks, so work reaches `main` only through a green pull request.
-- **A human gate**: add a required reviewer under **Settings** →
-  **Environments** → `production`; the deploy job already targets that
-  environment.
-
-To rehearse a deploy without uploading anything, use **Actions** → **CI** →
-**Run workflow** with `dry_run` checked. `lftp` then prints what it *would*
-transfer and delete. Off `main`, a manual run is only permitted as a dry run.
-
----
-
-## Configuration
-
-`docker compose up` needs no configuration. To override, create a `.env` next to
-`docker-compose.yml`:
-
-| Variable | Default | Purpose |
-|----------|---------|---------|
-| `DB_NAME` | `typhon_cath_crm` | Database name |
-| `DB_USER` | `crm_user` | Application database user |
-| `DB_PASS` | `devonly_change_me` | Application database password |
-| `MYSQL_ROOT_PASSWORD` | `devonly_root` | MySQL root password |
-| `DB_HOST_PORT` | `3306` | Host port for the database (see troubleshooting) |
-
-Application settings live in `src/.env` — copy `src/.env.example` and edit.
-Session timeouts and cookie behaviour are configured there.
-
----
-
-## Daily use
-
-| Task | Command |
-|------|---------|
-| Start | `docker compose up` |
-| Start in background | `docker compose up -d` |
-| Stop | `docker compose down` |
-| Logs | `docker compose logs -f` |
-| Install/update dependencies | `docker compose exec app composer install` |
-| Reset the database | `docker compose down -v && docker compose up` |
-| Database console (dev only) | `docker compose --profile tools up` → <http://localhost:8081> |
-
-> **Reset warning**: `down -v` deletes the database volume. All data is wiped and
-> re-seeded.
-
-`vendor/` is gitignored, so run `composer install` after cloning and whenever
-`composer.lock` changes.
-
----
-
-## Database
-
-| File | Role |
-|------|------|
-| `src/database/schema.sql` | Tables, keys, foreign keys, CHECK constraints |
-| `src/database/seed.sql` | Demo data + the role/permission matrix |
-| `src/database/indexes.sql` | **All** secondary and FULLTEXT indexes |
-| `src/database/migrations/` | Ordered upgrades for databases that already exist |
-
-Compose applies `schema` → `seed` → `indexes` in that order, once, on an empty
-volume.
-
-**`indexes.sql` is not optional.** RFQ, account and campaign search use MySQL
-FULLTEXT; without it those searches fail outright with *"Can't find FULLTEXT
-index matching the column list."*
-
-For an existing database, apply the migrations in filename order from the first
-one not yet applied. `021` is the current head. Read
-`020_integrity_constraints.sql`'s header before running it — it repairs data
-before adding constraints.
-
-**A new database is built from `schema.sql`, never from `migrations/`.**
-Migrations 001–005 contain no SQL: those tables have only ever been defined in
-`schema.sql`, so the directory is a changelog of changes *since* the original
-schema rather than a build script. Details in
-[`src/docs/DEPLOYMENT.md`](src/docs/DEPLOYMENT.md).
-
-### Backup and restore
-
-```bash
-php src/database/backup.php                              # timestamped dump -> database/backups/
-php src/database/restore.php <dump.sql>                  # restore over the configured database
-php src/database/restore.php <dump.sql> --into=scratch   # restore drill, non-destructive
-```
-
-Cron:
-
-```
-0 2 * * *  php /path/to/src/database/backup.php >> /path/to/backup.log 2>&1
-```
-
-Run the `--into=scratch` drill periodically — an untested backup is not a
-backup. The drill needs a database user that can create databases; the
-application user deliberately cannot.
-
-Set `DB_SSL_MODE=DISABLED` if the client rejects a self-signed server
-certificate.
-
----
-
-## Troubleshooting
-
-**Port 8080 already in use**
-Change `"8080:80"` to `"8081:80"` in `docker-compose.yml`.
-
-**Port 3306 already in use**
-You have a local MySQL. Set `DB_HOST_PORT=3307` in `.env` — no need to edit
-`docker-compose.yml`. The app is unaffected either way; that port is only for
-connecting with an external DB client.
-
-**Database connection error on first boot**
-The app can start before MySQL finishes initialising. `docker compose restart app`.
-
-**Search returns "Can't find FULLTEXT index"**
-`indexes.sql` did not run. It executes only on an *empty* volume, so:
-`docker compose down -v && docker compose up`.
-
-**`vendor/autoload.php` not found**
-Run `docker compose exec app composer install`.
-
-**A page returns 403**
-Working as intended — that account lacks the permission. Check Admin →
-Permissions (Super Admin only).
-
----
-
-## Connecting a database client
-
-| Setting | Value |
-|---------|-------|
-| Host | `127.0.0.1` |
-| Port | `3306` (or `DB_HOST_PORT`) |
-| Database | `typhon_cath_crm` |
-| Username | `crm_user` |
-| Password | `devonly_change_me` |
-
----
-
-## Known limitations
-
-[`src/docs/KNOWN_LIMITATIONS.md`](src/docs/KNOWN_LIMITATIONS.md) is an honest
-account of what this build does not do — campaign sending is simulated, there is
-no Excel import, login throttling is per-session, and the CSP still allows
-inline scripts. Read it before demoing or deploying.
-
-## License
-
-MIT — see [`LICENSE`](LICENSE).
+- Never expose `app/`, `config/`, `database/`, `storage/`, or `docs/` through the web server — only `public/` should be the document root, in local Docker and in production alike.
+- Passwords are hashed (bcrypt); never store or log plaintext passwords.
+- All protected pages require an active session (`Auth::check()`) and a role check (`Permissions`) via `Middleware/require_auth.php` and `Middleware/require_role.php`, since multiple users with different roles are logged in at once.
+- All state-changing (POST) forms must render and validate a CSRF token via `Csrf` — verified automatically by `tests/csrf_coverage.php`.
+- All SQL access goes through PDO prepared statements in the `Repository` classes — no raw string-concatenated queries.
